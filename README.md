@@ -84,3 +84,5 @@ A Jellyfin plugin links against the Jellyfin binary NuGet packages, which are
 themselves under the GPLv3. A compiled plugin is therefore GPLv3 whatever the
 source licence says, which is worth knowing before anybody reuses this code
 under something more permissive.
+
+See [NOTICE.md](NOTICE.md) for the intended-use notice.
