@@ -1,7 +1,106 @@
 <Project>
+
+    <!--
+        This file is the one place that says which Jellyfin server line an
+        artefact targets. The project file reads its target framework and its
+        Jellyfin package versions from here, and build.yaml is checked against
+        here by the CheckBuildYamlMatchesTheDeclaredLine target below.
+
+        Why it is worth a mechanism: PluginManager on the server compares the
+        running version against targetAbi with a greater-or-equal test, on both
+        live lines, so targetAbi is a floor with no ceiling. Issue #15 carries
+        the git grep that shows it, in both v10.11.11 and v12.0-rc4; an XML
+        comment cannot hold the pathspec that command needs.
+
+        So a package compiled against one line while declaring the ABI of an
+        older one is offered to every newer server, loaded, and then meets
+        whatever signature moved. Nothing on the server side refuses that, so
+        the values have to be right at the moment the package is built.
+
+        Which lines this plugin carries is question 1 on issue #2 and is not
+        answered here. The current stable line is what is declared until it is.
+    -->
+
+    <PropertyGroup>
+        <JellyfinLine Condition=" '$(JellyfinLine)' == '' ">10.11</JellyfinLine>
+    </PropertyGroup>
+
+    <!--
+        One PropertyGroup per carried line, and its id added to
+        JellyfinDeclaredLines below. The framework is the one the Jellyfin
+        packages of that version actually ship a lib folder for, which for
+        10.11.11 is net9.0 and for the 12.0 candidates is net10.0.
+    -->
+    <PropertyGroup Condition=" '$(JellyfinLine)' == '10.11' ">
+        <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
+        <JellyfinTargetFramework>net9.0</JellyfinTargetFramework>
+        <JellyfinTargetAbi>10.11.0.0</JellyfinTargetAbi>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <JellyfinDeclaredLines>10.11</JellyfinDeclaredLines>
+    </PropertyGroup>
+
     <PropertyGroup>
         <Version>0.0.0.0</Version>
         <AssemblyVersion>0.0.0.0</AssemblyVersion>
         <FileVersion>0.0.0.0</FileVersion>
     </PropertyGroup>
+
+    <!--
+        A line nobody declared leaves all three values empty, which would
+        otherwise restore whatever Jellyfin package NuGet resolves an empty
+        version to and target whatever framework the SDK defaults to. Refuse
+        instead of building.
+    -->
+    <Target Name="CheckJellyfinLineIsDeclared"
+            BeforeTargets="CollectPackageReferences;BeforeBuild">
+        <Error Condition=" '$(JellyfinPackageVersion)' == '' or '$(JellyfinTargetFramework)' == '' or '$(JellyfinTargetAbi)' == '' "
+               Text="JellyfinLine '$(JellyfinLine)' is not a server line this repository declares. Declared: $(JellyfinDeclaredLines). Add a PropertyGroup for it in Directory.Build.props, or build without overriding JellyfinLine." />
+        <Error Condition=" !$(JellyfinPackageVersion.StartsWith('$(JellyfinLine).')) "
+               Text="Line $(JellyfinLine) names package version $(JellyfinPackageVersion), which is not from that line. Directory.Build.props." />
+    </Target>
+
+    <!--
+        build.yaml is read by the plugin repository manager rather than by
+        MSBuild, so it cannot import a property and has to repeat the two
+        values. This target is what stops the repeat from drifting: it fails the
+        build rather than producing a package whose manifest and whose assembly
+        disagree about which server they are for.
+    -->
+    <Target Name="CheckBuildYamlMatchesTheDeclaredLine"
+            BeforeTargets="BeforeBuild"
+            DependsOnTargets="CheckJellyfinLineIsDeclared">
+
+        <PropertyGroup>
+            <_BuildYamlPath>$(MSBuildThisFileDirectory)build.yaml</_BuildYamlPath>
+        </PropertyGroup>
+
+        <Error Condition=" !Exists('$(_BuildYamlPath)') "
+               Text="$(_BuildYamlPath) is missing, so the packaging metadata cannot be checked against the declared line." />
+
+        <ReadLinesFromFile File="$(_BuildYamlPath)">
+            <Output TaskParameter="Lines" ItemName="_BuildYamlLine" />
+        </ReadLinesFromFile>
+
+        <ItemGroup>
+            <_BuildYamlAbiLine Include="@(_BuildYamlLine)"
+                               Condition=" $([System.String]::Copy('%(Identity)').StartsWith('targetAbi:')) " />
+            <_BuildYamlFrameworkLine Include="@(_BuildYamlLine)"
+                                     Condition=" $([System.String]::Copy('%(Identity)').StartsWith('framework:')) " />
+        </ItemGroup>
+
+        <PropertyGroup>
+            <_BuildYamlAbi>@(_BuildYamlAbiLine)</_BuildYamlAbi>
+            <_BuildYamlAbi>$(_BuildYamlAbi.Replace('targetAbi:', '').Replace('"', '').Trim())</_BuildYamlAbi>
+            <_BuildYamlFramework>@(_BuildYamlFrameworkLine)</_BuildYamlFramework>
+            <_BuildYamlFramework>$(_BuildYamlFramework.Replace('framework:', '').Replace('"', '').Trim())</_BuildYamlFramework>
+        </PropertyGroup>
+
+        <Error Condition=" '$(_BuildYamlAbi)' != '$(JellyfinTargetAbi)' "
+               Text="build.yaml declares targetAbi '$(_BuildYamlAbi)' and line $(JellyfinLine) declares '$(JellyfinTargetAbi)'. A package carrying the wrong floor is offered to servers it was not built against. Fix build.yaml or Directory.Build.props." />
+        <Error Condition=" '$(_BuildYamlFramework)' != '$(JellyfinTargetFramework)' "
+               Text="build.yaml declares framework '$(_BuildYamlFramework)' and line $(JellyfinLine) declares '$(JellyfinTargetFramework)'. The packaged assembly would be built for one runtime and packaged as another. Fix build.yaml or Directory.Build.props." />
+    </Target>
+
 </Project>
