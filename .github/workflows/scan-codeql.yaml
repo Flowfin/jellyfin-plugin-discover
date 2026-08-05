@@ -1,12 +1,24 @@
+# CodeQL, run here on this tree (#29).
+#
+# This was a call into an upstream reusable workflow whose only job carries
+# `if: github.repository == inputs.repository-name`, and the name passed to it
+# was the template's. So the scan did not run at all, and the run it did not do
+# appeared on every pull request as a skipped job named Analyze. A security
+# check that is present and does nothing is worse than one that is absent,
+# because the absent one is visible.
+#
+# Written out here rather than called, because what a code scan is pointed at is
+# this repository's own business, and passing that as an input to somebody
+# else's workflow is what produced the failure above.
 name: '🔬 Run CodeQL'
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
     paths-ignore:
       - '**/*.md'
   pull_request:
-    branches: [ master ]
+    branches: [master]
     paths-ignore:
       - '**/*.md'
   schedule:
@@ -16,15 +28,67 @@ on:
 # Deny-all at workflow level; the job below grants only what it needs.
 permissions: {}
 
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  call:
-    # Kept as a call only until #29 replaces it with a scan this repository owns:
-    # the upstream workflow gates itself on a repository name passed in below,
-    # which is why the scan does not currently run here at all.
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     permissions:
-      security-events: write # upload the CodeQL SARIF into the code-scanning tab
+      security-events: write # upload the SARIF into this repository's code scanning tab
       contents: read # checkout the tree to scan
-      actions: read # read workflow run metadata for the analysis
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
-    with:
-      repository-name: jellyfin/jellyfin-plugin-template
+      actions: read # read run metadata for the analysis
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The plugin itself.
+          - language: csharp
+            build-mode: autobuild
+          # The workflow files, which are the other thing in this tree that runs.
+          - language: actions
+            build-mode: none
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read the SDK the declared line asks for
+        if: matrix.language == 'csharp'
+        id: line
+        # Asked of MSBuild rather than written down, so the scan compiles against
+        # the same line the build does. The runner's preinstalled SDK is enough to
+        # evaluate a props file.
+        run: |
+          set -euo pipefail
+          framework=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinTargetFramework | tr -d '\r')
+          if [ -z "$framework" ]; then
+            echo "::error::Directory.Build.props names no target framework, so there is no SDK to set up."
+            exit 1
+          fi
+          echo "sdk=${framework#net}.x" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        if: matrix.language == 'csharp'
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ steps.line.outputs.sdk }}
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: +security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          category: /language:${{ matrix.language }}
