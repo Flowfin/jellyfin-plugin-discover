@@ -1,0 +1,117 @@
+# Two refusals about the version number (#21).
+#
+# The first is that the number is written in two files the server and the build
+# read separately, so they can disagree and the dashboard can then name a build
+# the assembly is not. The second is that a version can be raised without a word
+# saying what changed, which is the state in which a release note has to be
+# reconstructed from the log.
+#
+# Both legs read the tree and nothing else. The pull-request SHAs are passed
+# through env rather than interpolated into the script, so a crafted ref cannot
+# be evaluated as shell.
+name: Version guard
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+# Deny-all at workflow level; the job below grants only what it needs.
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    name: Version guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # read the tree and the commit range
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history so the base..head range is walkable; no step pushes, so
+          # the token is not persisted into .git/config.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: The four version fields agree
+        run: |
+          set -euo pipefail
+          # Read each field as a whole element and strip the tags, rather than
+          # with one capturing expression, so the extraction has no dependency on
+          # how a given sed treats a group.
+          # `|| true` so that a field which is absent arrives here as an empty
+          # string and meets the fail-closed check below with a message, rather
+          # than killing the step through pipefail with nothing said.
+          element() {
+            { grep -o "<$1>[^<]*</$1>" Directory.Build.props || true; } \
+              | sed -e "s@<$1>@@" -e "s@</$1>@@"
+          }
+          props_version=$(element Version)
+          props_assembly=$(element AssemblyVersion)
+          props_file=$(element FileVersion)
+          package_version=$({ grep -o '^version: *"[^"]*"' build.yaml || true; } \
+            | sed -e 's@^version: *"@@' -e 's@"$@@')
+
+          # Fail closed: a field that could not be read is not a field that agrees.
+          for name in props_version props_assembly props_file package_version; do
+            eval "value=\${$name}"
+            if [ -z "${value}" ]; then
+              echo "::error::version-guard could not read ${name} - failing closed instead of assuming it agrees."
+              exit 1
+            fi
+          done
+
+          echo "Directory.Build.props Version:         ${props_version}"
+          echo "Directory.Build.props AssemblyVersion: ${props_assembly}"
+          echo "Directory.Build.props FileVersion:     ${props_file}"
+          echo "build.yaml version:                    ${package_version}"
+
+          if [ "${props_version}" != "${props_assembly}" ] \
+            || [ "${props_version}" != "${props_file}" ] \
+            || [ "${props_version}" != "${package_version}" ]; then
+            echo "::error::The version is written in four places and they do not all say ${props_version}. A server shows the number it read from the package, so a disagreement here means the dashboard and the assembly can name different builds."
+            exit 1
+          fi
+          echo "All four agree on ${props_version}."
+
+      - name: A version bump touches the changelog
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          read_version() {
+            { git show "$1:Directory.Build.props" 2>/dev/null \
+              | grep -o '<Version>[^<]*</Version>' || true; } \
+              | sed -e 's@<Version>@@' -e 's@</Version>@@'
+          }
+          base_version=$(read_version "${BASE_SHA}")
+          head_version=$(read_version "${HEAD_SHA}")
+
+          if [ -z "${head_version}" ]; then
+            echo "::error::version-guard could not read the version at the head commit - failing closed."
+            exit 1
+          fi
+
+          if [ "${base_version}" = "${head_version}" ]; then
+            echo "The version is ${head_version} on both sides. Nothing to ask of the changelog."
+            exit 0
+          fi
+
+          echo "The version moves from ${base_version:-<absent>} to ${head_version}."
+          if git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" | grep -qxF 'CHANGELOG.md'; then
+            echo "CHANGELOG.md is in the change."
+            exit 0
+          fi
+          echo "::error::The version moves from ${base_version:-<absent>} to ${head_version} and CHANGELOG.md is untouched. Write what changed under Unreleased in the same change that raises the number."
+          exit 1
