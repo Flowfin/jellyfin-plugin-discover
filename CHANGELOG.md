@@ -1,0 +1,39 @@
+# Changelog
+
+## How a version works here
+
+A version is four numbers, because that is the shape the plugin manifest and the
+assembly attributes both take. It is stated once, as `PluginVersion` in
+`Directory.Build.props`, and the three assembly properties derive from it.
+`build.yaml` has to repeat it, because the plugin repository manager reads that
+file and cannot read an MSBuild property, so the build compares the two and
+fails when they differ. A server shows the version it read from the package, so
+two sources that disagree means the dashboard names a build a bug report cannot
+be tied to.
+
+While the first number is 0 nothing is promised. Settings, whatever the plugin
+stores, and the seam to a requests plugin may all change in any release, and an
+upgrade may leave data behind that has to be removed by hand.
+
+A release is breaking when a working install needs somebody to do something by
+hand to keep working. A setting that is read differently, stored data an older
+or newer build refuses, and a change to the contract a sibling plugin talks to
+are all breaking. New behaviour that an existing install ignores is not.
+
+There is no beta suffix, because a four-number version has nowhere to put one. A
+pre-release is a GitHub release marked as a prerelease, which
+`.github/workflows/publish.yaml` passes on as `is-unstable`. Which channel that
+reaches, and what happens when publishing fails, is
+[#121](https://github.com/iderex/jellyfin-plugin-discover/issues/121).
+
+Every change that bumps the version adds its line under Unreleased first. The
+`changelog-entry` check refuses a pull request that moves the version and leaves
+this file alone.
+
+## Unreleased
+
+- Nothing has been released. What exists so far is repository setup rather than
+  plugin behaviour, and the plan is on the milestones.
+- One place now states which server line the build targets, and the build
+  refuses a package whose manifest disagrees with it
+  ([#15](https://github.com/iderex/jellyfin-plugin-discover/issues/15)).
