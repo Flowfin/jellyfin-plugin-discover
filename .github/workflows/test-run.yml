@@ -1,0 +1,67 @@
+# The test steps, written out here rather than called from another
+# organisation's reusable workflow (#41, and the first half of #27 for test).
+#
+# It is a reusable workflow called by test.yaml rather than a job inside it for
+# one reason: the status context a called job produces is `<caller job id> /
+# <inner job name>`, and the branch ruleset on the default branch requires
+# `call / test` by name. Writing the steps into a plain job would rename the
+# context and the required check would then never report, which blocks every
+# pull request. Renaming the required check is a repository setting rather than
+# a change to this tree, and #40 is where that set is revisited.
+name: Test
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # checkout only
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read the SDK versions from the declared server lines
+        id: sdk
+        # Derived rather than repeated: Directory.Build.props is the one place a
+        # server line is stated, and the framework of each carried line is what
+        # decides which SDK can build it. A version written here instead would be
+        # a second source that nothing compares against the first.
+        run: |
+          set -euo pipefail
+          frameworks=$({ grep -o '<JellyfinTargetFramework>[^<]*</JellyfinTargetFramework>' Directory.Build.props || true; } \
+            | sed -e 's@<JellyfinTargetFramework>@@' -e 's@</JellyfinTargetFramework>@@' \
+            | sort -u)
+          if [ -z "${frameworks}" ]; then
+            echo "::error::No JellyfinTargetFramework is declared in Directory.Build.props, so there is nothing to install an SDK for. Failing closed rather than testing on whatever the runner happens to carry."
+            exit 1
+          fi
+          {
+            echo 'versions<<SDKEOF'
+            for framework in ${frameworks}; do
+              echo "${framework#net}.x"
+            done
+            echo 'SDKEOF'
+          } >> "$GITHUB_OUTPUT"
+          echo "Frameworks declared: ${frameworks}"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ steps.sdk.outputs.versions }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
