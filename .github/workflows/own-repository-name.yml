@@ -1,0 +1,77 @@
+# No workflow declares that it is running on somebody else's repository (#29).
+#
+# Two workflows passed `repository-name: jellyfin/jellyfin-plugin-template` into
+# upstream reusable workflows whose jobs are guarded by
+# `if: github.repository == inputs.repository-name`. The CodeQL scan therefore
+# never ran, and reported itself as a skipped job rather than as an absent one.
+# Nothing refused that, so it survived from the first commit.
+#
+# What this refuses is a workflow input naming a repository that is not the one
+# the run is on. It deliberately says nothing about `uses:`, where naming
+# another repository is how an action is referenced at all and is not a claim
+# about whose tree this is.
+name: own-repository-name
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+# Read-only: the check greps the tracked workflow files.
+permissions:
+  contents: read
+
+concurrency:
+  group: own-repository-name-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: No workflow names another repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Refuse a repository name that is not this repository
+        env:
+          THIS_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # owner/name on a repository-name input, in any of the workflow files.
+          # A value that is a ${{ }} expression is left alone: it is resolved at
+          # run time and is not a name written into the tree.
+          if ! found=$(grep -rnE '^[[:space:]]*repository[-_]name:[[:space:]]*[^$[:space:]]' .github/workflows/ || true); then
+            echo "::error::Could not read .github/workflows/."
+            exit 1
+          fi
+
+          if [ -z "$found" ]; then
+            echo "No workflow states a repository name at all."
+            exit 0
+          fi
+
+          fail=0
+          while IFS= read -r hit; do
+            value=$(printf '%s' "$hit" | sed -E 's/.*repository[-_]name:[[:space:]]*//; s/[[:space:]]*$//; s/^"//; s/"$//')
+            if [ "$value" = "$THIS_REPOSITORY" ]; then
+              echo "ok    $hit"
+            else
+              echo "FAIL  $hit"
+              fail=1
+            fi
+          done <<< "$found"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::A workflow states a repository name that is not ${THIS_REPOSITORY}. A run guarded on that name does nothing here and reports itself as skipped rather than as absent. Use \${{ github.repository }}, or stop passing the name."
+            exit 1
+          fi
+
+          echo "Every repository name in .github/workflows/ is this repository."

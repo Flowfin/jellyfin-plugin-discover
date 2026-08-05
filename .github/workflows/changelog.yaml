@@ -1,11 +1,14 @@
 name: '📝 Create/Update Release Draft & Release Bump PR'
 
+# Deliberate only. The push trigger is gone rather than the name it named being
+# swapped for this repository, because that swap would not have disabled this
+# workflow, it would have switched it on: its jobs were guarded by a repository
+# name that never matched, and correcting the name is what starts it running. It
+# writes a version into Directory.Build.props and build.yaml, and #21 showed what
+# it writes disagrees with itself and with the ABI floor #15 pinned. Whether this
+# repository adopts it at all is #26, and how a release is made is #119. Neither
+# is decided here.
 on:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - build.yaml
   workflow_dispatch:
   repository_dispatch:
     types:
@@ -16,15 +19,13 @@ permissions: {}
 
 jobs:
   call:
-    # Kept as a call pending #26 and #21: it writes the version into
-    # Directory.Build.props and build.yaml, which is the same ground #21 is
-    # deciding, so owning the steps before that decision would fix a scheme this
-    # repository has not chosen yet.
+    # Kept as a call pending #26: owning these steps before that decision would
+    # fix a release procedure this repository has not chosen yet.
     permissions:
       contents: write # push the version-bump branch and draft the release
       pull-requests: write # open or update the release-prep pull request
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/changelog.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     with:
-      repository-name: jellyfin/jellyfin-plugin-template
+      repository-name: ${{ github.repository }}
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
