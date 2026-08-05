@@ -1,0 +1,218 @@
+# Does the package a release would ship actually load on a server (#19).
+#
+# Everything else about a plugin is verifiable by reading. Whether the server
+# accepts it is not: it refuses for reasons that never reach the build, a wrong
+# ABI floor, a missing assembly, a mismatched framework, an exception in the
+# constructor. So this builds the release package with the same tool the release
+# path uses, drops it into a server of each targeted line running in a
+# container, and reads the server's own log.
+#
+# The command that builds the package is the jellyfin-plugin-repository-manager
+# step below, which is the same action .github/workflows/build.yaml reaches
+# through and the same one the publish path uses. Nothing here packages a debug
+# output directory.
+#
+# Nothing in this workflow needs a display, and the containers run as the
+# unprivileged runner user rather than as root. No machine trust store is
+# touched, per #42.
+name: plugin-loads
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+
+# Deny-all at workflow level; each job grants only what it needs.
+permissions: {}
+
+concurrency:
+  group: plugin-loads-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lines:
+    name: Read the targeted server lines
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.read.outputs.matrix }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Derive one job per declared line
+        id: read
+        # Asked of MSBuild rather than parsed out of the XML, so this is the same
+        # answer the build gets and not a second reading of the same file. The
+        # runner's preinstalled SDK is enough to evaluate a props file; nothing
+        # is compiled here, so no version is chosen at this point.
+        run: |
+          set -euo pipefail
+
+          declared=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinDeclaredLines)
+          declared=$(printf '%s' "$declared" | tr -d '\r' | tr ';,' '  ')
+
+          if [ -z "${declared// /}" ]; then
+            echo "::error::Directory.Build.props declares no server line, so there is nothing to prove loads."
+            exit 1
+          fi
+
+          entries=''
+          for line in $declared; do
+            abi=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinTargetAbi -p:JellyfinLine="$line" | tr -d '\r')
+            package=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinPackageVersion -p:JellyfinLine="$line" | tr -d '\r')
+            framework=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinTargetFramework -p:JellyfinLine="$line" | tr -d '\r')
+
+            if [ -z "$abi" ] || [ -z "$package" ] || [ -z "$framework" ]; then
+              echo "::error::Line ${line} is in JellyfinDeclaredLines and has no values in Directory.Build.props."
+              exit 1
+            fi
+
+            # net9.0 is built by the 9.0.x SDK. Derived rather than written down,
+            # so a line that moves the framework moves this with it.
+            sdk="${framework#net}.x"
+
+            entries="${entries}{\"line\":\"${line}\",\"abi\":\"${abi}\",\"package\":\"${package}\",\"framework\":\"${framework}\",\"sdk\":\"${sdk}\"},"
+          done
+
+          matrix="[${entries%,}]"
+          echo "$matrix"
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+  loads:
+    name: Loads on ${{ matrix.line }}
+    needs: lines
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.lines.outputs.matrix) }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ matrix.sdk }}
+
+      - name: Build the package a release would ship
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        id: jprm
+        with:
+          dotnet-target: ${{ matrix.framework }}
+
+      - name: Install the package into a server and read its log
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+          IMAGE: jellyfin/jellyfin:${{ matrix.package }}
+          ABI: ${{ matrix.abi }}
+          LINE: ${{ matrix.line }}
+        run: |
+          set -euo pipefail
+
+          plugin_name=$(sed -n 's/^name:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$/\1/p' build.yaml | head -1)
+          if [ -z "$plugin_name" ]; then
+            echo "::error::build.yaml carries no name, so there is nothing to look for in the server log."
+            exit 1
+          fi
+
+          # unpack <root> <targetAbi> installs the built package under a server's
+          # plugin directory, optionally rewriting the ABI floor in its manifest.
+          unpack() {
+            root="$1"
+            abi="$2"
+            dir="${root}/config/plugins/${plugin_name}_probe"
+
+            mkdir -p "$dir" "${root}/cache"
+            unzip -q -o "$ARTIFACT" -d "$dir"
+
+            if [ ! -f "${dir}/meta.json" ]; then
+              echo "::error::The built package carries no meta.json, so the server has nothing to read its ABI floor from."
+              exit 1
+            fi
+
+            jq --arg abi "$abi" '.targetAbi = $abi' "${dir}/meta.json" > "${dir}/meta.json.tmp"
+            mv "${dir}/meta.json.tmp" "${dir}/meta.json"
+          }
+
+          # run <name> <root> starts a server on this line with that plugin
+          # directory and waits until the plugin manager has had its say.
+          run() {
+            docker run -d --rm --name "$1" \
+              --user "$(id -u):$(id -g)" \
+              -v "$2/config:/config" \
+              -v "$2/cache:/cache" \
+              "$IMAGE" > /dev/null
+
+            for _ in $(seq 1 40); do
+              if docker logs "$1" 2>&1 | grep -q 'PluginManager'; then
+                sleep 5
+                return 0
+              fi
+              sleep 5
+            done
+
+            echo "::error::The server on line ${LINE} never reached its plugin manager. Its log follows."
+            docker logs "$1" 2>&1 | tail -50
+            return 1
+          }
+
+          good="$RUNNER_TEMP/good"
+          unpack "$good" "$ABI"
+          run good-server "$good"
+
+          echo "--- what the server said about plugins ---"
+          docker logs good-server 2>&1 | grep 'PluginManager' || true
+
+          if ! docker logs good-server 2>&1 | grep -q "Loaded plugin: ${plugin_name}"; then
+            echo "::error::The server on line ${LINE} did not log '${plugin_name}' as loaded. The package a release would ship does not load."
+            docker logs good-server 2>&1 | tail -80
+            exit 1
+          fi
+
+          if docker logs good-server 2>&1 | grep -iE "(failed|error).*${plugin_name}"; then
+            echo "::error::The server on line ${LINE} logged a failure naming ${plugin_name}."
+            exit 1
+          fi
+
+          echo "${plugin_name} loads on line ${LINE}."
+          docker stop good-server > /dev/null
+
+          # The same package with its ABI floor raised one line. The server reads
+          # that floor with no ceiling and this one is above it, so a server that
+          # loads this too would mean the check above proves nothing.
+          high_abi=$(printf '%s' "$ABI" | awk -F. '{ print $1 "." $2 + 1 ".0.0" }')
+          echo "--- and with the ABI floor at ${high_abi} instead of ${ABI} ---"
+
+          bad="$RUNNER_TEMP/bad"
+          unpack "$bad" "$high_abi"
+          run bad-server "$bad"
+
+          docker logs bad-server 2>&1 | grep 'PluginManager' || true
+
+          if docker logs bad-server 2>&1 | grep -q "Loaded plugin: ${plugin_name}"; then
+            echo "::error::A package declaring ABI ${high_abi} still loaded on line ${LINE}. This check cannot tell a good package from a broken one."
+            exit 1
+          fi
+
+          echo "A package built for a line above ${LINE} is refused by the server, so the check above is about the package and not about the server starting."
+          docker stop bad-server > /dev/null
