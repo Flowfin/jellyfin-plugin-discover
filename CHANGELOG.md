@@ -32,6 +32,8 @@ this file alone.
 
 ## Unreleased
 
+- A line added only so the changelog-entry check can be seen passing once
+  the entry exists. This branch is not for merging.
 - Nothing has been released. What exists so far is repository setup rather than
   plugin behaviour, and the plan is on the milestones.
 - One place now states which server line the build targets, and the build
