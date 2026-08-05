@@ -1,44 +1,40 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Follows the plugin, which reads it from Directory.Build.props, so a test never runs against a framework the plugin is not built for. -->
+    <!-- Follows the server line stated in Directory.Build.props, same as the plugin. -->
     <TargetFramework>$(JellyfinTargetFramework)</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.Template.Tests</RootNamespace>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <IsPackable>false</IsPackable>
-    <!-- Every analyzer setting below is the plugin's, with no difference. GenerateDocumentationFile stays on: with it off the StyleCop pass reports SA0001 and stops analysing comments at all, which would be a quieter gate rather than a cheaper one. -->
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Nullable>enable</Nullable>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <CodeAnalysisRuleSet>../jellyfin.ruleset</CodeAnalysisRuleSet>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Not an analyzer setting: a test assembly is not something anybody installs. -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <!--
+    The plugin excludes the Jellyfin runtime assemblies, because a server
+    supplies them and a plugin that shipped its own would load two copies. A test
+    host has no server, so it references the same packages with their runtime
+    assets kept. Same version property, so there is still one statement of which
+    line this is against.
+  -->
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" />
+    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.1" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="SerilogAnalyzer" Version="0.15.0" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="All" />
     <PackageReference Include="SmartAnalyzers.MultithreadingAnalyzer" Version="1.1.31" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!--
-      The plugin excludes the runtime assets of these two, because a server
-      supplies them and a package that carried its own copy would load twice.
-      Nothing supplies them to a test host, so touching any plugin type throws
-      FileNotFoundException on MediaBrowser.Common before a test body runs. They
-      are referenced here with their assets kept, at the version the declared
-      server line names, so the test runs against the same assemblies the plugin
-      was compiled against.
-    -->
-    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" />
-    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -37,6 +37,25 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     public static Plugin? Instance { get; private set; }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The base class writes whatever it is handed. A document declaring a
+    /// schema version this build does not know is refused here instead, so it
+    /// never reaches disk and is never read back as if its fields meant what
+    /// this build thinks they mean.
+    /// </remarks>
+    public override void UpdateConfiguration(BasePluginConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        if (configuration is PluginConfiguration pluginConfiguration)
+        {
+            ConfigurationSchema.ThrowIfUnknown(pluginConfiguration);
+        }
+
+        base.UpdateConfiguration(configuration);
+    }
+
+    /// <inheritdoc />
     public IEnumerable<PluginPageInfo> GetPages()
     {
         return
