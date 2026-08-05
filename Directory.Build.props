@@ -49,7 +49,7 @@
         the paragraph at the top of CHANGELOG.md.
     -->
     <PropertyGroup>
-        <PluginVersion>0.0.0.0</PluginVersion>
+        <PluginVersion>0.0.1.0</PluginVersion>
         <Version>$(PluginVersion)</Version>
         <AssemblyVersion>$(PluginVersion)</AssemblyVersion>
         <FileVersion>$(PluginVersion)</FileVersion>
