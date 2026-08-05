@@ -48,6 +48,24 @@ those three numbers as a supported line. They are the state #15 removes.
 
 The assembly lands under `Jellyfin.Plugin.Template/bin/Release/net9.0/`.
 
+## Running it against a local server
+
+There is no editor scaffolding in this repository. Every path in the template's
+`.vscode` configuration was derived from one setting naming the template's
+project, and this plugin's own name and identifier are not minted yet
+([#14](https://github.com/iderex/jellyfin-plugin-discover/issues/14)), so those
+tasks would have had to be rewritten the moment they were. The directory was
+removed rather than left building a solution that will not exist. The steps it
+automated are these, and they are short enough to run by hand:
+
+1. Build, as above.
+2. Create a directory named after the plugin inside the server's plugin
+   directory. That is `%LOCALAPPDATA%\jellyfin\plugins\` on Windows and
+   `~/.local/share/jellyfin/plugins/` on Linux, unless the server was told to
+   keep its data somewhere else.
+3. Copy everything from the build output directory into it.
+4. Restart the server, and read the server log for the plugin being loaded.
+
 Whether a package built from this tree actually loads on a server is
 [#19](https://github.com/iderex/jellyfin-plugin-discover/issues/19), and until
 that issue closes nobody has checked it.
