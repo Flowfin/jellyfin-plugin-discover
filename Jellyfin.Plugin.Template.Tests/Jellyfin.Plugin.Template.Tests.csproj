@@ -28,6 +28,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      The plugin excludes the runtime assets of these two, because a server
+      supplies them and a package that carried its own copy would load twice.
+      Nothing supplies them to a test host, so touching any plugin type throws
+      FileNotFoundException on MediaBrowser.Common before a test body runs. They
+      are referenced here with their assets kept, at the version the declared
+      server line names, so the test runs against the same assemblies the plugin
+      was compiled against.
+    -->
+    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" />
+    <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj" />
   </ItemGroup>
 
