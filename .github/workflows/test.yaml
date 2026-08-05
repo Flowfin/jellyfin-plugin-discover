@@ -18,9 +18,10 @@ permissions: {}
 
 jobs:
   call:
-    # Kept as a call for now: the upstream workflow is restore, build and
-    # `dotnet test` over whatever the solution holds, which is what this
-    # repository would write out by hand today and no more.
+    # The steps now live in this repository, in test-run.yml, which says there
+    # why it is a called workflow rather than a job written out here. The
+    # upstream wrapper it replaces pinned its own SDK version, which is a second
+    # answer to a question Directory.Build.props already answers.
     permissions:
       contents: read # checkout only
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/test.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
+    uses: ./.github/workflows/test-run.yml
