@@ -46,8 +46,8 @@ jobs:
           set -euo pipefail
 
           # owner/name on a repository-name input, in any of the workflow files.
-          # A value that is a ${{ }} expression is left alone: it is resolved at
-          # run time and is not a name written into the tree.
+          # A value beginning with a dollar sign is left alone: it is a workflow
+          # expression resolved at run time, not a name written into the tree.
           if ! found=$(grep -rnE '^[[:space:]]*repository[-_]name:[[:space:]]*[^$[:space:]]' .github/workflows/ || true); then
             echo "::error::Could not read .github/workflows/."
             exit 1
