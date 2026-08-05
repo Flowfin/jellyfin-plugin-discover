@@ -70,7 +70,7 @@ jobs:
           done <<< "$found"
 
           if [ "$fail" -ne 0 ]; then
-            echo "::error::A workflow states a repository name that is not ${THIS_REPOSITORY}. A run guarded on that name does nothing here and reports itself as skipped rather than as absent. Use \${{ github.repository }}, or stop passing the name."
+            echo "::error::A workflow states a repository name that is not ${THIS_REPOSITORY}. A run guarded on that name does nothing here and reports itself as skipped rather than as absent. Pass the github.repository context instead, or stop passing the name."
             exit 1
           fi
 
