@@ -13,6 +13,15 @@ on:
       - '**/*.md'
   workflow_dispatch:
 
+# Deny-all at workflow level; the job below grants only what it needs.
+permissions: {}
+
 jobs:
   call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@master
+    # Kept as a call into the upstream reusable workflow rather than written out
+    # here: it drives the plugin repository manager, which is the same tool the
+    # publish path uses, so owning a copy of these steps would mean two
+    # descriptions of one packaging procedure that can drift apart.
+    permissions:
+      contents: read # checkout; the artifact upload needs no token scope
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29

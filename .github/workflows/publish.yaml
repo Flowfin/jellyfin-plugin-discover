@@ -6,9 +6,17 @@ on:
       - released
   workflow_dispatch:
 
+# Deny-all at workflow level; the job below grants only what it needs.
+permissions: {}
+
 jobs:
   call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/publish.yaml@master
+    # Kept as a call: the release path uploads to infrastructure owned by the
+    # upstream project, and the steps that reach it are that project's to change.
+    # #119 decides whether this repository publishes that way at all.
+    permissions:
+      contents: write # attach the built package to the GitHub release
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/publish.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     with:
       version: ${{ github.event.release.tag_name }}
       is-unstable: ${{ github.event.release.prerelease }}
