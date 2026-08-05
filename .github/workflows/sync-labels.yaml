@@ -5,8 +5,16 @@ on:
     - cron: '0 0 1 * *'
   workflow_dispatch:
 
+# Deny-all at workflow level; the job below grants only what it needs.
+permissions: {}
+
 jobs:
   call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/sync-labels.yaml@master
+    # Kept as a call, and #26 is where it is decided whether it is kept at all.
+    # It replaces this repository's label set with the upstream project's, which
+    # is a decision about this tracker rather than about a build.
+    permissions:
+      issues: write # create, rename and delete labels on this repository
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/sync-labels.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
