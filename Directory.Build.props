@@ -41,10 +41,18 @@
         <JellyfinDeclaredLines>10.11</JellyfinDeclaredLines>
     </PropertyGroup>
 
+    <!--
+        The plugin version, stated once. The three MSBuild properties the
+        assembly carries derive from it, and build.yaml, which the dashboard
+        reads the installed version from, is compared against it by
+        CheckBuildYamlMatchesTheDeclaredVersion below. What the numbers mean is
+        the paragraph at the top of CHANGELOG.md.
+    -->
     <PropertyGroup>
-        <Version>0.0.0.0</Version>
-        <AssemblyVersion>0.0.0.0</AssemblyVersion>
-        <FileVersion>0.0.0.0</FileVersion>
+        <PluginVersion>0.0.0.0</PluginVersion>
+        <Version>$(PluginVersion)</Version>
+        <AssemblyVersion>$(PluginVersion)</AssemblyVersion>
+        <FileVersion>$(PluginVersion)</FileVersion>
     </PropertyGroup>
 
     <!--
@@ -101,6 +109,43 @@
                Text="build.yaml declares targetAbi '$(_BuildYamlAbi)' and line $(JellyfinLine) declares '$(JellyfinTargetAbi)'. A package carrying the wrong floor is offered to servers it was not built against. Fix build.yaml or Directory.Build.props." />
         <Error Condition=" '$(_BuildYamlFramework)' != '$(JellyfinTargetFramework)' "
                Text="build.yaml declares framework '$(_BuildYamlFramework)' and line $(JellyfinLine) declares '$(JellyfinTargetFramework)'. The packaged assembly would be built for one runtime and packaged as another. Fix build.yaml or Directory.Build.props." />
+    </Target>
+
+    <!--
+        The version has the same problem as the two values above and one more
+        reader: a server shows the version it read from the package, so a
+        build.yaml that disagrees with the assembly is a dashboard that names a
+        build nobody can tie a bug report to. build.yaml cannot import
+        PluginVersion, so it is compared against it instead.
+    -->
+    <Target Name="CheckBuildYamlMatchesTheDeclaredVersion"
+            BeforeTargets="BeforeBuild">
+
+        <PropertyGroup>
+            <_VersionYamlPath>$(MSBuildThisFileDirectory)build.yaml</_VersionYamlPath>
+        </PropertyGroup>
+
+        <Error Condition=" !Exists('$(_VersionYamlPath)') "
+               Text="$(_VersionYamlPath) is missing, so the packaged version cannot be checked against the declared one." />
+        <Error Condition=" '$(PluginVersion)' == '' "
+               Text="PluginVersion is empty. Directory.Build.props is where the version is stated." />
+
+        <ReadLinesFromFile File="$(_VersionYamlPath)">
+            <Output TaskParameter="Lines" ItemName="_VersionYamlLine" />
+        </ReadLinesFromFile>
+
+        <ItemGroup>
+            <_BuildYamlVersionLine Include="@(_VersionYamlLine)"
+                                   Condition=" $([System.String]::Copy('%(Identity)').StartsWith('version:')) " />
+        </ItemGroup>
+
+        <PropertyGroup>
+            <_BuildYamlVersion>@(_BuildYamlVersionLine)</_BuildYamlVersion>
+            <_BuildYamlVersion>$(_BuildYamlVersion.Replace('version:', '').Replace('"', '').Trim())</_BuildYamlVersion>
+        </PropertyGroup>
+
+        <Error Condition=" '$(_BuildYamlVersion)' != '$(PluginVersion)' "
+               Text="build.yaml declares version '$(_BuildYamlVersion)' and Directory.Build.props declares '$(PluginVersion)'. The dashboard and the assembly would disagree about which build is installed. Fix build.yaml or Directory.Build.props." />
     </Target>
 
 </Project>

@@ -1,0 +1,94 @@
+# A version bump that leaves CHANGELOG.md alone is refused (#21). The version a
+# server shows comes out of the package, so a build that arrives with no line
+# saying what changed is a build nobody can tie a report to afterwards. Written
+# out here rather than called from elsewhere: it reads this repository's own two
+# version fields, which no other repository knows about.
+name: changelog-entry
+
+on:
+  pull_request:
+    branches: ["**"]
+
+# Read-only: the check only walks git history.
+permissions:
+  contents: read
+
+# Cancel a superseded run on the same pull request; the check is cheap and
+# reading the range again costs nothing.
+concurrency:
+  group: changelog-entry-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  entry:
+    name: Version bump carries a changelog entry
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history so the base and the head are both walkable; no step
+          # pushes, so the token is not persisted into .git/config.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Refuse a version bump that does not touch the changelog
+        # The two SHAs are passed as environment variables and never
+        # interpolated into the script, so a crafted ref cannot become shell.
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Every read below is guarded, because a `git show` of a file that a
+          # commit does not carry exits non-zero, and a version silently read as
+          # empty at both ends is a bump this check would wave through.
+          read_props_version() {
+            if ! text=$(git show "$1:Directory.Build.props"); then
+              echo "::error::Directory.Build.props is not readable at $1."
+              exit 1
+            fi
+            printf '%s\n' "$text" | sed -n 's;.*<PluginVersion>\(.*\)</PluginVersion>.*;\1;p' | head -1
+          }
+
+          read_yaml_version() {
+            if ! text=$(git show "$1:build.yaml"); then
+              echo "::error::build.yaml is not readable at $1."
+              exit 1
+            fi
+            printf '%s\n' "$text" | sed -n 's;^version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$;\1;p' | head -1
+          }
+
+          base_props=$(read_props_version "$BASE_SHA")
+          head_props=$(read_props_version "$HEAD_SHA")
+          base_yaml=$(read_yaml_version "$BASE_SHA")
+          head_yaml=$(read_yaml_version "$HEAD_SHA")
+
+          if [ -z "$head_props" ] || [ -z "$head_yaml" ]; then
+            echo "::error::No version found at the head of this pull request. Directory.Build.props must carry <PluginVersion> and build.yaml must carry a version field."
+            exit 1
+          fi
+
+          echo "Directory.Build.props: ${base_props} -> ${head_props}"
+          echo "build.yaml:            ${base_yaml} -> ${head_yaml}"
+
+          if [ "$base_props" = "$head_props" ] && [ "$base_yaml" = "$head_yaml" ]; then
+            echo "The version does not move in this pull request, so no changelog entry is owed."
+            exit 0
+          fi
+
+          if ! changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA"); then
+            echo "::error::Could not diff ${BASE_SHA} against ${HEAD_SHA}."
+            exit 1
+          fi
+
+          if printf '%s\n' "$changed" | grep -qxF 'CHANGELOG.md'; then
+            echo "The version moves and CHANGELOG.md is in the change."
+            exit 0
+          fi
+
+          echo "::error::This pull request moves the version and does not touch CHANGELOG.md. Add the line under Unreleased that says what the new version changes."
+          exit 1
