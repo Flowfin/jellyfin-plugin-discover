@@ -34,7 +34,7 @@
     <PropertyGroup Condition=" '$(JellyfinLine)' == '10.11' ">
         <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
         <JellyfinTargetFramework>net9.0</JellyfinTargetFramework>
-        <JellyfinTargetAbi>10.11.0.0</JellyfinTargetAbi>
+        <JellyfinTargetAbi>10.12.0.0</JellyfinTargetAbi>
     </PropertyGroup>
 
     <PropertyGroup>
