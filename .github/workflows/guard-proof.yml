@@ -1,0 +1,27 @@
+# Near-miss for the workflow audit. This file exists for one commit.
+#
+# It declares no trigger but a manual one, so nothing here runs. What it does
+# carry is an action referenced by a tag rather than by a commit, which is the
+# finding zizmor's own comment in zizmor.yml names first: a tag can be moved to
+# point at different code after it has been reviewed.
+#
+# The commit that follows removes this file.
+name: guard-proof
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  near-miss:
+    name: A use that is not pinned
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
