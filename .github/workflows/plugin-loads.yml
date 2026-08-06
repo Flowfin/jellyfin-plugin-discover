@@ -129,7 +129,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          plugin_name=$(sed -n 's/^name:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$/\1/p' build.yaml | head -1)
+          # sed quits at the first name line rather than a `| head -1` doing it
+          # from the other end of a pipe, which is the same shape as the readers
+          # below and can fail the same way (#146).
+          plugin_name=$(sed -n -e 's/^name:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$/\1/p' -e '/^name:/q' build.yaml)
           if [ -z "$plugin_name" ]; then
             echo "::error::build.yaml carries no name, so there is nothing to look for in the server log."
             exit 1
@@ -154,6 +157,22 @@ jobs:
             mv "${dir}/meta.json.tmp" "${dir}/meta.json"
           }
 
+          # capture <name> writes that container's log to a file and answers with
+          # nothing. Every question below is then asked of the file.
+          #
+          # It is a file rather than a pipe because a pipe here answers the wrong
+          # question (#146). `docker logs x | grep -q y` has grep stop at the
+          # first match and close the pipe, docker exit non-zero on the closed
+          # pipe, and `pipefail` report the pipeline as failed although the line
+          # was found. It depends on whether docker finished writing first, so
+          # the same bytes pass and fail on different runs. It inverted both
+          # readers below, and one of them says a package that should have been
+          # refused was refused, which is a green check standing for a guard that
+          # did not bite.
+          capture() {
+            docker logs "$1" > "${RUNNER_TEMP}/$1.log" 2>&1 || true
+          }
+
           # run <name> <root> starts a server on this line with that plugin
           # directory and waits until the plugin manager has had its say.
           run() {
@@ -164,15 +183,17 @@ jobs:
               "$IMAGE" > /dev/null
 
             for _ in $(seq 1 40); do
-              if docker logs "$1" 2>&1 | grep -q 'PluginManager'; then
+              capture "$1"
+              if grep -q 'PluginManager' "${RUNNER_TEMP}/$1.log"; then
                 sleep 5
+                capture "$1"
                 return 0
               fi
               sleep 5
             done
 
             echo "::error::The server on line ${LINE} never reached its plugin manager. Its log follows."
-            docker logs "$1" 2>&1 | tail -50
+            tail -50 "${RUNNER_TEMP}/$1.log"
             return 1
           }
 
@@ -181,15 +202,15 @@ jobs:
           run good-server "$good"
 
           echo "--- what the server said about plugins ---"
-          docker logs good-server 2>&1 | grep 'PluginManager' || true
+          grep 'PluginManager' "${RUNNER_TEMP}/good-server.log" || true
 
-          if ! docker logs good-server 2>&1 | grep -q "Loaded plugin: ${plugin_name}"; then
+          if ! grep -q "Loaded plugin: ${plugin_name}" "${RUNNER_TEMP}/good-server.log"; then
             echo "::error::The server on line ${LINE} did not log '${plugin_name}' as loaded. The package a release would ship does not load."
-            docker logs good-server 2>&1 | tail -80
+            tail -80 "${RUNNER_TEMP}/good-server.log"
             exit 1
           fi
 
-          if docker logs good-server 2>&1 | grep -iE "(failed|error).*${plugin_name}"; then
+          if grep -iE "(failed|error).*${plugin_name}" "${RUNNER_TEMP}/good-server.log"; then
             echo "::error::The server on line ${LINE} logged a failure naming ${plugin_name}."
             exit 1
           fi
@@ -207,9 +228,9 @@ jobs:
           unpack "$bad" "$high_abi"
           run bad-server "$bad"
 
-          docker logs bad-server 2>&1 | grep 'PluginManager' || true
+          grep 'PluginManager' "${RUNNER_TEMP}/bad-server.log" || true
 
-          if docker logs bad-server 2>&1 | grep -q "Loaded plugin: ${plugin_name}"; then
+          if grep -q "Loaded plugin: ${plugin_name}" "${RUNNER_TEMP}/bad-server.log"; then
             echo "::error::A package declaring ABI ${high_abi} still loaded on line ${LINE}. This check cannot tell a good package from a broken one."
             exit 1
           fi
