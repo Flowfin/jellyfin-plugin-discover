@@ -56,6 +56,39 @@
     </PropertyGroup>
 
     <!--
+        The dependency graph, held still. Every project writes a
+        packages.lock.json and it is committed, so the exact resolved graph is a
+        reviewable file rather than whatever the feed served on the day.
+
+        Locked mode is on wherever CI is set, which is every runner the gate
+        uses, and it is what makes the lock file mean something: a restore whose
+        graph would differ from the committed one fails instead of quietly
+        restoring the other graph. It is deliberately not on for a working tree,
+        because adding a package there is normal work and would otherwise need a
+        flag before it could even be tried. Bringing a graph change here is a
+        restore with the force-evaluate flag, and committing what it writes.
+
+        This property group sits here rather than in the two project files so
+        that a project added later is locked from its first restore instead of
+        from the day somebody notices.
+
+        The audit is the other half. NuGet checks the restored graph against the
+        advisory database, direct and transitive, and NU1901 to NU1904 are
+        listed as errors so a known-vulnerable package fails the restore. Left
+        as warnings they would be true and green, printed into a log nobody
+        reads. The pair is deliberate: locking without an audit freezes a graph
+        and stops looking at it.
+    -->
+    <PropertyGroup>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <RestoreLockedMode Condition=" '$(CI)' == 'true' ">true</RestoreLockedMode>
+        <NuGetAudit>true</NuGetAudit>
+        <NuGetAuditMode>all</NuGetAuditMode>
+        <NuGetAuditLevel>low</NuGetAuditLevel>
+        <WarningsAsErrors>$(WarningsAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
+    </PropertyGroup>
+
+    <!--
         A line nobody declared leaves all three values empty, which would
         otherwise restore whatever Jellyfin package NuGet resolves an empty
         version to and target whatever framework the SDK defaults to. Refuse
