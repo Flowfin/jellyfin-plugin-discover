@@ -6,8 +6,6 @@ Host: api.themoviedb.org
 
 Host: image.tmdb.org
 
-Terms read: 2026-08-06
-
 The terms are at <https://www.themoviedb.org/api-terms-of-use>. The page states
 `Last Updated: October 20, 2023`, and every clause quoted below was read there
 on the date above. Nothing on this page is legal advice; the reasoning behind
