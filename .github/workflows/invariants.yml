@@ -1,0 +1,46 @@
+# This plugin's own invariants, one rule per invariant (#33). Not a code
+# scanner: nothing a general tool ships would know that a server channel type
+# belongs only in the surface adapter, or that a read of the wall clock anywhere
+# in this tree is a mistake until #47 lands the thing to read it through.
+#
+# The workflow does one thing, which is run the script. Everything else lives in
+# tools/invariants: the rules, the fixtures that prove each one fires, and the
+# runner. Adding an invariant is adding a rule file and a fixture, and this file
+# is not edited for it.
+#
+# Nothing is downloaded and nothing is installed, so there is no pinned version
+# here and no checksum to verify. The runner uses git and the shell, which is
+# what the checkout already needs, and a supply chain of no parts is the cheapest
+# one to hold.
+name: invariants
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+# Read-only: the runner greps the tracked tree.
+permissions:
+  contents: read
+
+concurrency:
+  group: invariants-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  invariants:
+    name: This plugin's invariants hold
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No step pushes via git, so do not persist the GITHUB_TOKEN in .git/config.
+          persist-credentials: false
+
+      - name: Run the invariant lint
+        run: ./tools/invariants/run.sh

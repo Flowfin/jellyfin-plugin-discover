@@ -1,16 +1,16 @@
-name: '🏗️ Build Plugin'
+name: "🏗️ Build Plugin"
 
 on:
   push:
     branches:
       - master
     paths-ignore:
-      - '**/*.md'
+      - "**/*.md"
   pull_request:
     branches:
       - master
     paths-ignore:
-      - '**/*.md'
+      - "**/*.md"
   workflow_dispatch:
 
 # Deny-all at workflow level; the job below grants only what it needs.

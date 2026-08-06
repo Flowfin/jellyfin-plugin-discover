@@ -1,0 +1,5 @@
+# .gitignore is honoured on top of this file, so build output is already out.
+
+# Written by the NuGet restore, not by a person. The tool that writes it decides
+# its shape, and a formatter rewriting it would put two writers on one file.
+**/packages.lock.json
