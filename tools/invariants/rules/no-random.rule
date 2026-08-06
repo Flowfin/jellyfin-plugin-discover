@@ -1,5 +1,5 @@
 Id: no-random
-Pattern: ThisMatchesNothingAnywhere
+Pattern: (\bnew[[:space:]]+Random\(|\bRandom\.Shared|\bGuid\.NewGuid\()
 Subject: *.cs
 Except: none
 Issue: 47
