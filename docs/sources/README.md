@@ -44,6 +44,8 @@ exception written down where a reader sees it.
 
 Not a source: www.w3.org - XML namespace URIs in a serialised configuration document, not an address anything is fetched from.
 
+Not a source: cdn.example.invalid - a fixture host in the configuration page reader's tests. `.invalid` is reserved so that it never resolves, and the host is there to prove the reader finds a host outside the server. Nothing fetches from it and no adapter names it.
+
 ## This is not legal advice
 
 Nothing in this directory is legal advice, and nobody here is a lawyer. These
