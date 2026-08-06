@@ -1,0 +1,22 @@
+Id: no-browser-automation
+Pattern: (Selenium|Playwright|Puppeteer|WebDriver|ChromeDriver|GeckoDriver|CefSharp)
+Subject: *.csproj *.props *.sln
+Except: none
+Issue: 43
+
+The configuration page is HTML with script in it, and the obvious way to test it
+is to drive a browser at a running server. That needs a display or a headless
+browser runtime, a binary fetched at test time, and a server to point it at. It
+is also the test that gets quarantined the first time it goes flaky, which
+leaves the page covered on paper and covered by nothing in fact.
+
+The refusal is written against the project files rather than against the tests,
+because the package arrives before the test does. Nobody drives a browser from
+this suite without first putting one of these names in a project file, so that
+is the line where the decision is visible and cheap to reverse deliberately.
+
+What replaces the browser is in
+Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs: the page is read out
+of the built assembly, and what a browser would have been asked to show is
+asserted against the bytes that ship. What that cannot cover, whether the page
+looks right and is usable, is a person's job and belongs to #115.
