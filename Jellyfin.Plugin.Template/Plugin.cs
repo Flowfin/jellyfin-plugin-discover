@@ -25,6 +25,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         Instance = this;
     }
 
+    /// <summary>
+    /// Gets the tick count read when this instance was made. A near-miss for the
+    /// invariant lint: it reads the wall clock where it stands, and this comment
+    /// names a ChannelItemInfo outside the surface adapter. Both are backed out
+    /// in the commit after this one.
+    /// </summary>
+    public long LoadedAtTicks { get; } = DateTime.UtcNow.Ticks;
+
     /// <inheritdoc />
     public override string Name => "Template";
 
