@@ -1,6 +1,6 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": [
-        "github>jellyfin/.github//renovate-presets/default#be62f6dd47a401c3a43e4b32678cdc3b3bddd4a5"
-    ]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>jellyfin/.github//renovate-presets/default#be62f6dd47a401c3a43e4b32678cdc3b3bddd4a5"
+  ]
 }

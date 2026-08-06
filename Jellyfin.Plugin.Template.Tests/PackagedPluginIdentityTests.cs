@@ -27,11 +27,14 @@ public static class PackagedPluginIdentityTests
         var assemblyFileName = typeof(Plugin).Assembly.GetName().Name + ".dll";
         var buildYaml = File.ReadAllLines(RepositoryFile("build.yaml"));
 
+        // A YAML sequence may be written flush with its key or indented under it, and both mean
+        // the same list. The reader tolerates either, so a formatter choosing the other spelling
+        // is not a package with no assembly in it.
         var artifacts = buildYaml
             .SkipWhile(line => !line.StartsWith("artifacts:", StringComparison.Ordinal))
             .Skip(1)
-            .TakeWhile(line => line.StartsWith('-'))
-            .Select(line => line.TrimStart('-').Trim().Trim('"'))
+            .TakeWhile(line => line.TrimStart().StartsWith('-'))
+            .Select(line => line.TrimStart().TrimStart('-').Trim().Trim('"'))
             .ToArray();
 
         Assert.Contains(assemblyFileName, artifacts, StringComparer.Ordinal);
