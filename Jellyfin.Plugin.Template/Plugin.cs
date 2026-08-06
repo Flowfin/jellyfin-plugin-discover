@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Jellyfin.Plugin.Template.Configuration;
 using MediaBrowser.Common.Configuration;
@@ -56,6 +57,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     }
 
     /// <inheritdoc />
+    [SuppressMessage("Design", "CA1024:Use properties where appropriate", Justification = "<Pending>")]
     public IEnumerable<PluginPageInfo> GetPages()
     {
         return
