@@ -8,11 +8,11 @@ starts from the reasoning rather than from a reconstruction of it.
 
 ## The notes
 
-| Note | Decision | State |
-| --- | --- | --- |
-| [0001](0001-a-discover-page-is-a-server-channel.md) | A discover page is a server channel | Decided |
-| [0002](0002-this-plugin-owns-the-catalogue.md) | This plugin owns the catalogue, a requests plugin owns requests | Decided |
-| Not written | What crosses the seam to a requests plugin | Owed by [#94](https://github.com/iderex/jellyfin-plugin-discover/issues/94) |
+| Note                                                | Decision                                                        | State                                                                       |
+| --------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [0001](0001-a-discover-page-is-a-server-channel.md) | A discover page is a server channel                             | Decided                                                                     |
+| [0002](0002-this-plugin-owns-the-catalogue.md)      | This plugin owns the catalogue, a requests plugin owns requests | Decided                                                                     |
+| Not written                                         | What crosses the seam to a requests plugin                      | Owed by [#94](https://github.com/iderex/jellyfin-plugin-discover/issues/94) |
 
 The third row is not an omission from this index. Issue #94 is where that
 contract is written and it stays open until the sibling repository exists and
