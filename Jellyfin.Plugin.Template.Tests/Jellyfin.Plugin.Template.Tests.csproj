@@ -25,6 +25,17 @@
     <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)" />
   </ItemGroup>
 
+  <!--
+    The server's host interface names an ASP.NET Core type in one of its
+    methods, so a fake that implements the interface has to name it too. This is
+    the framework the server itself runs on rather than a package added to the
+    graph, and it is here rather than in the plugin project because the plugin
+    does not touch it.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
