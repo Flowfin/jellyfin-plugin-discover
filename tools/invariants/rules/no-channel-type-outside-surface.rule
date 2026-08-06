@@ -1,0 +1,14 @@
+Id: no-channel-type-outside-surface
+Pattern: \b(IChannel|ChannelItemInfo|ChannelItemResult|ChannelItemType|ChannelFolderType|ChannelMediaContentType|InternalChannelFeatures|ChannelParentalRating)\b
+Subject: *.cs
+Except: :!*SurfaceAdapter.cs
+Issue: 52
+
+A discover page is a server channel, and the server's channel types are the
+shape that decision produced rather than the shape this plugin thinks in. If
+one of them reaches the shelf code, the catalogue code or the seam, then
+changing how the surface is represented means changing everything that touched
+it, and the adapter that exists to absorb that change absorbs nothing.
+
+The exception is the surface adapter itself, which is the one place the server's
+channel vocabulary is allowed to be spoken.

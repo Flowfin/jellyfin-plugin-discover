@@ -1,0 +1,14 @@
+Id: no-network-outside-source-adapter
+Pattern: (\bnew[[:space:]]+HttpClient\(|\bIHttpClientFactory\b|\bHttpRequestMessage\b|\bHttpWebRequest\b|\bWebRequest\.|\bnew[[:space:]]+Socket\(|\bDns\.)
+Subject: *.cs
+Except: :!*SourceAdapter.cs
+Issue: 73
+
+Everything that leaves this server for a third party leaves through a source
+adapter. That is what makes the rate limit, the backoff, the timeout and the
+terms of one source enforceable in one place instead of wherever somebody
+happened to need a page of titles.
+
+It is also what makes the test rule in #45 possible: a call that goes through
+the adapter goes through the injected handler a test supplies, and a call made
+anywhere else does not.

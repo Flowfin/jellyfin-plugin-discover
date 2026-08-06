@@ -1,0 +1,14 @@
+Id: no-unescaped-render-in-config-page
+Pattern: (\.innerHTML|\.outerHTML|document\.write|insertAdjacentHTML)
+Subject: *.html
+Except: none
+Issue: 43
+
+The configuration page is HTML with script in it, rendered in an administrator's
+browser, and the values it draws come from a configuration document and, once
+#74 lands, from a third party's response. Writing any of that into the page as
+markup rather than as text is how a response becomes script in the one browser
+session that can change every setting this plugin has.
+
+The refused calls are the ones that treat a string as markup. Setting text is
+not refused, and it is the replacement.

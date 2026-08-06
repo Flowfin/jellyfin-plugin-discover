@@ -1,0 +1,14 @@
+Id: no-wall-clock
+Pattern: \b(DateTime\.(Now|UtcNow|Today)|DateTimeOffset\.(Now|UtcNow)|Environment\.TickCount)
+Subject: *.cs
+Except: none
+Issue: 47
+
+Half of what this plugin does is time: a cache that expires, a retention limit,
+a refresh cadence, a backoff, a rate window. A read of the wall clock where it
+stands makes every one of those testable only by sleeping, and a test that
+sleeps is a test that gets deleted.
+
+Except is none today because the one place that supplies time does not exist
+yet. #47 builds it and adds its path here, and until then any read at all is
+refused, which is the correct answer for a tree that has no clock to inject.
