@@ -1,0 +1,20 @@
+# Prettier's configuration, in YAML so the reasons can sit next to the values.
+# What this formats is everything the C# analyzers do not reach: the
+# configuration page, the workflows, the packaging metadata and the
+# documentation. The C# is held by the analyzers and the rule set instead, and
+# Prettier does not read it.
+
+# The repository's own default, and it is what the tree already carries.
+tabWidth: 2
+
+# A workflow comment explaining why a step exists is long-form prose, and
+# rewrapping it at 80 would make every future edit to such a comment a
+# reformatting of its neighbours. Prettier does not rewrap prose in comments,
+# and this width only governs the code it prints.
+printWidth: 100
+
+# The tree is stored with LF and a Windows clone checks it out with CRLF, so a
+# fixed value here would refuse every Windows working copy while the same commit
+# passed on the gate. Whether line endings are normalised is git's question and
+# it is not answered in this file.
+endOfLine: auto

@@ -22,12 +22,12 @@ on:
     branches:
       - master
     paths-ignore:
-      - '**/*.md'
+      - "**/*.md"
   pull_request:
     branches:
       - master
     paths-ignore:
-      - '**/*.md'
+      - "**/*.md"
   workflow_dispatch:
 
 # Deny-all at workflow level; each job grants only what it needs.

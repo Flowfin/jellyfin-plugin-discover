@@ -10,19 +10,19 @@
 # Written out here rather than called, because what a code scan is pointed at is
 # this repository's own business, and passing that as an input to somebody
 # else's workflow is what produced the failure above.
-name: '🔬 Run CodeQL'
+name: "🔬 Run CodeQL"
 
 on:
   push:
     branches: [master]
     paths-ignore:
-      - '**/*.md'
+      - "**/*.md"
   pull_request:
     branches: [master]
     paths-ignore:
-      - '**/*.md'
+      - "**/*.md"
   schedule:
-    - cron: '24 2 * * 4'
+    - cron: "24 2 * * 4"
   workflow_dispatch:
 
 # Deny-all at workflow level; the job below grants only what it needs.

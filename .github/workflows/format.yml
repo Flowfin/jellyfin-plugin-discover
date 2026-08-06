@@ -1,0 +1,48 @@
+# The analyzers hold the C# and read nothing else. The configuration page is
+# HTML with script in it, the workflows and the packaging metadata are YAML, and
+# the documentation is markdown, and until this existed nothing read any of them
+# at all. Written out here rather than called from elsewhere: it runs one command
+# against this tree and there is nothing in it another repository would know.
+#
+# What it covers is derived rather than listed. Prettier walks the tree and takes
+# the files it recognises, so a file type added later is covered on the day it
+# arrives instead of on the day somebody remembers to add it to a glob.
+# .prettierignore says what is deliberately left out and why.
+name: format
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: ["**"]
+
+# Read-only: the check reads the tree and writes nothing.
+permissions: {}
+
+# Cancel a superseded run on the same ref; the check is cheap and reading the
+# tree again costs nothing.
+concurrency:
+  group: format-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prettier:
+    name: Formatting outside the C#
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # checkout only
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No step pushes via git, so do not persist the GITHUB_TOKEN in .git/config.
+          persist-credentials: false
+
+      - name: Check formatting
+        # The version is pinned because a formatter's output is a property of its
+        # version: an unpinned one would start failing this repository on a day
+        # nothing here changed. Moving it is an edit to this line, and the diff it
+        # produces is reviewed like any other.
+        run: npx --yes prettier@3.6.2 --check .
