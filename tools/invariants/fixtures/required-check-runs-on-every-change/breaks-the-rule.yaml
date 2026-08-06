@@ -1,0 +1,23 @@
+# A workflow producing a required context, with the trigger filter back on it.
+# This is a fixture. It is not in .github/workflows/, nothing runs it, and it
+# exists so the rule can be watched refusing the one line it is about.
+name: "🏗️ Build Plugin"
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - "**/*.md"
+
+permissions: {}
+
+jobs:
+  call:
+    name: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Build
+        run: echo "the run that the filter above withholds"
