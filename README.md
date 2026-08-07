@@ -1,3 +1,8 @@
+> [!NOTE]
+>
+> **Part of [Flowfin](https://github.com/Flowfin).** It works with any Jellyfin
+> server, and with the Flowfin clients.
+
 # jellyfin-plugin-discover
 
 A Jellyfin server plugin that adds a place to browse titles the server does not
@@ -16,15 +21,15 @@ section above as a plan and not as behaviour you can install.
 
 The plan is the issue tracker. It is organised into milestones, each with an
 issue that says what the milestone ends with, and the first one is
-[M1](https://github.com/iderex/jellyfin-plugin-discover/milestone/1). Ten
+[M1](https://github.com/Flowfin/jellyfin-plugin-discover/milestone/1). Ten
 questions in it are open decisions rather than work, and they are collected in
-[#2](https://github.com/iderex/jellyfin-plugin-discover/issues/2).
+[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2).
 
 ## Which server this builds against
 
 No set of supported server lines has been chosen yet. That choice is question 1
-in [#2](https://github.com/iderex/jellyfin-plugin-discover/issues/2), and
-[#15](https://github.com/iderex/jellyfin-plugin-discover/issues/15) is where it
+in [#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2), and
+[#15](https://github.com/Flowfin/jellyfin-plugin-discover/issues/15) is where it
 lands as one place the rest of the tree derives from.
 
 What the tree says today is three different things, all inherited from the
@@ -53,7 +58,7 @@ The assembly lands under `Jellyfin.Plugin.Template/bin/Release/net9.0/`.
 There is no editor scaffolding in this repository. Every path in the template's
 `.vscode` configuration was derived from one setting naming the template's
 project, and this plugin's own name and identifier are not minted yet
-([#14](https://github.com/iderex/jellyfin-plugin-discover/issues/14)), so those
+([#14](https://github.com/Flowfin/jellyfin-plugin-discover/issues/14)), so those
 tasks would have had to be rewritten the moment they were. The directory was
 removed rather than left building a solution that will not exist. The steps it
 automated are these, and they are short enough to run by hand:
@@ -67,7 +72,7 @@ automated are these, and they are short enough to run by hand:
 4. Restart the server, and read the server log for the plugin being loaded.
 
 Whether a package built from this tree actually loads on a server is
-[#19](https://github.com/iderex/jellyfin-plugin-discover/issues/19), and until
+[#19](https://github.com/Flowfin/jellyfin-plugin-discover/issues/19), and until
 that issue closes nobody has checked it.
 
 ## Licence
