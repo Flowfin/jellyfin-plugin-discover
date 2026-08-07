@@ -1,0 +1,39 @@
+Id: no-machine-trust-store
+Pattern: (\bX509Store\b|StoreName\.Root|StoreName\.CertificateAuthority|ServerCertificateCustomValidationCallback|DangerousAcceptAnyServerCertificateValidator|ServicePointManager\.ServerCertificateValidationCallback|dev-certs|certutil|security add-trusted-cert|update-ca-certificates)
+Subject: *.cs *.csproj *.props *.sln *.sh *.ps1 *.yml *.yaml
+Except: none
+Issue: 45
+
+This plugin talks to a metadata source over HTTPS, so the shortest route to
+testing that path against a local endpoint is a certificate the machine trusts,
+and the shortest route to that is installing one into the machine's own store.
+
+That is refused in both spellings. Installing a certificate is an administrative
+change to a machine somebody else is using, it outlives the test run, and it
+weakens that machine for everything else on it. Turning verification off instead
+is worse, because it removes the property the test was supposed to be about
+while leaving a test that still passes.
+
+Both spellings are in the pattern because they are the same decision. A run that
+cannot verify a certificate and continues anyway has already made the choice the
+first spelling makes explicitly, and a rule catching only the honest one would
+push the work towards the quiet one.
+
+The subject reaches the workflow files as well as the source, because a step
+that trusts a certificate before the suite runs leaves no trace in any test.
+
+The replacement is the injected handler: an outbound call made through the
+source adapter goes through a handler a test supplies, so no test needs a real
+endpoint and no certificate has to be trusted by anything. That is #45's second
+condition and its subject does not exist yet.
+
+Nothing is excepted. The subject names the file types a test, a project file or
+a workflow step is written in, and a rule file is none of them, so the pattern
+does not reach the place it is written down.
+
+What it cannot do is the whole of the risk. It reads tracked text one line at a
+time, so a store opened by reflection, a switch set from an environment variable
+the runner supplies, or a certificate trusted by a step that shells out to
+something this pattern does not name are all invisible to it. It also says
+nothing about what the real endpoint presents, which is not a property any test
+in this tree can hold.

@@ -1,0 +1,24 @@
+Id: no-sleep-in-a-test
+Pattern: (Thread\.Sleep\(|Task\.Delay\(|SpinWait\.SpinUntil\()
+Subject: *Tests/*.cs
+Except: none
+Issue: 47
+
+A test that waits for real time to pass is measuring the runner rather than the
+plugin. It passes on a quiet machine, fails on a loaded one, gets a longer wait
+put on it, and ends up quarantined; the code it covered is then covered on paper
+and by nothing in fact.
+
+The replacement is ClockATestAdvances. A test that needs three hours to have
+passed advances three hours and asserts immediately, which also makes the
+boundary reachable: one tick before a deadline and one tick after it cannot be
+distinguished by any test that got there by waiting.
+
+The subject is written as a directory suffix rather than as the test project's
+current path, because that path still carries the template's name and #14
+renames it. A rule naming the old path would go quiet on the day of the rename
+instead of failing.
+
+Its bound is the same one every rule here has. An await on a task that sleeps
+somewhere else, or a delay assembled at run time, is invisible to a pattern that
+reads one line at a time.
