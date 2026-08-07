@@ -1,6 +1,7 @@
 ---
 name: "Discover"
 guid: "8227de33-0101-48a3-951d-2bf921709e48"
+imageUrl: "https://raw.githubusercontent.com/Flowfin/jellyfin-plugin-discover/master/img/logo.png"
 # version follows PluginVersion in Directory.Build.props, and the build fails
 # when the two drift. What the numbers mean is at the top of CHANGELOG.md.
 version: "0.0.0.0"
