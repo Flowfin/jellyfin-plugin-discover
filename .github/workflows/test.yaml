@@ -1,11 +1,14 @@
 name: "🧪 Test Plugin"
 
+# Neither trigger carries a path filter, for the reason written out in
+# build.yaml (#154). `call / test` is required on the default branch, and a
+# workflow that never starts leaves that context missing rather than green, so a
+# filter here refuses the merge of every change it skips.
+# `required-check-runs-on-every-change` in tools/invariants refuses its return.
 on:
   push:
     branches:
       - master
-    paths-ignore:
-      - "**/*.md"
   pull_request:
     branches:
       - master

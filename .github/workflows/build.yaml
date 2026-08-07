@@ -1,11 +1,18 @@
 name: "🏗️ Build Plugin"
 
+# Neither trigger carries a path filter, and that is the point rather than an
+# oversight (#154). The branch ruleset requires `call / build` on the default
+# branch, and a workflow that declines to start reports nothing at all, so the
+# merge is refused for a check that is missing rather than passed for a check
+# that had nothing to say. A filter here does not skip a build, it makes every
+# change it skips unmergeable, which is where every Markdown-only change in this
+# repository sat until this was removed. The cost is a build on a change that
+# cannot break one, and `required-check-runs-on-every-change` in tools/invariants
+# is what refuses the filter coming back.
 on:
   push:
     branches:
       - master
-    paths-ignore:
-      - "**/*.md"
   pull_request:
     branches:
       - master
