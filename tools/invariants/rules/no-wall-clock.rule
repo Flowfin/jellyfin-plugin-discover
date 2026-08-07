@@ -1,7 +1,7 @@
 Id: no-wall-clock
 Pattern: \b(DateTime\.(Now|UtcNow|Today)|DateTimeOffset\.(Now|UtcNow)|Environment\.TickCount)
 Subject: *.cs
-Except: none
+Except: :!*SystemClock.cs
 Issue: 47
 
 Half of what this plugin does is time: a cache that expires, a retention limit,
@@ -9,6 +9,11 @@ a refresh cadence, a backoff, a rate window. A read of the wall clock where it
 stands makes every one of those testable only by sleeping, and a test that
 sleeps is a test that gets deleted.
 
-Except is none today because the one place that supplies time does not exist
-yet. #47 builds it and adds its path here, and until then any read at all is
-refused, which is the correct answer for a tree that has no clock to inject.
+The exception is the one implementation of IClock that reads the machine, which
+#47 added. It is written as a file suffix rather than as a full path because the
+project directory still carries the template's name and #14 renames it; a full
+path would turn that rename into a silently disabled invariant.
+
+The exception is one file and widening it is how this rule stops meaning
+anything. A second reader of the machine's clock belongs behind IClock, not
+beside SystemClock.
