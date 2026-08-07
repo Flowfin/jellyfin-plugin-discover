@@ -9,8 +9,6 @@ on:
   pull_request:
     branches:
       - master
-    paths-ignore:
-      - "**/*.md"
   workflow_dispatch:
 
 # Deny-all at workflow level; the job below grants only what it needs.
