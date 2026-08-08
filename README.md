@@ -14,10 +14,15 @@ server with no companion plugin installed.
 
 ## Status
 
-Nothing in that description is built. This repository is the official Jellyfin
-plugin template with a handful of security workflows added on top, and the work
-that turns it into the plugin above has not started. Read every sentence in the
-section above as a plan and not as behaviour you can install.
+Nothing in that description is built. There is no catalogue, nothing contacts a
+metadata source, and no new browsing appears anywhere in a client. Read every
+sentence in the section above as a plan and not as behaviour you can install.
+
+What has been built is underneath it rather than in front of it: the gate this
+repository runs on every change, the test project and the rules the suite lives
+under, the plugin's own identity, and a configuration that carries a schema
+version and no settings. None of that is visible to a user, which is why the
+paragraph above says what it says.
 
 The plan is the issue tracker. It is organised into milestones, each with an
 issue that says what the milestone ends with, and the first one is
@@ -28,24 +33,34 @@ questions in it are open decisions rather than work, and they are collected in
 ## Which server this builds against
 
 No set of supported server lines has been chosen yet. That choice is question 1
-in [#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2), and
-[#15](https://github.com/Flowfin/jellyfin-plugin-discover/issues/15) is where it
-lands as one place the rest of the tree derives from.
+in [#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2), and it is
+a decision about which lines this project will fix a bug in, which is a
+different question from which line the tree builds against today.
 
-What the tree says today is three different things, all inherited from the
-template:
+The tree no longer disagrees with itself about the second question.
+`Directory.Build.props` is the one place a server line is stated and everything
+else derives from it:
 
-    git grep -n 'targetAbi\|framework' -- build.yaml
-    build.yaml:5:targetAbi: "10.9.0.0"
-    build.yaml:6:framework: "net8.0"
+    git grep -nE '<Jellyfin(PackageVersion|TargetFramework|DeclaredLines)>' -- Directory.Build.props
+    Directory.Build.props:35:        <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
+    Directory.Build.props:36:        <JellyfinTargetFramework>net9.0</JellyfinTargetFramework>
+    Directory.Build.props:41:        <JellyfinDeclaredLines>10.11</JellyfinDeclaredLines>
+
+The project file reads both rather than repeating either, and the packaging
+metadata is compared against the same source by the build, which fails on a
+difference:
 
     git grep -n 'TargetFramework\|Jellyfin.Controller' -- Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj
-    Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj:4:    <TargetFramework>net9.0</TargetFramework>
-    Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj:14:    <PackageReference Include="Jellyfin.Controller" Version="10.9.11" >
+    Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj:5:    <TargetFramework>$(JellyfinTargetFramework)</TargetFramework>
+    Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj:15:    <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" >
 
-So it compiles against the 10.9 package set on net9.0 while declaring a net8.0
-framework and a 10.9.0.0 ABI floor in the packaging metadata. Do not read any of
-those three numbers as a supported line. They are the state #15 removes.
+    git grep -nE '^targetAbi|^framework' -- build.yaml
+    build.yaml:10:targetAbi: "10.11.0.0"
+    build.yaml:11:framework: "net9.0"
+
+So one line is declared, 10.11, and it is the only one anything here is built or
+checked against. Read that as the line the tree carries and not as a support
+commitment, which is still question 1's to make.
 
 ## Building
 
