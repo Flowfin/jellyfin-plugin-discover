@@ -60,9 +60,13 @@ public static class PackagedPluginIdentityTests
     /// <summary>
     /// Walks up from the test assembly to the directory holding the named repository file.
     /// </summary>
+    /// <remarks>
+    /// Internal rather than private because PluginIdentifierTests reads build.yaml the same
+    /// way. A second copy of this walk is a second thing to fix the day the layout moves.
+    /// </remarks>
     /// <param name="name">File name to find, relative to the repository root.</param>
     /// <returns>The full path to that file.</returns>
-    private static string RepositoryFile(string name)
+    internal static string RepositoryFile(string name)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
