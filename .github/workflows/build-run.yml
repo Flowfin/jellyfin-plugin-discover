@@ -1,0 +1,91 @@
+# The build steps, written out here rather than called from another
+# organisation's reusable workflow (#27).
+#
+# What the wrapper cost was not that the steps were bad. It was that
+# `@master` is a moving reference: the run used whatever that branch held at
+# the moment it started, and nothing in this repository recorded what that
+# was, so a green run last month cannot be read as a statement about anything.
+# The steps below are at this commit and are read from the diff.
+#
+# It is a reusable workflow called by build.yaml rather than a job inside it
+# for the same reason test-run.yml is: the status context a called job produces
+# is `<caller job id> / <inner job name>`, and the branch ruleset on the
+# default branch requires `call / build` by name. Writing the steps into a
+# plain job would rename the context, and a required context that never
+# reports blocks every pull request on the board. Renaming the required check
+# is a repository setting rather than a change to this tree, and #40 is where
+# that set is revisited.
+#
+# One job, and one package. A matrix over the declared lines would produce
+# `call / build (10.11)` and withhold `call / build` for the same reason, so
+# building every targeted line is #31's change and needs the required set
+# moved with it. Only one line is declared today, which is why nothing is lost
+# by that yet.
+name: Build
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # checkout; the artifact upload needs no token scope
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read the server line this package is built for
+        id: line
+        # Asked of MSBuild rather than written here, so this is the same answer
+        # the build gets rather than a second reading of the same file. The
+        # wrapper this replaces defaulted to net9.0 in its own inputs, which was
+        # a second statement of the server line that nothing compared against
+        # Directory.Build.props. The runner's preinstalled SDK is enough to
+        # evaluate a props file; nothing is compiled at this point.
+        run: |
+          set -euo pipefail
+
+          framework=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinTargetFramework | tr -d '\r')
+          if [ -z "$framework" ]; then
+            echo "::error::Directory.Build.props declares no JellyfinTargetFramework, so there is no runtime to package for. Failing closed rather than packaging against whatever the runner happens to carry."
+            exit 1
+          fi
+
+          # net9.0 is built by the 9.0.x SDK. Derived rather than written down,
+          # so a line that moves the framework moves this with it.
+          {
+            echo "framework=${framework}"
+            echo "sdk=${framework#net}.x"
+          } >> "$GITHUB_OUTPUT"
+          echo "Framework declared: ${framework}"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ steps.line.outputs.sdk }}
+
+      - name: Build the package a release would ship
+        # The same action plugin-loads.yml drives, so the package the gate
+        # builds here and the package a server is asked to load are built by one
+        # tool rather than by two that can drift.
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        id: jprm
+        with:
+          dotnet-target: ${{ steps.line.outputs.framework }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-artifact
+          retention-days: 30
+          # A run that uploaded nothing and said so afterwards is a green check
+          # standing for a package that was never produced.
+          if-no-files-found: error
+          path: ${{ steps.jprm.outputs.artifact }}
