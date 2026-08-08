@@ -1,0 +1,283 @@
+# The checks that reason about the pull request rather than about the code
+# (#32). Everything else in this gate reads the tree: the build, the suite, the
+# formatter, the invariants, the scanners. None of them can see that a change
+# arrived with no issue behind it, or that a commit subject carries nothing a
+# `git log` reader could follow. That is the defect class this holds, and it is
+# cheapest before the tenth pull request rather than after the tenth one that
+# references nothing.
+#
+# It is not a review substitute and it judges no content. Every leg below is a
+# question with one deterministic answer, which is why it can block a merge
+# without ever being wrong about a change it does not understand.
+#
+# TWO TIERS, and which tier a leg is in is the whole design.
+#
+#   FAIL, and only these two. A red run here means one of them:
+#     1. the pull request body carries an issue reference
+#     2. every commit subject carries an issue reference
+#
+#   WARN, annotation only, and it never reds a run:
+#     - the change is large
+#     - plugin source moved with no test change beside it
+#
+# The tiers are not interchangeable. A FAIL leg has one answer and no judgement
+# in it. A WARN leg is a convention that is right most of the time, and a check
+# that reds a legitimate change teaches people to stop reading it, which costs
+# more than the convention was worth. Nothing moves from WARN to FAIL without
+# somebody arguing for it in an issue.
+#
+# THE THIRD DETERMINISTIC PROPERTY, that a version bump also touches
+# CHANGELOG.md, is not here and is not missing. It is `changelog-entry.yml`,
+# which reads this repository's own two version fields at both ends of the
+# range. The target gate reaches the same end inside its own pr-hygiene
+# workflow; that this repository keeps it separate is a decision already
+# recorded, in the `changelog-entry.yml` row of the second table in
+# docs/gate-parity.md. Repeating the leg here would give one mistake two red
+# checks and leave #40 choosing between them.
+#
+# THE FAIL TIER IS SKIPPED FOR TWO KINDS OF AUTHOR, for two different reasons,
+# and each reason is written at the skip rather than only here. Neither skip is
+# silent: both annotate, so a run that judged less than the whole set cannot be
+# read as one that judged it all.
+#
+# Which checks stand behind a merge is a property of the repository rather than
+# of this file, so it is printed rather than restated:
+#
+#   gh api repos/Flowfin/jellyfin-plugin-discover/rules/branches/master \
+#     --jq '.[] | select(.type=="required_status_checks")
+#           | .parameters.required_status_checks[].context'
+#
+# Raising that set is #40, and the name to raise it to is the job name below.
+name: pr-hygiene
+
+on:
+  pull_request:
+    # edited: so adding the issue reference to the body re-runs the check
+    # instead of leaving a red run that the fix does not clear.
+    types: [opened, edited, synchronize, reopened]
+
+# Deny-all at workflow level; the job grants only what it reads.
+permissions: {}
+
+# Cancel a superseded run on the same pull request. Every leg is a read, so an
+# obsolete run has nothing to leave half-done.
+concurrency:
+  group: pr-hygiene-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    name: Deterministic pull-request hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read # the body, the commits and the changed-file list
+
+    steps:
+      # No checkout. Every input is the pull request's own metadata, and no
+      # untrusted value is ever interpolated into a shell command: they are read
+      # from the JavaScript objects instead, so there is no template-injection
+      # surface here.
+      - name: Judge the pull request
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const failures = [];
+            const warnings = [];
+
+            // Who the FAIL tier is for.
+            //
+            // A bot cannot know this repository's issue conventions and does not
+            // open its pull requests against an issue, so failing one on linkage
+            // refuses a change for a rule it was never able to follow.
+            //
+            // Somebody arriving from outside is a separate case with a separate
+            // reason. They can read a convention but they cannot know which
+            // issue number this board expects, and often there is no issue yet.
+            // The linkage is still wanted for their change; it is owed by
+            // whoever picks the change up, which is what the annotation says.
+            // Read this skip as "not their obligation", never as "linkage does
+            // not matter here".
+            //
+            // author_association describes the author's relationship to this
+            // repository, so somebody added as a collaborator stops being
+            // exempt from that moment.
+            //
+            // COLLABORATOR IS INSIDE, AND THE FIRST VERSION OF THIS LEFT IT
+            // OUT. The value here is the one the workflow token can see, and
+            // that token cannot see private organisation membership, so it
+            // reports COLLABORATOR where a user token reading the same pull
+            // request reports MEMBER. Measured rather than reasoned about:
+            //
+            //   the run that judged the near-miss branch, with an inside set of
+            //   OWNER and MEMBER only, passed and printed
+            //     author_association: COLLABORATOR
+            //   https://github.com/Flowfin/jellyfin-plugin-discover/actions/runs/31277922940
+            //
+            //   the same pull request through the API with a user token
+            //     gh api repos/Flowfin/jellyfin-plugin-discover/pulls/183 --jq '.author_association'
+            //     MEMBER
+            //
+            // With that set, every pull request on this board took the skip and
+            // the check was inert while reporting green, which is the worst
+            // shape a check can have. Push access to this repository is what
+            // the tier is really about, and COLLABORATOR is what push access
+            // looks like from here. The genuinely outside values are
+            // CONTRIBUTOR, FIRST_TIME_CONTRIBUTOR, FIRST_TIMER and NONE.
+            const isBot = pr.user && pr.user.type === "Bot";
+            const INSIDE = ["OWNER", "MEMBER", "COLLABORATOR"];
+            const isOutside = !INSIDE.includes(pr.author_association || "NONE");
+            const failTierApplies = !isBot && !isOutside;
+
+            // Printed on every run, not only on a skip, so a green run says
+            // what it judged on rather than leaving a reader to assume.
+            core.info(
+              `author_association: ${pr.author_association || "NONE"}; ` +
+                `author is a bot: ${isBot}; ` +
+                `the two failing checks apply: ${failTierApplies}`,
+            );
+
+            if (isBot) {
+              warnings.push(
+                "The author is a bot, so the two failing checks are skipped. " +
+                  "A bot opens its changes against no issue and cannot carry a " +
+                  "reference it was never given.",
+              );
+            } else if (isOutside) {
+              warnings.push(
+                "The author is outside this repository (author_association: " +
+                  `${pr.author_association || "NONE"}), so the two failing ` +
+                  "checks are skipped. The issue linkage is still wanted: " +
+                  "whoever picks this change up supplies the reference, and " +
+                  "files the issue where none exists yet.",
+              );
+            }
+
+            // Leg 1. The body carries an issue reference.
+            //
+            // Lenient on purpose. A bare `#123`, a closing keyword, or the full
+            // issue URL all satisfy it, because the reference is what is wanted
+            // and refusing a linked change over its phrasing is a check being
+            // clever at somebody else's expense.
+            const body = pr.body || "";
+            const bodyRefersToAnIssue =
+              /(^|[^\w])#\d+\b/.test(body) ||
+              /github\.com\/[^\/\s]+\/[^\/\s]+\/issues\/\d+/i.test(body);
+            if (failTierApplies && !bodyRefersToAnIssue) {
+              failures.push(
+                "The body carries no issue reference. Name the issue this " +
+                  "change is for, as `Closes #123` where it closes one and " +
+                  "`#123` where it does not.",
+              );
+            }
+
+            // Leg 2. Every commit subject carries an issue reference.
+            //
+            // The body is not enough. `git log`, `git blame` and a bisect show a
+            // subject without the pull request that carried it, so a subject
+            // with no reference is a commit whose reason is one hop away from
+            // every tool that will ever read it.
+            //
+            // A bare `#123` anywhere in the subject satisfies it. The target
+            // gate this was adopted from requires a bracketed `[#123]`; that is
+            // not adopted here, because nothing in this repository's history
+            // uses the bracket and the reference is what is wanted rather than
+            // its punctuation.
+            //
+            // Merge commits are exempt. They are written by the forge and
+            // inherit the linkage of what they merged.
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+            const subjectOf = (c) => c.commit.message.split("\n")[0];
+            const unlinked = commits.filter((c) => {
+              const authorIsBot =
+                (c.author && c.author.type === "Bot") ||
+                /\[bot\]/.test((c.commit.author && c.commit.author.name) || "");
+              const isMerge = c.parents.length > 1;
+              return (
+                !authorIsBot && !isMerge && !/(^|[^\w])#\d+\b/.test(subjectOf(c))
+              );
+            });
+            if (failTierApplies && unlinked.length > 0) {
+              const list = unlinked
+                .map((c) => `${c.sha.slice(0, 7)} ("${subjectOf(c)}")`)
+                .join(", ");
+              failures.push(
+                `Commit subject(s) with no issue reference: ${list}. Put the ` +
+                  "issue in the subject, as `#123`, so a log reader has it " +
+                  "without the pull request.",
+              );
+            }
+
+            // The changed files, which both warnings read.
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+            const changed = files.map((f) => f.filename);
+
+            // Warning. A large change.
+            //
+            // Advisory and never more than that. A document, a bulk rename or a
+            // first implementation legitimately exceeds any cap, and a check
+            // that reds those teaches people to ignore it.
+            const lines = files.reduce(
+              (total, f) => total + (f.additions || 0) + (f.deletions || 0),
+              0,
+            );
+            if (lines >= 400) {
+              warnings.push(
+                `This change touches ${lines} lines across ${files.length} ` +
+                  "files. Above about 400 a change stops being reviewable in " +
+                  "one sitting. Where it is one readable thing, say so in the " +
+                  "body; where it is two, it is two changes.",
+              );
+            }
+
+            // Warning. Plugin source with no test beside it.
+            //
+            // Written against the directory suffix rather than the current
+            // project name, because #14 renames both directories and a rule
+            // naming today's path would go quiet on the day of the rename
+            // instead of failing.
+            const isTest = (p) => /(^|\/)[^\/]*\.Tests\//.test(p);
+            const pluginSource = changed.filter(
+              (p) => p.endsWith(".cs") && !isTest(p),
+            );
+            const testSource = changed.filter((p) => isTest(p));
+            if (pluginSource.length > 0 && testSource.length === 0) {
+              warnings.push(
+                "Plugin source changed with no change in the test project: " +
+                  `${pluginSource.join(", ")}. Where the change is not ` +
+                  "testable, the body is where that is said.",
+              );
+            }
+
+            for (const warning of warnings) {
+              core.warning(warning);
+            }
+
+            if (failures.length > 0) {
+              for (const failure of failures) {
+                core.error(failure);
+              }
+              core.setFailed(
+                `${failures.length} hygiene check(s) failed. Every reason is ` +
+                  "above; this run judged both legs rather than stopping at the " +
+                  "first.",
+              );
+            } else if (!failTierApplies) {
+              core.info(
+                "The two failing checks were skipped for this author. The " +
+                  "reason is in the annotation above.",
+              );
+            } else {
+              core.info("The body and every commit subject carry an issue reference.");
+            }
