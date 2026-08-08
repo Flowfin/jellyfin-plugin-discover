@@ -44,11 +44,19 @@ description that fits one of them, and the other is what a reviewer misses.
 
 A commit message says what changed and what failure it prevents. Where it
 corrects something, it says what was wrong and how that was found. The first line
-is a sentence, not a category prefix; nothing here parses commit subjects and
-nothing here wants a convention that a machine does not read.
+is a sentence rather than a category prefix, and it carries the issue number, as
+`#123`, anywhere in the line. `git log`, `git blame` and a bisect all show a
+subject without the pull request that carried it, so a subject with no reference
+puts the reason for a change one hop away from every tool that will read it.
 
 Every change starts from an issue. Say which one the pull request closes, in the
 body, on its own line, so the tracker closes it on merge.
+
+Both of those are checked rather than requested, by
+`.github/workflows/pr-hygiene.yml`, which fails on those two and on nothing
+else. Two conventions in the same file annotate instead of failing: a change of
+about 400 lines or more, and plugin source moving with no change in the test
+project beside it. The workflow's own header says which tier each is in and why.
 
 ## What the gate refuses
 
