@@ -1,0 +1,219 @@
+# Refuse a package whose declared ABI does not name the line it was built
+# against, and two packages of one build that declare the same one (#30).
+#
+# targetAbi is the only thing telling a server whether a package fits it, and
+# the server reads it as a floor with no ceiling, so a package that declares one
+# line and was compiled against another is offered to every later server and
+# then meets whatever signature moved. Nothing on the server refuses that.
+#
+# The mistake arrives with the matrix. build.yaml carries one targetAbi literal,
+# so the moment a build produces a package per line, every leg ships the same
+# floor unless something compares each package with the line it was built for.
+# That is why this builds one package per declared line rather than judging the
+# one package the default build makes: with a single declared line the two legs
+# below judge one package and agree, and the day #31 adds a second line they are
+# already standing.
+#
+# The comparison is scripts/abi-matches-the-line.sh rather than a block here, so
+# it can be run against a package by hand and watched refusing without a runner.
+# This workflow holds no copy of it and no copy of the line mapping: every value
+# it passes in is read from Directory.Build.props, which #15 made the one place a
+# server line is stated.
+#
+# The script proves itself before it judges anything, in the first step of the
+# last job. A check nobody has watched refuse anything is a claim rather than a
+# control, and a proof that runs once and is written down is a proof about a tree
+# that has since moved.
+name: abi-matches-the-line
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+# Deny-all at workflow level; each job grants only what it needs.
+permissions: {}
+
+concurrency:
+  group: abi-matches-the-line-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lines:
+    name: Read the lines a package is built for
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.read.outputs.matrix }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Derive one job per declared line
+        id: read
+        # Asked of MSBuild rather than parsed out of the XML, so this is the
+        # same answer the build gets and not a second reading of the same file.
+        # The runner's preinstalled SDK is enough to evaluate a props file;
+        # nothing is compiled here.
+        run: |
+          set -euo pipefail
+
+          declared=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinDeclaredLines)
+          declared=$(printf '%s' "$declared" | tr -d '\r' | tr ';,' '  ')
+
+          if [ -z "${declared// /}" ]; then
+            echo "::error::Directory.Build.props declares no server line, so there is no package whose ABI could be judged."
+            exit 1
+          fi
+
+          entries=''
+          for line in $declared; do
+            abi=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinTargetAbi -p:JellyfinLine="$line" | tr -d '\r')
+            framework=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinTargetFramework -p:JellyfinLine="$line" | tr -d '\r')
+
+            if [ -z "$abi" ] || [ -z "$framework" ]; then
+              echo "::error::Line ${line} is in JellyfinDeclaredLines and has no values in Directory.Build.props."
+              exit 1
+            fi
+
+            # net9.0 is built by the 9.0.x SDK. Derived rather than written down,
+            # so a line that moves the framework moves this with it.
+            entries="${entries}{\"line\":\"${line}\",\"abi\":\"${abi}\",\"framework\":\"${framework}\",\"sdk\":\"${framework#net}.x\"},"
+          done
+
+          matrix="[${entries%,}]"
+          echo "$matrix"
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+  package:
+    name: Package for ${{ matrix.line }}
+    needs: lines
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.lines.outputs.matrix) }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ matrix.sdk }}
+
+      - name: Build the package a release would ship for this line
+        # The same action build-run.yml and plugin-loads.yml drive, so the
+        # package judged here is built by the tool the release path uses rather
+        # than by a second one that can drift. JellyfinLine reaches MSBuild as an
+        # environment property, which is how a leg other than the default one
+        # gets its own package set.
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        id: jprm
+        env:
+          JellyfinLine: ${{ matrix.line }}
+        with:
+          dotnet-target: ${{ matrix.framework }}
+
+      - name: Refuse a line whose graph is not the committed one
+        # The step judging the package reads the committed
+        # packages.lock.json, and that file describes one graph. This restore is
+        # what makes reading it true for this leg: RestoreLockedMode is on
+        # wherever CI is set, which Directory.Build.props states, so a line whose
+        # graph differs from the committed one fails here rather than being
+        # judged against a lock file that is not about it.
+        #
+        # A second declared line therefore reds this until it brings its own
+        # locked graph, which is #31's to do. Failing closed is the point: the
+        # alternative is a package judged against another line's lock file, and
+        # that comparison would pass while meaning nothing.
+        env:
+          JellyfinLine: ${{ matrix.line }}
+        run: dotnet restore Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj
+
+      - name: Refuse a package whose ABI does not name the line it was built for
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+          ABI: ${{ matrix.abi }}
+        run: |
+          set -euo pipefail
+          scripts/abi-matches-the-line.sh judge \
+            "$ARTIFACT" \
+            Jellyfin.Plugin.Template/packages.lock.json \
+            "$ABI"
+
+      - name: Record what this package declared
+        # Written from the package rather than from the matrix. A value copied
+        # out of the input would make the next job compare the mapping with
+        # itself, which agrees by construction and proves nothing.
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+          LINE: ${{ matrix.line }}
+        run: |
+          set -euo pipefail
+          mkdir -p declared
+          unzip -p "$ARTIFACT" meta.json \
+            | sed -n 's/.*"targetAbi"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+            | head -1 > "declared/${LINE}"
+          test -s "declared/${LINE}"
+          cat "declared/${LINE}"
+
+      - name: Upload what this package declared
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: declared-abi-${{ matrix.line }}
+          retention-days: 1
+          if-no-files-found: error
+          path: declared/${{ matrix.line }}
+
+  distinct:
+    name: Every package of this build declares its own ABI
+    needs: [lines, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prove the comparison refuses what it names
+        # First, and on every run. The near-misses are in the script beside the
+        # comparison they prove, so neither can be changed without the other
+        # being run against it.
+        run: scripts/abi-matches-the-line.sh prove
+
+      - name: Collect what every package declared
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          path: declared
+          pattern: declared-abi-*
+          merge-multiple: true
+
+      - name: Refuse two packages of one build that declare the same ABI
+        run: |
+          set -euo pipefail
+
+          # An empty collection is a failure rather than a pass: it means the
+          # legs above produced nothing, and nothing is not agreement.
+          find declared -type f -print0 | xargs -0 cat > declared-abis.txt
+          echo "declared, one line per package:"
+          sed 's/^/  /' declared-abis.txt
+
+          scripts/abi-matches-the-line.sh distinct declared-abis.txt
