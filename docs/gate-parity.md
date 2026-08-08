@@ -87,6 +87,7 @@ row says what makes it so. `defer` means an open question decides it.
 
 | Here                      | Verdict         | Why, in one line                                                                                                                                                                                                              |
 | ------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `branch-name-exists.yml`  | keep            | Two triggers and one upload condition here named a branch this repository does not have, so two audits never fired on a push and one sent its findings nowhere; the target has no such shape to refuse.                       |
 | `changelog.yaml`          | keep, and unrun | Inherited from the plugin template, manual dispatch only since its push trigger was removed, and [#119](https://github.com/iderex/jellyfin-plugin-discover/issues/119) is where the release process it belongs to is decided. |
 | `changelog-entry.yml`     | keep            | A version bump with no line saying what changed is a build nobody can tie a report to, and the target reaches the same end inside `pr-hygiene.yml`.                                                                           |
 | `command-dispatch.yaml`   | keep            | Inherited from the template; it turns a comment into a workflow dispatch and is the front half of `command-rebase.yaml`.                                                                                                      |
@@ -96,12 +97,12 @@ row says what makes it so. `defer` means an open question decides it.
 | `source-terms.yml`        | keep            | This plugin takes data from third parties under terms, and the target takes none, so nothing there has a reason to refuse an adapter whose terms were never written down.                                                     |
 | `sync-labels.yaml`        | keep            | Inherited from the template; it keeps the label set in step and touches nothing a merge depends on.                                                                                                                           |
 
-The two tables account for every workflow file in this repository. Twelve are
+The two tables account for every workflow file in this repository. Thirteen are
 named in the first table's last column as the counterpart of a target workflow,
-and the eight above are the rest:
+and the nine above are the rest:
 
     ls .github/workflows | wc -l
-    20
+    22
 
 ## What this table is not
 

@@ -1,0 +1,169 @@
+# Every branch name a workflow states is a branch this repository has (#28).
+#
+# The workflows added on top of the template were written against a repository
+# whose default branch is `main`. This one's is `master`, so `scorecard.yml` and
+# `zizmor.yml` carried a push trigger that could never fire, and the repository
+# read as covered by two audits that ran on a schedule or not at all. A trigger
+# naming an absent branch fails silently by construction: GitHub does not warn,
+# the workflow appears in the list, and the only visible difference is runs that
+# are not there.
+#
+# What this refuses is a literal branch name that no branch of this repository
+# carries, in either of the two places a workflow states one: a value under
+# `branches:` or `branches-ignore:`, and a fully qualified head ref written
+# into a step or job condition. The second spelling is not decoration.
+# `zizmor.yml` guarded its upload of security findings on such a ref under the
+# absent name, so correcting only the trigger would have left the audit running
+# and its results going nowhere, which is the same silence one layer down.
+#
+# The literal that prefixes such a ref is assembled from two halves rather than
+# written out anywhere in this file, because a check whose own prose, pattern
+# or failure message carries the string it looks for refuses its own
+# documentation. The assembly is at the line that does it.
+#
+# A value holding a glob character is a pattern rather than a name and is
+# reported as skipped, because there is no branch for it to be compared
+# against. So is a ref built out of a workflow expression, which is resolved at
+# run time and is not a name written into the tree.
+#
+# What it cannot do. It reads the workflow files a line at a time rather than
+# parsing YAML, so it knows the two spellings that are written here, a block
+# list and a bracketed list, plus a plain scalar. A branch name arriving by an
+# anchor, a merge key or a folded scalar would not be seen, and the run prints
+# every value it did look at so a reader can tell the difference. It also says
+# nothing about whether a workflow names the right branch: naming a branch that
+# exists but is not the one the check was meant to guard passes here. And it
+# reaches no prose: a comment describing a branch is not read, so a sentence
+# that has gone stale against the tree it sits in stays for a person to catch.
+name: branch-name-exists
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+# Read-only: the check greps the tracked workflow files and lists the branches.
+permissions:
+  contents: read
+
+concurrency:
+  group: branch-name-exists-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: No workflow names a branch this repository does not have
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Refuse a branch name that is not a branch of this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          THIS_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # The branches this repository has, from the forge rather than from
+          # the checkout, which is shallow and carries one ref.
+          branches=$(gh api "repos/${THIS_REPOSITORY}/branches" --paginate --jq '.[].name')
+          if [ -z "$branches" ]; then
+            echo "::error::Could not read the branch list for ${THIS_REPOSITORY}. The check cannot judge a name against a list it does not have, so this is a failure rather than a pass."
+            exit 1
+          fi
+          printf 'Branches on %s:\n' "$THIS_REPOSITORY"
+          printf '%s\n' "$branches" | sed 's/^/  /'
+          echo
+
+          # Every value under a branches: or branches-ignore: key, with the file
+          # and line it came from. Three spellings are read: a block list, a
+          # bracketed list, and a plain scalar.
+          stated=$(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -print0 \
+            | sort -z \
+            | xargs -0 awk '
+              function emit(v) {
+                sub(/[[:space:]]*#.*$/, "", v)
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+                gsub(/^"|"$|^'"'"'|'"'"'$/, "", v)
+                if (v != "") print FILENAME ":" FNR "\t" v
+              }
+              FNR == 1 { inblock = 0 }
+              {
+                if (match($0, /^[[:space:]]*branches(-ignore)?:[[:space:]]*/)) {
+                  rest = substr($0, RLENGTH + 1)
+                  sub(/[[:space:]]*#.*$/, "", rest)
+                  gsub(/[[:space:]]+$/, "", rest)
+                  if (rest == "") { inblock = 1; next }
+                  inblock = 0
+                  if (substr(rest, 1, 1) == "[") {
+                    sub(/^\[/, "", rest)
+                    sub(/\][[:space:]]*$/, "", rest)
+                    n = split(rest, parts, ",")
+                    for (i = 1; i <= n; i++) emit(parts[i])
+                  } else {
+                    emit(rest)
+                  }
+                  next
+                }
+                if (inblock) {
+                  if (match($0, /^[[:space:]]*-[[:space:]]*/)) { emit(substr($0, RLENGTH + 1)); next }
+                  if ($0 ~ /^[[:space:]]*$/) next
+                  inblock = 0
+                }
+              }
+            ')
+
+          # The other spelling: a ref compared in a job or step condition. The
+          # prefix is assembled from two halves so that this file does not carry
+          # it whole; written out, the scan below would read its own machinery
+          # and its own messages as branch names. The name is taken up to the
+          # first character a ref may not carry, so a quote or a brace ends it.
+          head_ref='refs/''heads/'
+          refs=$(grep -rnoE "${head_ref}"'[^"'"'"'[:space:]]*' .github/workflows/ \
+            | sed -E "s#^([^:]+):([0-9]+):${head_ref}#\1:\2\t#" || true)
+
+          stated=$(printf '%s\n%s\n' "$stated" "$refs" | grep -v '^[[:space:]]*$' || true)
+
+          if [ -z "$stated" ]; then
+            echo "::error::No workflow states a branch name at all, which is not a state this repository has been in. Something changed in how the files are written and this check stopped reading them."
+            exit 1
+          fi
+
+          fail=0
+          while IFS=$'\t' read -r where value; do
+            case "$value" in
+              "")
+                echo "skip  $where  (a head ref with no name after it)"
+                continue
+                ;;
+              *['$'\{\}]*)
+                echo "skip  $where  $value  (a workflow expression, resolved at run time)"
+                continue
+                ;;
+              *[\*\?\[\]\!\+]*)
+                echo "skip  $where  $value  (a pattern, not a name)"
+                continue
+                ;;
+            esac
+            if printf '%s\n' "$branches" | grep -Fxq -- "$value"; then
+              echo "ok    $where  $value"
+            else
+              echo "FAIL  $where  $value"
+              fail=1
+            fi
+          done <<< "$stated"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::A workflow names a branch ${THIS_REPOSITORY} does not have. A trigger on it never fires and a condition on it is never true, so the workflow reads as covering something it does not."
+            exit 1
+          fi
+
+          echo
+          echo "Every branch name stated in .github/workflows/ is a branch of ${THIS_REPOSITORY}."
