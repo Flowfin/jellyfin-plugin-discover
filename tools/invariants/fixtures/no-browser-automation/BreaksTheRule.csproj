@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Not compiled. tools/ is outside every project in the solution, so this file
+    is text the build never reads. It is here so the runner can watch
+    no-browser-automation refuse something, and it is written as the mistake
+    somebody actually makes: one package added to a test project on the day
+    driving a browser looks easier than reading the page.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Selenium.WebDriver" Version="4.0.0" />
+  </ItemGroup>
+
+</Project>

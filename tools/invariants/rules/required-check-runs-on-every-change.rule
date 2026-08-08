@@ -1,0 +1,26 @@
+Id: required-check-runs-on-every-change
+Pattern: paths-ignore
+Subject: .github/workflows/build.yaml .github/workflows/test.yaml
+Except: none
+Issue: 154
+
+These two workflows produce `call / build` and `call / test`, which the branch
+ruleset on the default branch requires. A required context is satisfied by a run
+that reports success and by nothing else, so a workflow that declines to start
+does not skip a check, it withholds one, and the merge is refused for a context
+that is missing.
+
+Both files carried a trigger path filter ignoring Markdown. The effect was not
+that documentation changes skipped a build. It was that documentation changes
+could not be merged at all, and three pull requests sat in that state before
+anybody read the block as one defect rather than as three.
+
+The rule is written against the trigger key rather than against the glob,
+because the glob is not the mistake. Any path filter on either of these two
+workflows removes a class of change from what the gate can speak about, and
+which class it is only decides who notices.
+
+Its bound is the file list above. A third workflow added later to produce a
+required context is not covered here, because this rule cannot read the required
+set: that set is a repository setting and no part of it is in the tree. Whoever
+raises the required set widens `Subject`, and #40 is where that set is chosen.

@@ -1,6 +1,7 @@
 ---
-name: "Template"
-guid: "eb5d7894-8eef-4b36-aa6f-5d124e828ce1"
+name: "Discover"
+guid: "8227de33-0101-48a3-951d-2bf921709e48"
+imageUrl: "https://raw.githubusercontent.com/Flowfin/jellyfin-plugin-discover/master/img/logo.png"
 # version follows PluginVersion in Directory.Build.props, and the build fails
 # when the two drift. What the numbers mean is at the top of CHANGELOG.md.
 version: "0.0.0.0"
@@ -8,12 +9,13 @@ version: "0.0.0.0"
 # server line is decided, and the build fails when these two drift from it.
 targetAbi: "10.11.0.0"
 framework: "net9.0"
-overview: "Short description about your plugin"
+overview: "Browse titles a server does not have. Under development, and none of that browsing is built yet."
 description: >
-  This is a longer description that can span more than one
-  line and include details about your plugin.
+  This is being built so that a user can look through titles the server does not hold and see them alongside what it does hold.
+
+  None of that exists yet. What installs today is the plugin itself and a configuration page that carries no settings. There is no catalogue, nothing contacts a metadata source, and no new browsing appears anywhere in a client.
 category: "General"
-owner: "jellyfin"
+owner: "Flowfin"
 artifacts:
   - "Jellyfin.Plugin.Template.dll"
 changelog: >

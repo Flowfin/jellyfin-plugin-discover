@@ -1,7 +1,7 @@
 Id: no-random
 Pattern: (\bnew[[:space:]]+Random\(|\bRandom\.Shared|\bGuid\.NewGuid\()
 Subject: *.cs
-Except: none
+Except: :!*SystemRandomSource.cs
 Issue: 47
 
 The same argument as the clock, for the other source of an answer a test cannot
@@ -9,5 +9,7 @@ predict. A shuffled shelf, a jittered backoff and a generated identifier are all
 things a test has to be able to fix, and it can only fix them if they come from
 somewhere it can supply.
 
-Except is none today for the reason on no-wall-clock: the one place that
-supplies randomness does not exist yet, and #47 adds it with its path.
+The exception is the one implementation of IRandomSource, which #47 added, and
+it is written as a file suffix for the reason on no-wall-clock. Nothing behind
+it is cryptographic: a key or a token needs a generator chosen for that job and
+this rule does not stand in for that choice.

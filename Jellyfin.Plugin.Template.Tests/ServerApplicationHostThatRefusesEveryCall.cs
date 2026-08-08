@@ -23,9 +23,36 @@ namespace Jellyfin.Plugin.Template.Tests;
 ///
 /// It is written out rather than generated, so what it refuses is visible in a
 /// diff the next time the server's interface moves.
+///
+/// Every refusal is recorded before it is thrown. A registration that reaches
+/// the host fails on the throw, so the log adds nothing there; what it adds is
+/// the other direction, where a test asserts the log is empty and so states that
+/// the registrator asked the host for nothing at all. That is a claim about a
+/// run rather than about one member, and without the log it could only be made
+/// by listing every member a test did not see fail.
 /// </remarks>
 internal sealed class ServerApplicationHostThatRefusesEveryCall : IServerApplicationHost
 {
+    private readonly CallLog _log;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ServerApplicationHostThatRefusesEveryCall"/> class,
+    /// recording into a log of its own.
+    /// </summary>
+    public ServerApplicationHostThatRefusesEveryCall()
+        : this(new CallLog())
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ServerApplicationHostThatRefusesEveryCall"/> class.
+    /// </summary>
+    /// <param name="log">The log this fake records into, shared with the other fakes in the run.</param>
+    public ServerApplicationHostThatRefusesEveryCall(CallLog log)
+    {
+        _log = log;
+    }
+
     /// <inheritdoc />
     public event EventHandler? HasPendingRestartChanged
     {
@@ -133,6 +160,9 @@ internal sealed class ServerApplicationHostThatRefusesEveryCall : IServerApplica
     /// <inheritdoc />
     public string GetLocalApiUrl(string hostname, string? scheme = null, int? port = null) => throw Refused();
 
-    private static InvalidOperationException Refused([CallerMemberName] string member = "")
-        => new InvalidOperationException($"The registrator reached {member} on the server host. Registration runs while the server is still building its container, so nothing on the host is answerable yet.");
+    private InvalidOperationException Refused([CallerMemberName] string member = "")
+    {
+        _log.Record($"IServerApplicationHost.{member}");
+        return new InvalidOperationException($"The registrator reached {member} on the server host. Registration runs while the server is still building its container, so nothing on the host is answerable yet.");
+    }
 }

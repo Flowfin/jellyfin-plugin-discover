@@ -12,6 +12,11 @@
 # through and the same one the publish path uses. Nothing here packages a debug
 # output directory.
 #
+# The same package is also compared with what build.yaml names before it is
+# installed (#35), because loading is not the same question. A package missing a
+# file its manifest names, or carrying one it does not, loads exactly like a
+# correct one.
+#
 # Nothing in this workflow needs a display, and the containers run as the
 # unprivileged runner user rather than as root. No machine trust store is
 # touched, per #42.
@@ -119,6 +124,17 @@ jobs:
         id: jprm
         with:
           dotnet-target: ${{ matrix.framework }}
+
+      # Before the server is asked whether it accepts the package, the package
+      # is asked whether it is the thing build.yaml describes (#35). A file
+      # dropped from the packaging tool's output and a file added to it both
+      # install cleanly, so loading is not the question this answers. The
+      # comparison is in tools/package-contents.sh rather than here, so it can
+      # be run against a package by hand and watched refusing without a runner.
+      - name: Refuse a package that is not what build.yaml names
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+        run: tools/package-contents.sh "$ARTIFACT" build.yaml
 
       - name: Install the package into a server and read its log
         env:

@@ -1,0 +1,38 @@
+# A workflow whose steps cannot be read back to a version. This file is a
+# fixture. It is outside .github/workflows, nothing runs it, and it exists so
+# the rule can be watched refusing each spelling it is about.
+#
+# The last two steps are the good ones. They are here so that leg 1 firing is
+# not merely the file being wrong everywhere, and so a pattern that broadened
+# until it matched anything would be visible.
+name: breaks-the-rule
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  moving:
+    runs-on: ubuntu-latest
+    steps:
+      # A branch, so what ran is whatever that branch held at the moment.
+      - uses: some-org/some-action@master
+      # A tag, which is a name somebody else can move onto other bytes.
+      - uses: some-org/some-action@v7.0.1 # v7.0.1
+      # No ref at all, so the default branch answers.
+      - uses: some-org/some-action
+      # Pinned, and nothing here says which version those bytes are.
+      - uses: some-org/some-action@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # Hexadecimal and too short to be a commit, which is the abbreviation git
+      # accepts and github resolves against a repository that keeps moving.
+      - uses: some-org/some-action@3d3c42e # v7.0.1
+      # A local call, which cannot be pinned because it is already this commit.
+      - uses: ./.github/workflows/test-run.yml
+      # Pinned, with the version written where a person reads it.
+      - uses: some-org/some-action@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+  called:
+    # A reusable workflow call is the same line in a different position, and the
+    # one this repository inherits is the reason the rule exists.
+    uses: some-org/some-repo/.github/workflows/build.yaml@master

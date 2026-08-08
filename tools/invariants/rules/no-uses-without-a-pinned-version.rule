@@ -1,0 +1,50 @@
+Id: no-uses-without-a-pinned-version
+Pattern: ^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]+([^./[:space:]][^@[:space:]]*([[:space:]]|$)|[^[:space:]]+@([0-9a-f]*[^0-9a-f[:space:]]|[0-9a-f]{1,39}([[:space:]]|$)|[0-9a-f]{41,}|[0-9a-f]{40}[[:space:]]*$))
+Subject: .github/workflows
+Except: none
+Issue: 27
+
+A gate is worth what it can say about itself afterwards. A step named by a
+branch or a tag ran whatever those bytes were at the moment the run started,
+and nothing in this repository records what that was, so a green run a month
+ago cannot be read as a statement about anything. That is #27's complaint and
+this is the half of it that a machine can hold.
+
+The rule refuses four spellings, and they are one decision reached four ways.
+
+A ref that is not hexadecimal is a name somebody else can move: a branch always,
+and a tag whenever the owner chooses to. A `uses:` with no ref at all is the
+same thing spelled by omission, because the default branch answers.
+
+A hexadecimal ref that is not forty characters is an abbreviation. Git accepts
+one against the repository in front of it and the forge resolves it against a
+repository that keeps growing, so the bytes an abbreviation names are a function
+of when it was resolved rather than of what was written.
+
+A forty-character pin with no trailing comment is the case this rule exists for
+that no other check here holds. The pin is correct and unreadable: nothing on
+the line, and nothing anywhere else in the tree, says which release those bytes
+are. A reader deciding whether an advisory applies has to resolve the sha
+against the network to find out, which is the work the comment exists to save,
+and a renovate bump that drops the comment leaves the pin looking fine.
+
+A path beginning with `./` is excepted by the pattern rather than by the
+`Except` field, because a call into this repository's own workflows is already
+at this commit and there is nothing to pin it to. That is the only legitimate
+`uses:` without a sha, and writing it into the pattern keeps the exception next
+to the reason for it.
+
+Nothing else is excepted. The subject is the workflow directory, so the rule
+reaches every workflow this repository owns and every wrapper it has kept, and
+it does not reach the prose that describes it.
+
+What it cannot do. It reads a line at a time, so it judges the shape of a
+comment and never its truth: `# v1.2.3` against a sha from a different release
+passes, and so does `# see the pull request`. Nothing here checks that the sha
+exists, that it belongs to the repository named beside it, or that the tag the
+comment names ever pointed at it. Renovate is what keeps those honest today and
+this rule is what notices when the comment stops being written at all.
+
+It also says nothing about what a pinned action does. A sha is a statement that
+the bytes did not move, not that they were ever safe to run, and the audit that
+judges the workflows themselves is a different check with a different subject.
