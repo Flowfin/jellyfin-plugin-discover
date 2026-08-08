@@ -101,12 +101,42 @@ jobs:
             // not matter here".
             //
             // author_association describes the author's relationship to this
-            // repository, so somebody added as a member stops being exempt from
-            // that moment.
+            // repository, so somebody added as a collaborator stops being
+            // exempt from that moment.
+            //
+            // COLLABORATOR IS INSIDE, AND THE FIRST VERSION OF THIS LEFT IT
+            // OUT. The value here is the one the workflow token can see, and
+            // that token cannot see private organisation membership, so it
+            // reports COLLABORATOR where a user token reading the same pull
+            // request reports MEMBER. Measured rather than reasoned about:
+            //
+            //   the run that judged the near-miss branch, with an inside set of
+            //   OWNER and MEMBER only, passed and printed
+            //     author_association: COLLABORATOR
+            //   https://github.com/Flowfin/jellyfin-plugin-discover/actions/runs/31277922940
+            //
+            //   the same pull request through the API with a user token
+            //     gh api repos/Flowfin/jellyfin-plugin-discover/pulls/183 --jq '.author_association'
+            //     MEMBER
+            //
+            // With that set, every pull request on this board took the skip and
+            // the check was inert while reporting green, which is the worst
+            // shape a check can have. Push access to this repository is what
+            // the tier is really about, and COLLABORATOR is what push access
+            // looks like from here. The genuinely outside values are
+            // CONTRIBUTOR, FIRST_TIME_CONTRIBUTOR, FIRST_TIMER and NONE.
             const isBot = pr.user && pr.user.type === "Bot";
-            const INSIDE = ["OWNER", "MEMBER"];
+            const INSIDE = ["OWNER", "MEMBER", "COLLABORATOR"];
             const isOutside = !INSIDE.includes(pr.author_association || "NONE");
             const failTierApplies = !isBot && !isOutside;
+
+            // Printed on every run, not only on a skip, so a green run says
+            // what it judged on rather than leaving a reader to assume.
+            core.info(
+              `author_association: ${pr.author_association || "NONE"}; ` +
+                `author is a bot: ${isBot}; ` +
+                `the two failing checks apply: ${failTierApplies}`,
+            );
 
             if (isBot) {
               warnings.push(
