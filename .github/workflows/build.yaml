@@ -23,10 +23,13 @@ permissions: {}
 
 jobs:
   call:
-    # Kept as a call into the upstream reusable workflow rather than written out
-    # here: it drives the plugin repository manager, which is the same tool the
-    # publish path uses, so owning a copy of these steps would mean two
-    # descriptions of one packaging procedure that can drift apart.
+    # The steps now live in this repository, in build-run.yml, which says there
+    # why it is a called workflow rather than a job written out here. The
+    # upstream wrapper it replaces was pinned to a commit on another
+    # organisation's branch, so what this gate ran was a moving reference this
+    # repository kept no record of. It also defaulted its own .NET version and
+    # target, which is a second answer to a question Directory.Build.props
+    # already answers.
     permissions:
       contents: read # checkout; the artifact upload needs no token scope
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
+    uses: ./.github/workflows/build-run.yml
