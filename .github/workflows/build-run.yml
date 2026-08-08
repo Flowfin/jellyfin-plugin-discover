@@ -80,12 +80,62 @@ jobs:
         with:
           dotnet-target: ${{ steps.line.outputs.framework }}
 
+      - name: Restore the locked dependency graph the bill of materials reads
+        # The graph is materialised here rather than by the generator, so the
+        # inventory describes the closure committed in packages.lock.json and
+        # not whatever a feed served while the inventory was being written.
+        # RestoreLockedMode is on wherever CI is set, which Directory.Build.props
+        # states, so a graph that would differ from the committed one fails this
+        # step instead of being quietly documented as if it were the locked one.
+        run: dotnet restore Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj
+
+      - name: Write the bill of materials for what ships
+        # Which third-party code is in the process that will hold a metadata
+        # source key and talk to a third party is a question a reader has to be
+        # able to answer without this project's tooling, so the output is
+        # CycloneDX JSON and it travels with the package rather than beside it.
+        #
+        # The generator is a NuGet global tool pinned by version, which is that
+        # ecosystem's pin and does not add a third-party action to the set this
+        # repository trusts by commit. It reads the graph restored above and is
+        # told not to restore one of its own.
+        #
+        # It documents the plugin project only. A test assembly is not something
+        # anybody installs, and a bill of materials for the package that names
+        # the test graph would overstate what is in the process.
+        env:
+          SBOM_DIR: ${{ runner.temp }}/sbom
+        run: |
+          set -euo pipefail
+          mkdir -p "$SBOM_DIR"
+          dotnet tool install --global CycloneDX --version 6.2.0
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          dotnet-CycloneDX Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj \
+            --output-format Json \
+            --output "$SBOM_DIR" \
+            --filename sbom.cyclonedx.json \
+            --set-nuget-purl \
+            --exclude-test-projects \
+            --disable-package-restore
+
+          # The upload below refuses only when nothing at all matched, so a
+          # generator that wrote somewhere else, or wrote an empty file, would
+          # leave the package uploaded on its own and the run green. This is
+          # where that is refused instead.
+          test -s "$SBOM_DIR/sbom.cyclonedx.json"
+
       - name: Upload Artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: build-artifact
           retention-days: 30
           # A run that uploaded nothing and said so afterwards is a green check
-          # standing for a package that was never produced.
+          # standing for a package that was never produced. Two paths and one
+          # artifact, so a reader who takes the package takes the inventory of
+          # what is in it at the same time. `error` fires only on an empty match
+          # across both paths, which is why the step above checks the bill of
+          # materials for itself rather than leaving it to this line.
           if-no-files-found: error
-          path: ${{ steps.jprm.outputs.artifact }}
+          path: |
+            ${{ steps.jprm.outputs.artifact }}
+            ${{ runner.temp }}/sbom/sbom.cyclonedx.json
