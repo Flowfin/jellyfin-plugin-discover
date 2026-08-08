@@ -13,6 +13,13 @@ jobs:
     # Kept as a call, and #26 is where it is decided whether it is kept at all.
     # It is the other half of the comment-command process above and is reached
     # only by a dispatch that half sends.
+    #
+    # Why keeping the call beats owning the steps. The upstream job at eb99033 is
+    # a rebase action and two reactions on the comment that asked for it, and it
+    # runs only when the front half dispatches to it. Steps written out here
+    # would be a force-push path maintained in this tree against a caller this
+    # repository does not own, which is the more dangerous half of the pair to
+    # hold a stale copy of.
     permissions:
       contents: write # rebase and force-push the pull request head
       pull-requests: write # react on the comment that asked for the rebase

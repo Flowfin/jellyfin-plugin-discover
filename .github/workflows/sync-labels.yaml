@@ -13,6 +13,13 @@ jobs:
     # Kept as a call, and #26 is where it is decided whether it is kept at all.
     # It replaces this repository's label set with the upstream project's, which
     # is a decision about this tracker rather than about a build.
+    #
+    # Why keeping the call beats owning the steps. The whole of the upstream job
+    # at eb99033 is one action pointed at a label list held on that project's
+    # default branch, with delete-other-labels set. Steps written out here would
+    # either name the same moving file, which is the same dependency with more
+    # lines around it, or carry a copy of the list, which drifts against the
+    # thing it was copied from without anything here noticing.
     permissions:
       issues: write # create, rename and delete labels on this repository
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/sync-labels.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29

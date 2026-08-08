@@ -15,6 +15,12 @@ jobs:
     # It serves the upstream project's comment-command process; the token passed
     # below is a placeholder rather than a credential, so it cannot work here as
     # it stands.
+    #
+    # Why keeping the call beats owning the steps. The upstream job at eb99033 is
+    # one action dispatching a command vocabulary that project defines, rebase
+    # and update-prep. Steps written out here would hold a second copy of that
+    # vocabulary while the commands stay theirs, so the copy goes stale the first
+    # time they add one and nothing here would say so.
     permissions:
       contents: read # the dispatcher reads the repository to resolve the command
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/command-dispatch.yaml@eb99033a7ff644881b014bc0b4169916c854a68b # master, 2026-07-29
