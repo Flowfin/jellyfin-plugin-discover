@@ -12,9 +12,18 @@ name.
 
 ## Cutting a release
 
-1. Update `version` in `build.yaml` on the release branch and merge it.
+1. Update `version` in `build.yaml` on the release branch, move the lines
+   describing that version out of `## Unreleased` and under a `## 1.4.0` heading
+   of its own in `CHANGELOG.md`, and merge both together.
 2. Check that the commit you want to release is on that branch.
-3. Push the tag for that commit:
+3. Check that the changelog names the version. The run checks this again and
+   fails before anything is published, so this is the cheap place to find out:
+
+   ```
+   tools/changelog-names-the-version.sh 1.4.0 CHANGELOG.md
+   ```
+
+4. Push the tag for that commit:
 
    ```
    git tag 1.4.0-stable <commit>
@@ -41,9 +50,12 @@ The release notes are not written by hand and are not taken from `CHANGELOG.md`.
 The run asks GitHub to compose them, which it does from the commits and merged
 pull requests between the previous release and this tag, so what a reader sees
 under a release is the merge history of that range. `CHANGELOG.md` stays the
-place a version's changes are stated in this project's own words, and the two are
-not compared by anything: a tag whose changelog entry says something else still
-publishes.
+place a version's changes are stated in this project's own words.
+
+The two are compared, in one direction and by name only. The run refuses a
+version `CHANGELOG.md` does not carry a heading for, and it refuses a heading
+with nothing under it. What those lines say is not judged by anything, so a tag
+whose changelog entry describes the wrong change still publishes.
 
 That matters more than it looks, because a release the workflow created is not
 edited by this route afterwards, and under immutable releases it cannot be edited
@@ -84,6 +96,8 @@ is gone and no catalog is fed until a manifest generator is added.
 - There is no `packages.lock.json` next to the plugin project, so the release build
   cannot restore against a reviewed dependency graph. Create one with
   `dotnet restore <project> -p:RestorePackagesWithLockFile=true` and commit it.
+- `CHANGELOG.md` carries no heading naming the version being released, or the
+  heading is there with nothing under it.
 - The version stamped into the assembly is not the version in `build.yaml`.
 - The build produced no archive, or more than one, or no packaging metadata.
 - A release already exists for the tag.

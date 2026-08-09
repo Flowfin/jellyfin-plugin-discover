@@ -219,6 +219,22 @@ jobs:
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "Publishing version ${version} from tag ${tag}."
 
+      - name: Check the changelog names the version
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        # CHANGELOG.md is where this project states a version's changes in its own
+        # words. The notes on the release are composed by the forge from the commit
+        # range, so they are a different artefact with a different author and they do
+        # not stand in for it. Until now nothing compared the version being published
+        # with the file that is supposed to describe it, and the state that produces is
+        # a released version whose line is still sitting under Unreleased.
+        #
+        # The comparison is tools/changelog-names-the-version.sh rather than a block
+        # here, so it can be run against the changelog before a tag exists. Nothing in
+        # this workflow can be watched refusing without pushing a tag, and a tag that
+        # created a release cannot be reused.
+        run: tools/changelog-names-the-version.sh "${VERSION}" CHANGELOG.md
+
   build:
     name: Build package
     needs: gate
