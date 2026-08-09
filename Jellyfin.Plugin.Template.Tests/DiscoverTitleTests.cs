@@ -38,7 +38,7 @@ public class DiscoverTitleTests
             Name = "Arrival",
             ReleaseYear = 2016,
             Summary = "A linguist is asked to talk to something that has landed.",
-            ArtworkLocation = new Uri("https://image.example/poster/329865.jpg")
+            ArtworkLocation = new Uri("https://cdn.example.invalid/poster/329865.jpg")
         };
 
         var second = new DiscoverTitle
