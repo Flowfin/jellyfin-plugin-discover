@@ -37,6 +37,19 @@ for the tag, and attaches four files:
 - one `.md5` file, the checksum of the archive
 - one `.sha256` file for the same archive
 
+The release notes are not written by hand and are not taken from `CHANGELOG.md`.
+The run asks GitHub to compose them, which it does from the commits and merged
+pull requests between the previous release and this tag, so what a reader sees
+under a release is the merge history of that range. `CHANGELOG.md` stays the
+place a version's changes are stated in this project's own words, and the two are
+not compared by anything: a tag whose changelog entry says something else still
+publishes.
+
+That matters more than it looks, because a release the workflow created is not
+edited by this route afterwards, and under immutable releases it cannot be edited
+at all. Notes that have to read a particular way have to come out of the commit
+subjects in the range.
+
 The `.md5` is the value a Jellyfin catalog serves as the plugin checksum. There is
 exactly one per release so that no generator can pair a checksum with the wrong
 file. Both the archive and the metadata are checked for existence by name before the
