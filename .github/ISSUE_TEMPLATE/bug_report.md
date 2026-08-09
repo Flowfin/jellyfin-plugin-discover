@@ -1,40 +1,58 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Something the plugin does that it should not, or does not do that it should
 title: ""
-labels: ""
+labels: bug
 assignees: ""
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+Read
+[the status section of the README](https://github.com/Flowfin/jellyfin-plugin-discover#status)
+first. Most of what this plugin is described as doing is not built yet, so a
+report about browsing, shelves or a metadata source is likely to be answered
+with the issue that carries the work rather than with a fix.
 
-**To Reproduce**
-Steps to reproduce the behavior:
+## Server
 
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+Which Jellyfin server version, and how it is run: a container image and its tag,
+a distribution package, or something else. The version on its own is not enough,
+because the package declares a floor and a server below it does not load the
+plugin at all.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## Client
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+Which client, and its version. Web, Android, Android TV, a television app,
+something else. Name it even when the answer feels irrelevant. What a user sees
+here is drawn by the client rather than by the plugin, so one server state looks
+different in two of them and a report with no client named cannot be placed.
 
-**Desktop (please complete the following information):**
+## Plugin version
 
-- OS: [e.g. iOS]
-- Browser [e.g. chrome, safari]
-- Version [e.g. 22]
+The version the dashboard shows on the plugin's page, and whether it was
+installed from a manifest or copied in by hand.
 
-**Smartphone (please complete the following information):**
+## What happened
 
-- Device: [e.g. iPhone6]
-- OS: [e.g. iOS8.1]
-- Browser [e.g. stock browser, safari]
-- Version [e.g. 22]
+What you saw, in the words of what you saw. A screenshot where the complaint is
+about what was drawn.
 
-**Additional context**
-Add any other context about the problem here.
+## What you expected instead
+
+What you thought would happen, and what led you to expect it.
+
+## How to reproduce it
+
+The steps, from a state somebody else can reach. Say whether it happens every
+time or only sometimes.
+
+## The server log
+
+The lines around the failure, from the server's own log rather than from the
+dashboard's summary. Remove any API key before pasting: a source key in a URL is
+still a key.
+
+## Other plugins
+
+Which other plugins are installed and enabled. Say "none" where that is the
+case, because a report from a server carrying only this plugin and one from a
+server carrying eight are different reports.
