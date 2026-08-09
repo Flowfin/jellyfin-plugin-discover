@@ -15,14 +15,43 @@ server with no companion plugin installed.
 ## Status
 
 Nothing in that description is built. There is no catalogue, nothing contacts a
-metadata source, and no new browsing appears anywhere in a client. Read every
-sentence in the section above as a plan and not as behaviour you can install.
+metadata source, and no new browsing appears anywhere in a client:
+
+    git grep -nE 'Catalog|Shelf|IChannel|ChannelItemInfo|HttpClient|IHttpClientFactory' -- 'Jellyfin.Plugin.Template/*.cs'
+    exit=1
+
+Read every sentence in the section above as a plan and not as behaviour you can
+install. The note at the top of this page is the same kind of sentence and needs
+the same reading. Nothing here has been tried with any client, and "any Jellyfin
+server" is narrower than it sounds: the package declares a floor, and a server
+below it does not load the plugin at all.
+
+    git grep -n '^targetAbi' -- build.yaml
+    build.yaml:10:targetAbi: "10.11.0.0"
 
 What has been built is underneath it rather than in front of it: the gate this
-repository runs on every change, the test project and the rules the suite lives
-under, the plugin's own identity, and a configuration that carries a schema
-version and no settings. None of that is visible to a user, which is why the
-paragraph above says what it says.
+repository runs, the test project and the rules the suite lives under, the
+plugin's own identity, and a configuration that carries a schema version and no
+settings. None of that is visible to a user, which is why the paragraph above
+says what it says.
+
+The gate does not run on quite every change, and the exception is the one a
+reader of this page is most likely to run into. Two workflows skip a change that
+touches only Markdown, so a documentation change is judged by less than the whole
+set:
+
+    git grep -n -A1 'paths-ignore:' -- .github/workflows/
+    .github/workflows/plugin-loads.yml:29:    paths-ignore:
+    .github/workflows/plugin-loads.yml-30-      - "**/*.md"
+    --
+    .github/workflows/plugin-loads.yml:34:    paths-ignore:
+    .github/workflows/plugin-loads.yml-35-      - "**/*.md"
+    --
+    .github/workflows/scan-codeql.yaml:18:    paths-ignore:
+    .github/workflows/scan-codeql.yaml-19-      - "**/*.md"
+    --
+    .github/workflows/scan-codeql.yaml:22:    paths-ignore:
+    .github/workflows/scan-codeql.yaml-23-      - "**/*.md"
 
 The plan is the issue tracker. It is organised into milestones, each with an
 issue that says what the milestone ends with, and the first one is
@@ -72,11 +101,12 @@ The assembly lands under `Jellyfin.Plugin.Template/bin/Release/net9.0/`.
 
 There is no editor scaffolding in this repository. Every path in the template's
 `.vscode` configuration was derived from one setting naming the template's
-project, and this plugin's own name and identifier are not minted yet
-([#14](https://github.com/Flowfin/jellyfin-plugin-discover/issues/14)), so those
-tasks would have had to be rewritten the moment they were. The directory was
-removed rather than left building a solution that will not exist. The steps it
-automated are these, and they are short enough to run by hand:
+project, and the project directories and the solution still carry the template's
+name until
+[#14](https://github.com/Flowfin/jellyfin-plugin-discover/issues/14) renames
+them, so those tasks would have had to be rewritten the moment they were. The
+directory was removed rather than left building a solution that will not exist.
+The steps it automated are these, and they are short enough to run by hand:
 
 1. Build, as above.
 2. Create a directory named after the plugin inside the server's plugin
@@ -86,9 +116,12 @@ automated are these, and they are short enough to run by hand:
 3. Copy everything from the build output directory into it.
 4. Restart the server, and read the server log for the plugin being loaded.
 
-Whether a package built from this tree actually loads on a server is
-[#19](https://github.com/Flowfin/jellyfin-plugin-discover/issues/19), and until
-that issue closes nobody has checked it.
+You do not have to take this on trust. A package built from this tree is
+installed into a server container and the server's own log is read for the
+plugin loading, by `.github/workflows/plugin-loads.yml`, which is
+[#19](https://github.com/Flowfin/jellyfin-plugin-discover/issues/19) and is
+closed. What that covers is the one line the tree declares, 10.11, because that
+is the only one declared, and it does not run on a change that is only Markdown.
 
 ## Licence
 
