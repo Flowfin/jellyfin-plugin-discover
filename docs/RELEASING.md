@@ -16,10 +16,10 @@ name.
 2. Check that the commit you want to release is on that branch.
 3. Push the tag for that commit:
 
-    ```
-    git tag 1.4.0-stable <commit>
-    git push origin 1.4.0-stable
-    ```
+   ```
+   git tag 1.4.0-stable <commit>
+   git push origin 1.4.0-stable
+   ```
 
 The `Publish Release` workflow takes it from there.
 
