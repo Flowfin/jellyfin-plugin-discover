@@ -30,6 +30,12 @@ Every change that bumps the version adds its line under Unreleased first. The
 `changelog-entry` check refuses a pull request that moves the version and leaves
 this file alone.
 
+At release time that line moves again, out of Unreleased and under a heading
+naming the version, as `## 1.4.0` or `## 1.4.0.0`. The publish run refuses a tag
+whose version this file has no such heading for, and refuses a heading with
+nothing under it, so a version somebody installed is described here before it is
+published. Whether the description is right is not judged by anything.
+
 ## Unreleased
 
 - Nothing has been released. What exists so far is repository setup rather than
