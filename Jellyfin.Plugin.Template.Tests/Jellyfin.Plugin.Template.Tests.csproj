@@ -42,7 +42,35 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.1" PrivateAssets="All" />
   </ItemGroup>
 
+  <!--
+    Coverage is collected by the ordinary `dotnet test` run rather than by a
+    separate command, because a number produced only by a command nobody runs is
+    a number nobody has. The table is printed to the console on every run,
+    including the gate's, so the figure a reader quotes is the figure the run
+    printed. What it does and does not establish is
+    docs/what-a-green-suite-proves.md (#50).
+  -->
+  <PropertyGroup>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <CoverletOutput>$(MSBuildThisFileDirectory)TestResults/coverage.cobertura.xml</CoverletOutput>
+    <!--
+      The plugin assembly is the only module measured. The test assembly's own
+      coverage is a statement about the tests rather than about the code, and a
+      figure averaging the two moves when tests are added and says nothing.
+    -->
+    <Include>[Jellyfin.Plugin.Template]*</Include>
+    <!--
+      No Threshold is set, and that is a decision rather than an omission. A
+      threshold is met by tests that execute a line and assert nothing, so it
+      buys a number and not a suite. The signal that a test would have failed
+      had the line been wrong is mutation testing, which is #36, and it is
+      reported rather than enforced for the same reason.
+    -->
+  </PropertyGroup>
+
   <ItemGroup>
+    <PackageReference Include="coverlet.msbuild" Version="6.0.4" PrivateAssets="All" />
     <PackageReference Include="SerilogAnalyzer" Version="0.15.0" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="All" />
     <PackageReference Include="SmartAnalyzers.MultithreadingAnalyzer" Version="1.1.31" PrivateAssets="All" />

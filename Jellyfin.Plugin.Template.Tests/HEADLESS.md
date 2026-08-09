@@ -150,4 +150,6 @@ suite grows is #44's third condition.
 
 This page is about the tests that were refused. What a green suite proves and
 what it does not is the neighbouring question, and it is
-[#50](https://github.com/Flowfin/jellyfin-plugin-discover/issues/50).
+[`docs/what-a-green-suite-proves.md`](../docs/what-a-green-suite-proves.md),
+which also carries what the suite measures nothing over and where each risk
+outside it is held instead.
