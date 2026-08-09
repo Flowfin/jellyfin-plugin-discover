@@ -1,0 +1,35 @@
+# Every assembly the plugin is allowed to reference, one simple name per line.
+# Blank lines and lines starting with # are ignored.
+#
+# AssemblyReferencesTests reads this file and refuses in both directions: a
+# reference the list does not name, and a name the list holds that the assembly
+# no longer references. So adding a dependency is a change to this file, made on
+# purpose, and dropping one does not leave a name here that reads as still
+# allowed.
+#
+# What this exists for is #102. A sibling plugin becomes a hard dependency one
+# convenient reference at a time, and the first of them compiles, packages and
+# installs exactly like the rest of the tree.
+#
+# These are simple assembly names rather than package names, because that is
+# what the compiler writes into the assembly and therefore what can be read back
+# out of it. The list is what the compiler emitted, not what the project file
+# restored: a package whose types the code never touches leaves no reference
+# here, and it will fail this list on the day the code first uses one.
+
+# The server's own assemblies. They arrive from the server at load time and are
+# excluded from the package for that reason, so a reference to one of them is
+# not something this plugin ships.
+MediaBrowser.Common
+MediaBrowser.Controller
+MediaBrowser.Model
+
+# The dependency injection abstractions the server registers services through.
+# The server supplies this one too; the plugin only names the interfaces.
+Microsoft.Extensions.DependencyInjection.Abstractions
+
+# Runtime facades. Not dependencies in any useful sense: they are how the
+# compiler spells a type that lives in the runtime the server already runs on.
+System.Collections
+System.Runtime
+netstandard

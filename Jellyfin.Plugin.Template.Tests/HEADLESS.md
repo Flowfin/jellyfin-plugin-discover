@@ -122,6 +122,28 @@ workflow instead, and a default `dotnet test` run on a machine with no container
 runtime is green rather than skipped with warnings. Keeping that true as the
 suite grows is #44's third condition.
 
+## What is beside the suite when it runs
+
+No sibling plugin is on disk. That is the suite's normal state rather than an
+arrangement any test makes, and it is stated here because a claim that the two
+plugins do not depend on each other is worth nothing if the suite quietly had
+the other one to hand. The tree carries two projects that are built, and neither
+is a sibling. The invariant fixtures are excluded because they exist to break
+rules rather than to be compiled:
+
+    git ls-files '*.csproj' ':!tools/'
+    Jellyfin.Plugin.Template.Tests/Jellyfin.Plugin.Template.Tests.csproj
+    Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj
+
+What holds it as the tree grows is `AssemblyReferencesTests`, which reads the
+references out of the built plugin assembly and compares them with
+`allowed-assembly-references.txt`. A reference the list does not name fails, and
+a name on the list the assembly no longer carries fails too, so the list stays a
+record of what was allowed on purpose. That is
+[#102](https://github.com/Flowfin/jellyfin-plugin-discover/issues/102), and what
+it cannot reach is a type loaded by name at run time, which emits no reference
+for the compiler to write down.
+
 ## What none of this covers
 
 - Elevation itself is refused by nothing in this tree. No rule in
