@@ -14,6 +14,8 @@ description: >
   This is being built so that a user can look through titles the server does not hold and see them alongside what it does hold.
 
   None of that exists yet. What installs today is the plugin itself and a configuration page that carries no settings. There is no catalogue, nothing contacts a metadata source, and no new browsing appears anywhere in a client.
+
+  Two things it will not do when it is built. It does not acquire anything: no downloading, no indexers, no queue. And it does not handle a request for a title beyond passing on that somebody asked, which is a separate plugin's job; this one is meant to be useful on a server where no such plugin is installed.
 category: "General"
 owner: "Flowfin"
 artifacts:
