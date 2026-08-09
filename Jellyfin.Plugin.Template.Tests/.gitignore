@@ -1,0 +1,5 @@
+# Written by the test run rather than by a person. The coverage report is an
+# output of `dotnet test`, one per run, and a report committed once is a figure
+# from a tree that has since changed. docs/what-a-green-suite-proves.md says why
+# no figure is written down anywhere either.
+TestResults/
