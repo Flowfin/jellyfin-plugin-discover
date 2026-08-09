@@ -1,0 +1,41 @@
+Id: no-sibling-plugin-reference
+Pattern: (Jellyfin\.Plugin\.Requests|jellyfin-plugin-requests)
+Subject: *.cs *.csproj *.props *.sln *.json
+Except: none
+Issue: 95
+
+This plugin is complete with nothing behind the seam. A want goes to the local
+sink whether or not a requests plugin is installed, and that is what keeps
+either plugin installable alone.
+
+The failure is gradual rather than sudden, which is why it gets a rule rather
+than a paragraph. A shared type is added because both sides needed the same
+shape, then a helper because it was already there, then a version constraint so
+the helper keeps working, and at the end neither plugin installs without the
+other and the seam is decoration. Every step in that sequence is reasonable
+where it stands. The first one is the only one that is cheap to refuse.
+
+The name the pattern matches is read from the sibling rather than guessed:
+
+    gh api "repos/Flowfin/jellyfin-plugin-requests/git/trees/HEAD?recursive=1" --jq '.tree[].path'
+    Jellyfin.Plugin.Requests/Jellyfin.Plugin.Requests.csproj
+    Jellyfin.Plugin.Requests.sln
+
+so the assembly, the namespace and the package all carry one string, and the
+repository name is the second spelling because a project reference across a
+checkout is written as a path rather than as an assembly name.
+
+The subject is the source, the project and solution files, and the lock files.
+The lock files are in it because a package reference reaches the resolved graph
+whether or not anybody reads the project file it came from, so the closure this
+build restores is judged as well as the file that asked for it.
+
+Nothing is excepted. The interface the sibling implements is this plugin's own
+and lives in this tree, so declaring it and collecting implementations of it from
+the server's container costs no reference in either direction.
+
+What it cannot do. It reads tracked text, so a workflow that fetches the sibling
+at run time is outside the subject, and an assembly loaded by name at run time is
+outside what any pattern here can see. It also judges this tree rather than what
+ships: whether the built package's dependency list names a sibling is a property
+of the artefact, and #102 is where that and the reverse direction are held.

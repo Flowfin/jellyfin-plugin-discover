@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Not compiled. tools/ is outside every project in the solution, so this file
+    is text the build never reads. Both spellings of the reference are here
+    because they arrive by different routes: one from a feed, one from a
+    checkout sitting beside this one.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Plugin.Requests" Version="1.0.0" />
+    <ProjectReference Include="../../jellyfin-plugin-requests/Jellyfin.Plugin.Requests/Jellyfin.Plugin.Requests.csproj" />
+  </ItemGroup>
+
+</Project>
