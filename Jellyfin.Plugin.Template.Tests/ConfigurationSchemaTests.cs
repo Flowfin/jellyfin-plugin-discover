@@ -21,6 +21,27 @@ public class ConfigurationSchemaTests
     private const string DocumentTail = "</SchemaVersion>\n</PluginConfiguration>";
 
     /// <summary>
+    /// A document this build's version rule accepts, carrying one element it does
+    /// not declare. This is what a hand edit, a restored backup from a build with
+    /// more settings, or a partially applied downgrade looks like on disk.
+    /// </summary>
+    private const string WithSettingFromAnotherBuild =
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+        + "<PluginConfiguration xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n"
+        + "  <SchemaVersion>1</SchemaVersion>\n"
+        + "  <ShelfRefreshHours>6</ShelfRefreshHours>\n"
+        + "</PluginConfiguration>";
+
+    /// <summary>
+    /// The same addition written as an attribute rather than as an element.
+    /// </summary>
+    private const string WithAttributeFromAnotherBuild =
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+        + "<PluginConfiguration xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" shelfRefreshHours=\"6\">\n"
+        + "  <SchemaVersion>1</SchemaVersion>\n"
+        + "</PluginConfiguration>";
+
+    /// <summary>
     /// A document from a version this build does not know is refused, with a
     /// message naming both versions.
     /// </summary>
@@ -82,12 +103,84 @@ public class ConfigurationSchemaTests
         Assert.Equal(PluginConfiguration.CurrentSchemaVersion, new PluginConfiguration().SchemaVersion);
     }
 
+    /// <summary>
+    /// An element this build does not declare is read past and dropped, and
+    /// nothing refuses the document for carrying it.
+    /// </summary>
+    /// <remarks>
+    /// Written down rather than left to be discovered, because this is the answer
+    /// the build already gives and nobody had recorded which of the two possible
+    /// answers it was. The reading half is benign. The dropping half is not: the
+    /// value does not survive the next save, so a document a later build wrote
+    /// and this one rewrites comes back smaller than it went in.
+    /// </remarks>
+    [Fact]
+    public void AnElementThisBuildDoesNotKnowIsDroppedRatherThanRefused()
+    {
+        var configuration = ReadDocument(WithSettingFromAnotherBuild);
+
+        // Read past rather than tripped over: the version next to the unknown
+        // element arrived intact.
+        Assert.Equal(PluginConfiguration.CurrentSchemaVersion, configuration.SchemaVersion);
+
+        // And not refused. The rule this build has is about the version, not
+        // about the shape of the rest of the document.
+        ConfigurationSchema.ThrowIfUnknown(configuration);
+
+        // What was dropped stays dropped. Writing the configuration back is what
+        // a save does, and the element is not in what comes out.
+        var written = Write(configuration);
+
+        Assert.Contains("<SchemaVersion>", written, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShelfRefreshHours", written, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// An attribute this build does not declare is treated the same way as an
+    /// element, so the answer above is about the document rather than about one
+    /// spelling of an addition.
+    /// </summary>
+    [Fact]
+    public void AnAttributeThisBuildDoesNotKnowIsDroppedTheSameWay()
+    {
+        var configuration = ReadDocument(WithAttributeFromAnotherBuild);
+
+        Assert.Equal(PluginConfiguration.CurrentSchemaVersion, configuration.SchemaVersion);
+
+        ConfigurationSchema.ThrowIfUnknown(configuration);
+
+        Assert.DoesNotContain("shelfRefreshHours", Write(configuration), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// An unknown element does not carry a document past the version rule, so the
+    /// tolerance above cannot be used to smuggle a foreign document in.
+    /// </summary>
+    [Fact]
+    public void AnUnknownElementDoesNotExcuseAnUnknownVersion()
+    {
+        var configuration = ReadDocument(
+            WithSettingFromAnotherBuild.Replace(
+                "<SchemaVersion>1</SchemaVersion>",
+                "<SchemaVersion>99</SchemaVersion>",
+                StringComparison.Ordinal));
+
+        var refusal = Assert.Throws<UnknownConfigurationSchemaException>(
+            () => ConfigurationSchema.ThrowIfUnknown(configuration));
+
+        Assert.Equal(99, refusal.FoundSchemaVersion);
+    }
+
     private static PluginConfiguration Read(int schemaVersion)
     {
-        var document = DocumentHead
+        return ReadDocument(
+            DocumentHead
             + schemaVersion.ToString(CultureInfo.InvariantCulture)
-            + DocumentTail;
+            + DocumentTail);
+    }
 
+    private static PluginConfiguration ReadDocument(string document)
+    {
         var serializer = new XmlSerializer(typeof(PluginConfiguration));
         var settings = new XmlReaderSettings
         {
@@ -98,5 +191,14 @@ public class ConfigurationSchemaTests
         using var text = new StringReader(document);
         using var reader = XmlReader.Create(text, settings);
         return (PluginConfiguration)serializer.Deserialize(reader)!;
+    }
+
+    private static string Write(PluginConfiguration configuration)
+    {
+        var serializer = new XmlSerializer(typeof(PluginConfiguration));
+
+        using var text = new StringWriter(CultureInfo.InvariantCulture);
+        serializer.Serialize(text, configuration);
+        return text.ToString();
     }
 }
