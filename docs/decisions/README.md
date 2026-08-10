@@ -1,20 +1,22 @@
 # Decision record
 
-Three decisions in this plan shape everything built on top of them: how a
-discover page is represented, who owns the catalogue, and what crosses the seam
-to a requests plugin. Each one has an argument behind it, and each argument will
-be re-opened by whoever arrives next. This directory is so that the re-opening
-starts from the reasoning rather than from a reconstruction of it.
+Four decisions in this plan shape everything built on top of them: how a
+discover page is represented, who owns the catalogue, where that catalogue
+lives, and what crosses the seam to a requests plugin. Each one has an argument
+behind it, and each argument will be re-opened by whoever arrives next. This
+directory is so that the re-opening starts from the reasoning rather than from a
+reconstruction of it.
 
 ## The notes
 
-| Note                                                | Decision                                                        | State                                                                       |
-| --------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| [0001](0001-a-discover-page-is-a-server-channel.md) | A discover page is a server channel                             | Decided                                                                     |
-| [0002](0002-this-plugin-owns-the-catalogue.md)      | This plugin owns the catalogue, a requests plugin owns requests | Decided                                                                     |
-| Not written                                         | What crosses the seam to a requests plugin                      | Owed by [#94](https://github.com/iderex/jellyfin-plugin-discover/issues/94) |
+| Note                                                               | Decision                                                        | State                                                                       |
+| ------------------------------------------------------------------ | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [0001](0001-a-discover-page-is-a-server-channel.md)                | A discover page is a server channel                             | Decided                                                                     |
+| [0002](0002-this-plugin-owns-the-catalogue.md)                     | This plugin owns the catalogue, a requests plugin owns requests | Decided                                                                     |
+| [0003](0003-the-catalogue-lives-in-the-plugins-own-data-folder.md) | Where the catalogue lives on disk                               | Decided                                                                     |
+| Not written                                                        | What crosses the seam to a requests plugin                      | Owed by [#94](https://github.com/iderex/jellyfin-plugin-discover/issues/94) |
 
-The third row is not an omission from this index. Issue #94 is where that
+The last row is not an omission from this index. Issue #94 is where that
 contract is written and it stays open until the sibling repository exists and
 points at it, so the note it produces is that issue's deliverable rather than
 this one's.
