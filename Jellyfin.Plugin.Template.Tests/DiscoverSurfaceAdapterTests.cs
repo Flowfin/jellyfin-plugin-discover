@@ -347,7 +347,7 @@ public class DiscoverSurfaceAdapterTests
                 Summary = "Titles this server does not have.",
                 CatalogueVersion = "2026-08-10T00:00:00Z",
                 Audience = SurfaceAudience.General,
-                HomePage = new Uri("https://example.invalid/discover")
+                HomePage = new Uri("https://cdn.example.invalid/discover")
             }
         };
 
@@ -356,7 +356,7 @@ public class DiscoverSurfaceAdapterTests
         Assert.Equal("Discover", adapter.Name);
         Assert.Equal("Titles this server does not have.", adapter.Description);
         Assert.Equal("2026-08-10T00:00:00Z", adapter.DataVersion);
-        Assert.Equal("https://example.invalid/discover", adapter.HomePageUrl);
+        Assert.Equal("https://cdn.example.invalid/discover", adapter.HomePageUrl);
         Assert.Equal(ChannelParentalRating.GeneralAudience, adapter.ParentalRating);
     }
 
