@@ -87,13 +87,68 @@ other.
   supplies today. Then the choice is not whether to build this but whether to
   keep that source.
 
-## What this page does not settle
+## Whether the interface could take one later
 
-Whether the interface in front of every metadata source can take a per-user
-source without being reshaped. That interface does not exist yet, it is
-[#73](https://github.com/Flowfin/jellyfin-plugin-discover/issues/73), and a
-claim here about what it does or does not make possible would be a claim about a
-file nobody has written. #84 stays open on it.
+It could, and the reason is one sentence: the only thing a per-user source needs
+that a server-wide one does not is which user is asking, and that arrives as a
+field on the question without changing a signature or a caller.
+
+The interface asks a source two things:
+
+    git grep -n 'MetadataSource Source { get; }\|Task<SourceAnswer> FetchAsync' origin/master -- Jellyfin.Plugin.Template/Sources/IMetadataSource.cs
+    origin/master:Jellyfin.Plugin.Template/Sources/IMetadataSource.cs:46:    MetadataSource Source { get; }
+    origin/master:Jellyfin.Plugin.Template/Sources/IMetadataSource.cs:66:    Task<SourceAnswer> FetchAsync(SourceQuery query, CancellationToken cancellationToken);
+
+Neither of those moves. The question does, and it moves by gaining a field
+rather than by being rebuilt:
+
+    git grep -n -A 5 'public readonly record struct SourceQuery' origin/master -- Jellyfin.Plugin.Template/Sources/SourceQuery.cs
+    origin/master:Jellyfin.Plugin.Template/Sources/SourceQuery.cs:44:public readonly record struct SourceQuery(
+    origin/master:Jellyfin.Plugin.Template/Sources/SourceQuery.cs-45-    string Name,
+    origin/master:Jellyfin.Plugin.Template/Sources/SourceQuery.cs-46-    DiscoverTitleKind Kind,
+    origin/master:Jellyfin.Plugin.Template/Sources/SourceQuery.cs-47-    int? StartIndex,
+    origin/master:Jellyfin.Plugin.Template/Sources/SourceQuery.cs-48-    int? Limit)
+
+Those four are positional, so a fifth positional parameter would be a change to
+every place a query is built. An init-only property with no value by default is
+not, and it is the shape that fits: a query carrying nobody is the
+server-wide case that every shelf asks today, and a query carrying a user is the
+per-user case, so the same adapter can serve both and the shelves that ask for
+neither are untouched.
+
+Three things a per-user source would otherwise strain against are already where
+they belong.
+
+Authentication is the adapter's, not the interface's, which is what the
+interface's own remarks say it is for. A token store, a refresh and a revocation
+path all sit inside one adapter and none of them appears in a signature, so
+nothing about them reaches a caller.
+
+The state a per-user source spends most of its life in already has an answer.
+A user who has not authorised anything is a source that was asked and should not
+have been, which is neither an error nor an empty shelf:
+
+    git grep -n 'NotConfigured = 2' origin/master -- Jellyfin.Plugin.Template/Sources/SourceOutcome.cs
+    origin/master:Jellyfin.Plugin.Template/Sources/SourceOutcome.cs:43:    NotConfigured = 2,
+
+That case exists because a server-wide key can be missing. It reads the same way
+per user, and without it every unauthorised user would look to a refresh like a
+source that had nothing to say.
+
+Which body answered is named rather than inferred, so a service that only ever
+speaks per user is a member added to the body list and a position in the
+precedence beside it, which is the change point that already exists for adding
+any source.
+
+What this does not settle is the thing that is not the interface's business:
+whether an answer fetched for one user may be kept where another user's request
+could reach it. That is the catalogue rather than the source, and it is the list
+[#70](https://github.com/Flowfin/jellyfin-plugin-discover/issues/70) asks for.
+None of this has been exercised, because no per-user adapter exists and none is
+planned; it is a reading of the four files above rather than a thing that has
+been built against them.
+
+## What this page does not settle
 
 Nothing on this page is refused by anything. Three invariant rules carry this
 vocabulary and none of them has a stored grant as its subject:
