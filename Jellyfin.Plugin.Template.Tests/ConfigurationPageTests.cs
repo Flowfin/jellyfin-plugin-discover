@@ -177,6 +177,32 @@ public class ConfigurationPageTests
     }
 
     /// <summary>
+    /// The page says that the library's name cannot be changed, and why.
+    /// </summary>
+    /// <param name="phrase">Wording the sentence has to carry.</param>
+    /// <remarks>
+    /// This page is where an operator goes looking for a rename, so it is
+    /// where the absence of one has to be answered. The server builds the
+    /// identity of every item under a library out of the library's name, which
+    /// is read out of the server's source in docs/title-identity.md, so a
+    /// rename orphans every favourite and every played mark under it. That is
+    /// #60.
+    ///
+    /// The phrases below are what the sentence has to carry rather than the
+    /// sentence itself, so the wording can be improved without this turning
+    /// red, while dropping the reason or the consequence cannot.
+    /// </remarks>
+    [Theory]
+    [InlineData("cannot be changed")]
+    [InlineData("identity")]
+    [InlineData("favourite")]
+    [InlineData("docs/title-identity.md")]
+    public void ThePageSaysTheLibraryNameCannotBeChanged(string phrase)
+    {
+        Assert.Contains(phrase, ReadPage(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// The settings this plugin's configuration declares.
     /// </summary>
     /// <returns>The property names.</returns>
