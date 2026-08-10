@@ -31,5 +31,6 @@ Microsoft.Extensions.DependencyInjection.Abstractions
 # Runtime facades. Not dependencies in any useful sense: they are how the
 # compiler spells a type that lives in the runtime the server already runs on.
 System.Collections
+System.Linq
 System.Runtime
 netstandard

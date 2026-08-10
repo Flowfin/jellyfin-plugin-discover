@@ -1,7 +1,7 @@
 Id: no-channel-type-outside-surface
-Pattern: \b(IChannel|ChannelItemInfo|ChannelItemResult|ChannelItemType|ChannelFolderType|ChannelMediaContentType|InternalChannelFeatures|ChannelParentalRating)\b
+Pattern: \b(IChannel|ChannelItemInfo|ChannelItemResult|ChannelItemType|ChannelFolderType|ChannelMediaContentType|ChannelMediaType|ChannelItemSortField|InternalChannelItemQuery|InternalChannelFeatures|ChannelParentalRating|DynamicImageResponse|MetadataProvider|ImageType|ImageFormat|BaseItem|MediaSourceInfo|PersonInfo)\b|MediaBrowser\.(Controller\.(Channels|Entities|Providers|Library|LiveTv|Dto)|Model\.(Channels|Entities|Drawing|Dto|LiveTv))\b
 Subject: *.cs
-Except: :!*SurfaceAdapter.cs
+Except: :!*SurfaceAdapter.cs :!*SurfaceAdapterTests.cs
 Issue: 52
 
 A discover page is a server channel, and the server's channel types are the
@@ -10,5 +10,27 @@ one of them reaches the shelf code, the catalogue code or the seam, then
 changing how the surface is represented means changing everything that touched
 it, and the adapter that exists to absorb that change absorbs nothing.
 
-The exception is the surface adapter itself, which is the one place the server's
-channel vocabulary is allowed to be spoken.
+The pattern has two halves and they cover each other. The names are the types
+the adapter actually reaches for, which catches a file naming one with no
+import in sight. The namespaces catch everything else in the same places: a
+type from them is either imported or written out in full, and both spellings
+carry the namespace, so the second half does not depend on anybody having
+listed the type. Neither half alone would do. A file can name `ChannelItemInfo`
+with a global import that this tree does not have, and a file can reach a type
+nobody thought to list.
+
+Crossing the boundary is not only a matter of the channel vocabulary, which is
+why the entity, provider and drawing namespaces are in the second half. The
+item base class, the media source, the person and the picture kinds all arrive
+through the same interface, and an item shape that leaks is as expensive as a
+folder kind that does. `MediaBrowser.Model.Plugins`, `MediaBrowser.Common` and
+`MediaBrowser.Model.Serialization` are deliberately not here: the plugin class
+and its configuration are how a plugin is loaded at all, and they are not the
+surface.
+
+The exception is the surface adapter itself, which is the one place the
+server's vocabulary is allowed to be spoken, and its own tests, which have to
+speak it to call the adapter at all. Every other test goes through the plugin's
+own interface and a fake of it, which is what #49 asks for; a test file that has
+to be renamed to compile is the rule telling its author that it is on the wrong
+side of the boundary.
