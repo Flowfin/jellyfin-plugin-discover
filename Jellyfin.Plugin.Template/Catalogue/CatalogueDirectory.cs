@@ -138,8 +138,9 @@ public sealed class CatalogueDirectory
     /// <param name="documentName">The file name, and only a file name.</param>
     /// <returns>The full path that name resolves to.</returns>
     /// <exception cref="ArgumentException">
-    /// Thrown when the name is blank, carries a directory separator, is rooted,
-    /// or is one of the relative names that walk out of the directory.
+    /// Thrown when the name is blank, carries either directory separator or a
+    /// drive marker, is rooted, or is one of the relative names that walk out of
+    /// the directory.
     /// </exception>
     /// <remarks>
     /// The refusal is here rather than at each caller because a name that
@@ -149,18 +150,30 @@ public sealed class CatalogueDirectory
     /// name arriving from a shelf definition an operator typed is the case this
     /// exists for, and #105 refuses such a definition on save rather than
     /// leaving this as the only guard.
+    ///
+    /// Both separators are named here rather than asking the runtime which one
+    /// it uses. A Linux server does not treat a backslash as a separator, so
+    /// <c>Path.GetFileName</c> hands back <c>nested\shelves</c> whole and a name
+    /// carrying one is accepted there and refused on Windows. A document this
+    /// plugin wrote on one and cannot name on the other is the shape that
+    /// produces, and the same name walks out of the directory on the server that
+    /// does treat it as a separator. The first spelling of this check asked the
+    /// runtime, and the gate's Linux run is where that showed.
     /// </remarks>
     public string DocumentPath(string documentName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(documentName);
 
-        if (!string.Equals(Path.GetFileName(documentName), documentName, StringComparison.Ordinal)
+        if (documentName.Contains('/', StringComparison.Ordinal)
+            || documentName.Contains('\\', StringComparison.Ordinal)
+            || documentName.Contains(':', StringComparison.Ordinal)
+            || !string.Equals(Path.GetFileName(documentName), documentName, StringComparison.Ordinal)
             || Path.IsPathRooted(documentName)
             || string.Equals(documentName, ".", StringComparison.Ordinal)
             || string.Equals(documentName, "..", StringComparison.Ordinal))
         {
             throw new ArgumentException(
-                "A catalogue document is named by a file name and nothing else. A name carrying a separator, a root or a relative step would put the document outside the one directory this plugin writes to.",
+                "A catalogue document is named by a file name and nothing else. A name carrying either separator, a drive marker, a root or a relative step would put the document outside the one directory this plugin writes to, on the server whose runtime reads it that way.",
                 nameof(documentName));
         }
 
