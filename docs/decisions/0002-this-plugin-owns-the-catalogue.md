@@ -65,12 +65,17 @@ version rule in
 field set here would put a second description of the handover in the tree, next
 to the one #94 exists to hold.
 
-The boundary above is a position, not yet a mechanism. Nothing in this
-repository refuses code that reads another plugin's storage today. The rule that
-would refuse it is in
-[#33](https://github.com/iderex/jellyfin-plugin-discover/issues/33), and until
-that rule exists and is proven to fire, this section is the whole of the
-enforcement.
+The boundary above is a position and, since
+[#69](https://github.com/iderex/jellyfin-plugin-discover/issues/69) added
+`tools/invariants/rules/no-other-plugin-storage.rule`, also a mechanism for two
+of the ways it can be broken: a path composed under the plugins path or the
+plugin configurations path, and a type loaded out of an assembly by path at run
+time. That rule was watched refusing both.
+
+It is not the whole of the boundary and the rule's own text says where it stops.
+A plugin that reads another's data through an API the server offers is outside
+any pattern a text lint can write, and for that part this section is still the
+whole of the enforcement.
 
 ## What would reverse this
 

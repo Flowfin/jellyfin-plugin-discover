@@ -28,23 +28,6 @@ interfaces do not exist, and today every test in the suite necessarily names a
 server type, because the only thing there is to test is a plugin class the
 server defines. #49 adds the rule with the file set it derives from.
 
-## Nothing reads or writes another plugin's storage
-
-From #69, and the subject is #65. The position is already decided and written
-out in `docs/decisions/0002-this-plugin-owns-the-catalogue.md`: this plugin owns
-the catalogue, a requests plugin owns request records and their fulfilment, and
-neither reads the other's files. That is what keeps either one installable
-alone. #69's last condition asks for a rule that refuses the code rather than a
-note asking for it, and `0002` says in its own words that until such a rule
-exists and is proven to fire, the note is the whole of the enforcement.
-
-There is nothing for the rule to match yet. This plugin writes nothing at all:
-#65 is where the catalogue's location and form are chosen, and a pattern written
-before that choice would have to guess at the calls a store has not been given.
-The two spellings it will have to reach are a path built under another plugin's
-directory and a type loaded out of another plugin's assembly, and whether either
-is even expressible as a line pattern depends on what #65 chooses.
-
 ## What the configuration page renders
 
 From #33, partly held and partly not.

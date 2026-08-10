@@ -1,0 +1,50 @@
+Id: no-other-plugin-storage
+Pattern: (\.PluginsPath\b|\.PluginConfigurationsPath\b|Assembly\.Load[A-Za-z]*\(|AppDomain\.CurrentDomain|\bType\.GetType\()
+Subject: *.cs
+Except: :!*ApplicationPathsThatRefuseEveryCallButThePluginDirectories.cs :!*CallsTheServerSeesTests.cs
+Issue: 69
+
+Neither this plugin nor a requests plugin reads the other's storage. That is
+what keeps either of them installable alone, and it is the position
+`docs/decisions/0002-this-plugin-owns-the-catalogue.md` argues at length. Until
+this rule landed that note was the whole of the enforcement, and it said so.
+
+The two spellings are the two ways one plugin reaches another's data, and they
+are different failures with the same result.
+
+The first is a path. Every plugin's data folder is a directory under the plugins
+path, and every plugin's configuration document is a file under the plugin
+configurations path, so composing a path from either one is how a plugin reads a
+neighbour's files. This plugin needs neither: the server hands it its own folder,
+derived from the assembly it loaded, and the base class writes its own
+configuration without being asked where. That is what
+`docs/decisions/0003-the-catalogue-lives-in-the-plugins-own-data-folder.md`
+decided, and it is what makes this half expressible as a pattern rather than as
+a guess. Before that decision there was no store, so there was no legitimate use
+of these members to distinguish an illegitimate one from.
+
+The second is an assembly. A plugin can reach another plugin's types without a
+reference by loading the assembly at run time and asking it for a type by name,
+which is the spelling `no-sibling-plugin-reference` cannot see: that rule reads
+project files and source for one name, and a load by path carries no name it
+matches.
+
+Two files in the test project are excepted and both are the seam to the server
+rather than to a plugin. One is the fake standing in for the server's path
+interface, which has to declare every member of it, including the two this rule
+names. The other is the test asserting which of those members the plugin
+actually reaches while it is constructed, which is the assertion that says the
+plugin reads one directory and no more. Excepting the fake and keeping the
+assertion would leave the assertion refused for naming the members it exists to
+count. Both are named by file suffix rather than by path, so the rename in #14
+does not silence them: a file that moves keeps its exception and a file that is
+renamed loses it and reddens.
+
+What it cannot do. It reads tracked text one line at a time, so a path built
+across two lines, a member reached through a local variable assigned earlier, or
+a directory walked upward from this plugin's own folder are all invisible to it.
+Nothing it matches is proof of intent either: a legitimate use of these members
+would fail this rule and the answer is to argue the exception here rather than
+to widen the pattern. And the property it holds is about this tree rather than
+about what runs: a plugin that reads another's files through an API the server
+offers, rather than through a path, is outside every pattern this lint can write.
