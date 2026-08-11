@@ -28,9 +28,27 @@ MediaBrowser.Model
 # The server supplies this one too; the plugin only names the interfaces.
 Microsoft.Extensions.DependencyInjection.Abstractions
 
+# The logging abstractions, for the same reason and from the same place. The
+# server holds the implementation and decides where a line goes; the plugin
+# names ILogger and nothing behind it. A catalogue document that cannot be read
+# is reported through this rather than thrown at whoever asked for a shelf,
+# which is #66.
+Microsoft.Extensions.Logging.Abstractions
+
 # Runtime facades. Not dependencies in any useful sense: they are how the
 # compiler spells a type that lives in the runtime the server already runs on.
 System.Collections
 System.Linq
 System.Runtime
 netstandard
+
+# Also from the runtime the server already runs on, and named separately
+# because these are the parts of it the catalogue store reaches for rather than
+# spellings of a type. System.Security.Cryptography is the checksum a catalogue
+# document carries so a truncated or altered one is refused on read;
+# System.Threading is the lock that stops two refreshes writing one document at
+# once; System.Memory is the span the payload is checked over. All three are
+# #66. None of them is packaged: the server supplies the runtime.
+System.Memory
+System.Security.Cryptography
+System.Threading
