@@ -1,0 +1,52 @@
+# The parity tables are the only place this repository says why its gate differs
+# from the one it was measured against (#4), and until now nothing read them.
+# That is how they went stale: a workflow landed, neither table gained a row,
+# and the sentence claiming both tables accounted for every workflow file went
+# on standing above a count that no longer counted. An unexplained gap is what
+# the milestone calls a defect, and a page nothing reads turns one into a defect
+# nobody sees.
+#
+# The workflow does one thing, which is run the script. What the three legs
+# refuse, and what none of them can do, is in
+# tools/gate-parity-names-every-workflow.sh rather than here, so the reasoning
+# sits with the code that acts on it.
+#
+# It reads this repository only. Whether the first table still describes the
+# target gate is a comparison against another repository, which the page states
+# as a command for a person to run, and putting that in the gate would make a
+# check here red for a change made somewhere else.
+#
+# Nothing is downloaded and nothing is installed, so there is no pinned version
+# here beyond the checkout and no checksum to verify.
+name: gate-parity
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+# Read-only: the script reads the tracked tree.
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    name: The parity tables name every workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No step pushes via git, so do not persist the GITHUB_TOKEN in .git/config.
+          persist-credentials: false
+
+      - name: Refuse a workflow the parity tables do not account for
+        run: ./tools/gate-parity-names-every-workflow.sh
