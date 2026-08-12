@@ -105,6 +105,7 @@ row says what makes it so. `defer` means an open question decides it.
 | `changelog-entry.yml`     | keep, separate  | A version bump with no line saying what changed is a build nobody can tie a report to. The target reaches the same end inside its own pr-hygiene workflow; kept apart here so that one mistake reds one check, and `pr-hygiene.yml` says so at the leg that is not in it. |
 | `command-dispatch.yaml`   | keep            | Inherited from the template; it turns a comment into a workflow dispatch and is the front half of `command-rebase.yaml`.                                                                                                                                                  |
 | `command-rebase.yaml`     | keep            | Inherited from the template; it rebases a pull request on request and costs nothing when nobody asks.                                                                                                                                                                     |
+| `gate-parity.yml`         | keep            | This page is the only place the difference between the two gates is argued, and nothing read it, so it drifted against the directory it describes; the target has one gate and nothing to hold a table against.                                                           |
 | `own-repository-name.yml` | keep            | Two workflows here declared they were running on the template's repository and their jobs silently never ran; nothing on the target has that shape to refuse.                                                                                                             |
 | `plugin-loads.yml`        | keep            | The target proves a login works; this proves the packaged plugin loads at all on each targeted line, which is the claim that matters when there is no login.                                                                                                              |
 | `source-terms.yml`        | keep            | This plugin takes data from third parties under terms, and the target takes none, so nothing there has a reason to refuse an adapter whose terms were never written down.                                                                                                 |
@@ -112,17 +113,26 @@ row says what makes it so. `defer` means an open question decides it.
 
 The two tables account for every workflow file in this repository. Fifteen are
 named in the first table's last column as the counterpart of a target workflow,
-and the nine above are the rest:
+and the ten above are the rest:
 
     ls .github/workflows | wc -l
-    24
+    25
 
-It read fourteen and twenty-three until this edit. `abi-matches-the-line.yml`
-landed after the tables were written and was named on neither of them, so the
-sentence claiming they accounted for everything was false while the command
-under it printed a number nobody had re-run. It is named in the `dotnet.yml` row
-rather than in the second table, because the ABI floor is a job of that workflow
-on the target rather than a check the target does not run.
+It read fourteen and twenty-three, and then fifteen and nine.
+`abi-matches-the-line.yml` landed after the tables were written and was named on
+neither of them, so the sentence claiming they accounted for everything was
+false while the command under it printed a number nobody had re-run. It is named
+in the `dotnet.yml` row rather than in the second table, because the ABI floor is
+a job of that workflow on the target rather than a check the target does not run.
+
+Those two corrections were both made by hand, months apart, by somebody who
+happened to run the command. `gate-parity.yml` is what reads the claim now: a
+workflow file this page never names reds the gate, a row in the second table
+naming a file that is not there reds it, and the number above is compared with
+the directory rather than trusted. What it holds is this repository's half. The
+first table's other end is the target gate, which is another repository over the
+network, so whether those rows still describe it stays the command at the top of
+this page and a person to run it.
 
 ## What this table is not
 
