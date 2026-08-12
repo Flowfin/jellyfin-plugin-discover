@@ -1,7 +1,7 @@
 Id: no-channel-type-outside-surface
 Pattern: \b(IChannel|ChannelItemInfo|ChannelItemResult|ChannelItemType|ChannelFolderType|ChannelMediaContentType|ChannelMediaType|ChannelItemSortField|InternalChannelItemQuery|InternalChannelFeatures|ChannelParentalRating|DynamicImageResponse|MetadataProvider|ImageType|ImageFormat|BaseItem|MediaSourceInfo|PersonInfo)\b|MediaBrowser\.(Controller\.(Channels|Entities|Providers|Library|LiveTv|Dto)|Model\.(Channels|Entities|Drawing|Dto|LiveTv))\b
 Subject: *.cs
-Except: :!*SurfaceAdapter.cs :!*SurfaceAdapterTests.cs
+Except: :!*SurfaceAdapter.cs :!*SurfaceAdapterTests.cs :!*PluginServiceRegistrator.cs
 Issue: 52
 
 A discover page is a server channel, and the server's channel types are the
@@ -34,3 +34,20 @@ speak it to call the adapter at all. Every other test goes through the plugin's
 own interface and a fake of it, which is what #49 asks for; a test file that has
 to be renamed to compile is the rule telling its author that it is on the wrong
 side of the boundary.
+
+The registrator is the third, added with the registration in #53, and it is the
+same case rather than a hole cut for convenience. The server builds its surfaces
+by asking its container for every implementation of `IChannel`, so a plugin that
+registers under any other type is one the server never collects and no client
+ever sees. That name cannot be avoided in the place a plugin declares what it
+offers, and the declaration is what registration is. It is the same reasoning
+this rule already gives for the adapter: if the surface ever stops being
+represented as a channel, both files change, because both are the seam to the
+server rather than code behind it. What is on the other side of that seam, the
+shelves, the catalogue and the handover, still names none of it.
+
+The file is one line of the vocabulary wide today, and nothing here holds it to
+one line. What holds the registrator narrow is the test that exactly one surface
+is offered to the server, which derives the interface from the adapter rather
+than naming it, so it stays silent under this rule while counting what this
+exception makes possible.
