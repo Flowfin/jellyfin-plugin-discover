@@ -26,6 +26,13 @@ namespace Jellyfin.Plugin.Template.Catalogue;
 /// truncated or altered after the move are refused on read instead of being
 /// handed to whoever asked.
 ///
+/// A third property is about which build wrote the document rather than about
+/// the bytes surviving. Every document names its format version on its first
+/// line, and a version this build does not read is refused rather than parsed
+/// on the assumption that the two formats agree. That is
+/// <see cref="CatalogueDocumentFormat"/>, and it is what a downgrade and a
+/// restored backup arrive as.
+///
 /// The header carries no byte count, and that is a decision rather than an
 /// omission. A count refuses nothing the checksum does not already refuse:
 /// every truncation and every extra byte changes the payload, and therefore
@@ -77,24 +84,13 @@ public sealed class CatalogueDocumentStore
     /// </remarks>
     public const string TemporaryNameSuffix = ".writing";
 
-    /// <summary>
-    /// The first line of every document, naming the format its header is in.
-    /// </summary>
-    /// <remarks>
-    /// It carries a number so a later format is a different first line rather
-    /// than a header that parses differently. A document whose marker is not
-    /// this one is refused on read, which is what makes a change of format
-    /// visible instead of silent.
-    /// </remarks>
-    public const string FormatMarker = "discover-catalogue/1";
-
     private const int ChecksumDigits = 64;
 
     /// <summary>
     /// Derived rather than written down, so a change to the marker moves the
     /// reader with it instead of leaving a length that was right yesterday.
     /// </summary>
-    private static readonly int HeaderLength = FormatMarker.Length + 1 + ChecksumDigits + 1 + 1;
+    private static readonly int HeaderLength = CatalogueDocumentFormat.CurrentMarker.Length + 1 + ChecksumDigits + 1 + 1;
 
     private readonly CatalogueDirectory _directory;
     private readonly ILogger<CatalogueDocumentStore> _logger;
@@ -203,6 +199,18 @@ public sealed class CatalogueDocumentStore
     /// cannot see, where an empty shelf is the same thing the next refresh
     /// fixes. The operator is told instead, in the log, with the path.
     ///
+    /// A document from a format version this build does not read answers the
+    /// same way, and that is the point of it rather than a shortcut: refusing
+    /// means the surface has no catalogue rather than a wrong one. What the
+    /// operator is told is different, because a downgrade and a bad disk are
+    /// different things to be holding. <see cref="CatalogueDocumentFormat"/>
+    /// carries the rule and both messages.
+    ///
+    /// The version is judged before the length and before the checksum. A
+    /// version 2 document is not obliged to carry a version 1 header, so
+    /// measuring it against one first would report a document from a newer
+    /// build as truncated and send an operator looking at their disk.
+    ///
     /// Absence is not logged. A first run on a fresh server reads documents
     /// that are not there yet, and a warning per read would put an error in the
     /// log of every new install.
@@ -218,13 +226,31 @@ public sealed class CatalogueDocumentStore
 
         var bytes = File.ReadAllBytes(documentPath);
 
+        var scanned = Math.Min(bytes.Length, CatalogueDocumentFormat.LongestMarkerLength + 1);
+        var markerLength = bytes.AsSpan(0, scanned).IndexOf((byte)'\n');
+
+        if (markerLength < 0)
+        {
+            return Unreadable(documentPath, "it does not begin with the line every document names its format on");
+        }
+
+        if (!CatalogueDocumentFormat.TryReadVersion(Encoding.ASCII.GetString(bytes, 0, markerLength), out var version))
+        {
+            return Unreadable(documentPath, "its first line names no catalogue format, so nothing here wrote it");
+        }
+
+        if (version != CatalogueDocumentFormat.CurrentVersion)
+        {
+            return Unreadable(documentPath, CatalogueDocumentFormat.WhyItCannotBeRead(version));
+        }
+
         if (bytes.Length < HeaderLength)
         {
             return Unreadable(documentPath, "it is shorter than the header every document carries");
         }
 
         var header = Encoding.ASCII.GetString(bytes, 0, HeaderLength);
-        var declaredChecksum = header.Substring(FormatMarker.Length + 1, ChecksumDigits);
+        var declaredChecksum = header.Substring(CatalogueDocumentFormat.CurrentMarker.Length + 1, ChecksumDigits);
 
         if (!string.Equals(header, Header(declaredChecksum), StringComparison.Ordinal))
         {
@@ -263,7 +289,7 @@ public sealed class CatalogueDocumentStore
 
     private static string Header(string checksum)
     {
-        return FormatMarker + "\n" + checksum + "\n\n";
+        return CatalogueDocumentFormat.CurrentMarker + "\n" + checksum + "\n\n";
     }
 
     private static byte[] HeaderBytes(string checksum)
