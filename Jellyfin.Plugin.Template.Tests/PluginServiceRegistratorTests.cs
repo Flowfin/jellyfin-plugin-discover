@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Jellyfin.Plugin.Template.Surface;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -66,6 +67,42 @@ public class PluginServiceRegistratorTests
         {
             Assert.NotNull(provider.GetRequiredService(descriptor.ServiceType));
         }
+    }
+
+    /// <summary>
+    /// Exactly one surface is offered to the server, under the interface the
+    /// server collects surfaces by.
+    /// </summary>
+    /// <remarks>
+    /// The server asks its container for every implementation it finds, so two
+    /// registrations are two libraries in front of every user and a
+    /// registration under the adapter's own type is none at all. Both are
+    /// silent: nothing fails, nothing is logged, and the first report comes
+    /// from somebody looking at a screen.
+    ///
+    /// The interface is derived from the adapter rather than named here. That
+    /// keeps this file on the plugin's side of
+    /// `no-channel-type-outside-surface`, and it makes the assertion the
+    /// stronger one: what is counted is whatever the adapter implements for the
+    /// server, so a change of interface is still counted rather than leaving a
+    /// test that passes while looking for a type nothing implements any more.
+    /// </remarks>
+    [Fact]
+    public void ExactlyOneSurfaceIsOfferedToTheServer()
+    {
+        var services = new ServiceCollection();
+
+        new PluginServiceRegistrator().RegisterServices(services, new ServerApplicationHostThatRefusesEveryCall());
+
+        var serverInterface = typeof(DiscoverSurfaceAdapter)
+            .GetInterfaces()
+            .Single(contract => contract.Assembly != typeof(Plugin).Assembly);
+
+        var offered = services.Where(descriptor => descriptor.ServiceType == serverInterface).ToArray();
+
+        Assert.Single(offered);
+        Assert.Equal(typeof(DiscoverSurfaceAdapter), offered[0].ImplementationType);
+        Assert.Equal(ServiceLifetime.Singleton, offered[0].Lifetime);
     }
 
     /// <summary>
