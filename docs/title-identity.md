@@ -112,9 +112,9 @@ also in the identifier of the surface's own row:
     v12.0-rc4:1
 
 So after a rename every title is a new row, and whatever a user had marked on
-the old one, a favourite or a played state, stays on the old one. The old rows
-are not cleaned up either. The server does remove items it no longer sees, but
-it looks for them under the parent it is refreshing:
+the old one, a favourite or a played state, is not on the new one. The server
+does remove items it no longer sees, but it looks for them under the parent it
+is refreshing:
 
     git show v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs | sed -n '738,740p'
                     var existingIds = _libraryManager.GetItemIds(query);
@@ -122,12 +122,129 @@ it looks for them under the parent it is refreshing:
                         .ToArray();
 
 After a rename that parent is a new row as well, so the previous subtree is not
-in any query the refresh makes and nothing goes looking for it.
+in any query the refresh makes and nothing goes looking for it there.
+
+Something else does go looking, and it looks by a query the rename does move.
+The task that refreshes surfaces runs a clean-up straight after the refresh:
+
+    git grep -n 'new ChannelPostScanTask(_channelManager, _logger, _libraryManager)' v10.11.11 v12.0-rc4 -- src/Jellyfin.LiveTv/Channels/RefreshChannelsScheduledTask.cs
+    v10.11.11:src/Jellyfin.LiveTv/Channels/RefreshChannelsScheduledTask.cs:70:            await new ChannelPostScanTask(_channelManager, _logger, _libraryManager).Run(progress, cancellationToken)
+    v12.0-rc4:src/Jellyfin.LiveTv/Channels/RefreshChannelsScheduledTask.cs:70:            await new ChannelPostScanTask(_channelManager, _logger, _libraryManager).Run(progress, cancellationToken)
+
+The clean-up reads every surface row in the library and keeps the ones with no
+loaded plugin behind them:
+
+    git grep -n 'var installedChannelIds = ((ChannelManager)_channelManager).GetInstalledChannelIds();' v10.11.11 v12.0-rc4 -- src/Jellyfin.LiveTv/Channels/ChannelPostScanTask.cs
+    v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelPostScanTask.cs:51:            var installedChannelIds = ((ChannelManager)_channelManager).GetInstalledChannelIds();
+    v12.0-rc4:src/Jellyfin.LiveTv/Channels/ChannelPostScanTask.cs:51:            var installedChannelIds = ((ChannelManager)_channelManager).GetInstalledChannelIds();
+
+The ids it keeps are built from the names the loaded plugins carry now, through
+the same derivation quoted above:
+
+    git grep -n 'return GetAllChannels().Select(i => GetInternalChannelId(i.Name));' v10.11.11 v12.0-rc4 -- src/Jellyfin.LiveTv/Channels/ChannelManager.cs
+    v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:148:            return GetAllChannels().Select(i => GetInternalChannelId(i.Name));
+    v12.0-rc4:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:149:            return GetAllChannels().Select(i => GetInternalChannelId(i.Name));
+
+So after a rename the old surface's row is not among the ids the clean-up keeps,
+and what it does to a row it did not keep is the items first and the row after.
+The task carrying both halves has one default trigger and that trigger is an
+interval:
+
+    git grep -n 'IntervalTicks = TimeSpan.FromHours(24).Ticks' v10.11.11 v12.0-rc4 -- src/Jellyfin.LiveTv/Channels/RefreshChannelsScheduledTask.cs
+    v10.11.11:src/Jellyfin.LiveTv/Channels/RefreshChannelsScheduledTask.cs:82:                    Type = TaskTriggerInfoType.IntervalTrigger, IntervalTicks = TimeSpan.FromHours(24).Ticks
+    v12.0-rc4:src/Jellyfin.LiveTv/Channels/RefreshChannelsScheduledTask.cs:82:                    Type = TaskTriggerInfoType.IntervalTrigger, IntervalTicks = TimeSpan.FromHours(24).Ticks
+
+A rename leaves the old subtree standing for up to a day on a server nobody has
+retimed that task on, and then the server takes it away.
 
 This is read from the server's source and has not been watched happening on a
 running server. There is no surface to rename yet:
 [#53](https://github.com/Flowfin/jellyfin-plugin-discover/issues/53) is where
 one arrives.
+
+## What the removal does to a favourite
+
+Removing a row does not remove what a user marked on it. Both lines detach that
+data instead, moving it to a placeholder item and stamping when the move
+happened:
+
+    git grep -n -A1 'SetProperty(f => f.RetentionDate, date)' v10.11.11 v12.0-rc4 -- Jellyfin.Server.Implementations/Item/
+    v10.11.11:Jellyfin.Server.Implementations/Item/BaseItemRepository.cs:138:                .SetProperty(f => f.RetentionDate, date)
+    v10.11.11:Jellyfin.Server.Implementations/Item/BaseItemRepository.cs-139-                .SetProperty(f => f.ItemId, PlaceholderId));
+    --
+    v12.0-rc4:Jellyfin.Server.Implementations/Item/ItemPersistenceService.cs:122:                .SetProperty(f => f.RetentionDate, date)
+    v12.0-rc4:Jellyfin.Server.Implementations/Item/ItemPersistenceService.cs-123-                .SetProperty(f => f.ItemId, BaseItemRepository.PlaceholderId));
+
+A maintenance task deletes detached rows once the stamp is old enough:
+
+    git grep -n 'const int LimitDays = 90;' v10.11.11 v12.0-rc4 -- Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs
+    v10.11.11:Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs:54:        const int LimitDays = 90;
+    v12.0-rc4:Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs:54:        const int LimitDays = 90;
+
+That task offers no default trigger of its own, so on a server where nobody has
+given it one it does not run at all:
+
+    git grep -n -A2 'public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()' v10.11.11 v12.0-rc4 -- Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs
+    v10.11.11:Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs:73:    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
+    v10.11.11:Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs-74-    {
+    v10.11.11:Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs-75-        yield break;
+    --
+    v12.0-rc4:Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs:73:    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
+    v12.0-rc4:Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs-74-    {
+    v12.0-rc4:Emby.Server.Implementations/ScheduledTasks/Tasks/CleanupUserDataTask.cs-75-        yield break;
+
+There is a route back out of the placeholder, and it matches on the data's own
+key rather than on the item it was detached from:
+
+    git grep -n -A1 'var userKeys = item.GetUserDataKeys().ToArray();' v10.11.11 v12.0-rc4 -- Jellyfin.Server.Implementations/Item/
+    v10.11.11:Jellyfin.Server.Implementations/Item/BaseItemRepository.cs:785:                var userKeys = item.GetUserDataKeys().ToArray();
+    v10.11.11:Jellyfin.Server.Implementations/Item/BaseItemRepository.cs-786-                var retentionDate = (DateTime?)null;
+    --
+    v12.0-rc4:Jellyfin.Server.Implementations/Item/ItemPersistenceService.cs:213:                var userKeys = item.GetUserDataKeys().ToArray();
+    v12.0-rc4:Jellyfin.Server.Implementations/Item/ItemPersistenceService.cs-214-                var retentionDate = (DateTime?)null;
+
+For an item that came from a surface the first of those keys is not the row's
+identifier at all:
+
+    git grep -n -A6 'public virtual List<string> GetUserDataKeys()' v10.11.11 v12.0-rc4 -- MediaBrowser.Controller/Entities/BaseItem.cs
+    v10.11.11:MediaBrowser.Controller/Entities/BaseItem.cs:1468:        public virtual List<string> GetUserDataKeys()
+    v10.11.11:MediaBrowser.Controller/Entities/BaseItem.cs-1469-        {
+    v10.11.11:MediaBrowser.Controller/Entities/BaseItem.cs-1470-            var list = new List<string>();
+    v10.11.11:MediaBrowser.Controller/Entities/BaseItem.cs-1471-
+    v10.11.11:MediaBrowser.Controller/Entities/BaseItem.cs-1472-            if (SourceType == SourceType.Channel)
+    v10.11.11:MediaBrowser.Controller/Entities/BaseItem.cs-1473-            {
+    v10.11.11:MediaBrowser.Controller/Entities/BaseItem.cs-1474-                if (!string.IsNullOrEmpty(ExternalId))
+    --
+    v12.0-rc4:MediaBrowser.Controller/Entities/BaseItem.cs:1645:        public virtual List<string> GetUserDataKeys()
+    v12.0-rc4:MediaBrowser.Controller/Entities/BaseItem.cs-1646-        {
+    v12.0-rc4:MediaBrowser.Controller/Entities/BaseItem.cs-1647-            var list = new List<string>();
+    v12.0-rc4:MediaBrowser.Controller/Entities/BaseItem.cs-1648-
+    v12.0-rc4:MediaBrowser.Controller/Entities/BaseItem.cs-1649-            if (SourceType == SourceType.Channel)
+    v12.0-rc4:MediaBrowser.Controller/Entities/BaseItem.cs-1650-            {
+    v12.0-rc4:MediaBrowser.Controller/Entities/BaseItem.cs-1651-                if (!string.IsNullOrEmpty(ExternalId))
+
+It is the identifier the plugin supplied with the title, which is the one input
+to the hash at the top of this page that a rename leaves alone:
+
+    git grep -n 'item.ExternalId = info.Id;' v10.11.11 v12.0-rc4 -- src/Jellyfin.LiveTv/Channels/ChannelManager.cs
+    v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:1097:            item.ExternalId = info.Id;
+    v12.0-rc4:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:1095:            item.ExternalId = info.Id;
+
+Whether a mark actually lands back on the new row is not established. The
+reattachment runs on an item's first metadata refresh, and the refresh a newly
+created surface item gets is put on a queue rather than run where the item is
+made:
+
+    git grep -n '_providerManager.QueueRefresh(item.Id' v10.11.11 v12.0-rc4 -- src/Jellyfin.LiveTv/Channels/ChannelManager.cs
+    v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:1171:                _providerManager.QueueRefresh(item.Id, new MetadataRefreshOptions(new DirectoryService(_fileSystem)), RefreshPriority.Normal);
+    v12.0-rc4:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:1168:                _providerManager.QueueRefresh(item.Id, new MetadataRefreshOptions(new DirectoryService(_fileSystem)), RefreshPriority.Normal);
+
+The old rows are not detached until the clean-up half of the same scheduled run,
+which comes after the half that created the new rows. Whether that queued
+refresh reaches an item before or after its predecessor's data is sitting at the
+placeholder is what decides the answer, and nothing read here settles it. What
+is settled is that the mark is not destroyed at the moment the old row goes, and
+that on a default install nothing is scheduled to destroy it afterwards either.
 
 ## The surface's name is fixed, and is not a setting
 
@@ -136,10 +253,12 @@ control that changes it, which is the decision
 [#60](https://github.com/Flowfin/jellyfin-plugin-discover/issues/60) asks for.
 
 An operator who could type a new name into a box would be one keystroke from
-losing every favourite their users had marked, with nothing on the page telling
-them so at the moment they did it, and the loss would not show up until the next
-refresh. A setting worth that would have to buy something, and what it buys is a
-different word on one library tile.
+taking every favourite their users had marked off the title it was marked on,
+with nothing on the page telling them so at the moment they did it, and nothing
+showing until the next refresh. Whether those marks find their way back is the
+question the section above ends on unanswered, which is a worse thing to hand an
+operator than either answer would be. A setting worth that would have to buy
+something, and what it buys is a different word on one library tile.
 
 The same reasoning binds the build. Changing the name in a release is the same
 event as an operator changing it, so it is a breaking change rather than a
