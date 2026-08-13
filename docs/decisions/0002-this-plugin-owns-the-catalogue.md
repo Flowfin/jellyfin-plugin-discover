@@ -1,7 +1,7 @@
 # 0002 This plugin owns the catalogue, a requests plugin owns requests
 
 Decided. Raised in
-[#69](https://github.com/iderex/jellyfin-plugin-discover/issues/69).
+[#69](https://github.com/Flowfin/jellyfin-plugin-discover/issues/69).
 
 ## The problem this settles
 
@@ -45,7 +45,7 @@ Not that the title still exists at the source. Not that the artwork is still
 reachable. Not that the overview text has not changed. Not that this plugin
 still holds the record at all, because retention removes records and the
 retention ceiling is question 8 on
-[#2](https://github.com/iderex/jellyfin-plugin-discover/issues/2).
+[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2).
 
 A requests plugin that wants a current answer re-resolves the title from the
 source by identifier. That is its business and not this plugin's, and it needs
@@ -57,16 +57,16 @@ endpoint for that purpose.
 
 The record that crosses the boundary is not named or versioned in this note. It
 is a projection of the catalogue record from
-[#64](https://github.com/iderex/jellyfin-plugin-discover/issues/64), which does
+[#64](https://github.com/Flowfin/jellyfin-plugin-discover/issues/64), which does
 not exist yet, and the contract that carries it is
-[#94](https://github.com/iderex/jellyfin-plugin-discover/issues/94), with the
+[#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94), with the
 version rule in
-[#101](https://github.com/iderex/jellyfin-plugin-discover/issues/101). Naming a
+[#101](https://github.com/Flowfin/jellyfin-plugin-discover/issues/101). Naming a
 field set here would put a second description of the handover in the tree, next
 to the one #94 exists to hold.
 
 The boundary above is a position and, since
-[#69](https://github.com/iderex/jellyfin-plugin-discover/issues/69) added
+[#69](https://github.com/Flowfin/jellyfin-plugin-discover/issues/69) added
 `tools/invariants/rules/no-other-plugin-storage.rule`, also a mechanism for two
 of the ways it can be broken: a path composed under the plugins path or the
 plugin configurations path, and a type loaded out of an assembly by path at run

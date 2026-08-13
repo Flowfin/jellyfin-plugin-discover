@@ -24,7 +24,7 @@ There is no beta suffix, because a four-number version has nowhere to put one. A
 pre-release is a GitHub release marked as a prerelease, which
 `.github/workflows/publish.yaml` passes on as `is-unstable`. Which channel that
 reaches, and what happens when publishing fails, is
-[#121](https://github.com/iderex/jellyfin-plugin-discover/issues/121).
+[#121](https://github.com/Flowfin/jellyfin-plugin-discover/issues/121).
 
 Every change that bumps the version adds its line under Unreleased first. The
 `changelog-entry` check refuses a pull request that moves the version and leaves
@@ -42,4 +42,4 @@ published. Whether the description is right is not judged by anything.
   plugin behaviour, and the plan is on the milestones.
 - One place now states which server line the build targets, and the build
   refuses a package whose manifest disagrees with it
-  ([#15](https://github.com/iderex/jellyfin-plugin-discover/issues/15)).
+  ([#15](https://github.com/Flowfin/jellyfin-plugin-discover/issues/15)).

@@ -18,7 +18,7 @@ different reasons, and those are the last two sections.
 What it was given: one line of a markdown file carrying U+202E, the character
 that reorders what a reader sees without changing what a compiler reads.
 
-    https://github.com/iderex/jellyfin-plugin-discover/actions/runs/31111270257/job/92649385372
+    https://github.com/Flowfin/jellyfin-plugin-discover/actions/runs/31111270257/job/92649385372
     tools/guard-proof/near-miss.md:8:    the bytes after this arrow are overridden: <U+202E>gnitset si sihT
     ##[error]Dangerous bidirectional/invisible Unicode found (Trojan Source, CVE-2021-42574). Remove these control characters.
 
@@ -43,7 +43,7 @@ read but not run, and this sentence is the whole of what is known about it.
 What it was given: a workflow file, triggered manually and by nothing else, whose
 one step referenced `actions/checkout` by tag rather than by commit.
 
-    https://github.com/iderex/jellyfin-plugin-discover/actions/runs/31111290945/job/92649459556
+    https://github.com/Flowfin/jellyfin-plugin-discover/actions/runs/31111290945/job/92649459556
     INFO audit: zizmor: 🌈 completed ./.github/workflows/guard-proof.yml
     error[unpinned-uses]: unpinned action reference
       --> ./.github/workflows/guard-proof.yml:25:15
@@ -59,7 +59,7 @@ What it was given: a direct reference to `System.Security.Cryptography.Xml`
 4.5.0 in the test project, with the lock file regenerated so the dependency graph
 carried the same package the project declared.
 
-    https://github.com/iderex/jellyfin-plugin-discover/actions/runs/31111290460/job/92649458344
+    https://github.com/Flowfin/jellyfin-plugin-discover/actions/runs/31111290460/job/92649458344
     Jellyfin.Plugin.Template.Tests/Jellyfin.Plugin.Template.Tests.csproj » System.Security.Cryptography.Xml@4.5.0 – .NET Information Disclosure Vulnerability (moderate severity)
       ↪ https://github.com/advisories/GHSA-vh55-786g-wjwj
     ##[error]Dependency review detected vulnerable packages.
@@ -90,17 +90,17 @@ page is about.
 This one was not staged. A commit landed on a branch with a `Signed-off-by`
 trailer naming an address that is not its author's, and the gate refused it:
 
-    gh api repos/iderex/jellyfin-plugin-discover/commits/6815c59f353d01c805ccd118a8b81fcfe9badd51/check-runs --jq '.check_runs[] | select(.name=="DCO sign-off") | .conclusion'
+    gh api repos/Flowfin/jellyfin-plugin-discover/commits/6815c59f353d01c805ccd118a8b81fcfe9badd51/check-runs --jq '.check_runs[] | select(.name=="DCO sign-off") | .conclusion'
     failure
 
-    https://github.com/iderex/jellyfin-plugin-discover/actions/runs/31109878855/job/92644560252
+    https://github.com/Flowfin/jellyfin-plugin-discover/actions/runs/31109878855/job/92644560252
     FAIL  6815c59f353d01c805ccd118a8b81fcfe9badd51 is missing: Signed-off-by: Nils Lehnen <30603423+iderex@users.noreply.github.com>
     ok    94308ed98a30e6349268ba784c0a6f3e66206bee
 
 The same two changes, cherry-picked with the trailer corrected and pushed as
 different commits, pass:
 
-    gh api repos/iderex/jellyfin-plugin-discover/commits/22906201b9735c2e4f939cb94a5e8cebf6a4fe85/check-runs --jq '.check_runs[] | select(.name=="DCO sign-off") | .conclusion'
+    gh api repos/Flowfin/jellyfin-plugin-discover/commits/22906201b9735c2e4f939cb94a5e8cebf6a4fe85/check-runs --jq '.check_runs[] | select(.name=="DCO sign-off") | .conclusion'
     success
 
 So the gate is proven in both directions, and the refusal is sharper than a
@@ -118,7 +118,7 @@ It also does not run on a pull request at all, which its own comment states and
 gives the reason for. Its triggers are a weekly schedule, a branch protection
 change, and a push to `main`:
 
-    gh api repos/iderex/jellyfin-plugin-discover --jq .default_branch
+    gh api repos/Flowfin/jellyfin-plugin-discover --jq .default_branch
     master
 
 This repository's default branch is `master`, so the push trigger names a branch

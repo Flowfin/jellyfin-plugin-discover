@@ -1,7 +1,7 @@
 # 0001 A discover page is a server channel
 
 Decided. Raised in
-[#51](https://github.com/iderex/jellyfin-plugin-discover/issues/51).
+[#51](https://github.com/Flowfin/jellyfin-plugin-discover/issues/51).
 
 ## The requirement that decides it
 
@@ -13,7 +13,7 @@ server they disturb.
 ## What was decided
 
 The plugin implements the server's channel interface and registers it through
-[#18](https://github.com/iderex/jellyfin-plugin-discover/issues/18). The server
+[#18](https://github.com/Flowfin/jellyfin-plugin-discover/issues/18). The server
 then offers it to every client as one more entry in the list of libraries.
 
 ## Where the evidence comes from
@@ -56,7 +56,7 @@ implementation is expected to serve both:
      9 files changed, 82 insertions(+), 23 deletions(-)
 
 All of that is nullable annotation and documentation.
-[#31](https://github.com/iderex/jellyfin-plugin-discover/issues/31) is what
+[#31](https://github.com/Flowfin/jellyfin-plugin-discover/issues/31) is what
 tells us the day that stops being true, by compiling against both package sets
 rather than reasoning about the diff.
 
@@ -115,8 +115,8 @@ movie-shaped one is materialised as a movie:
     v12.0-rc4:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:989:                    ChannelMediaContentType.Movie => GetItemById<Movie>(info.Id, channelProvider.Name, out isNew),
 
 So the database grows, and other item queries can see these items.
-[#58](https://github.com/iderex/jellyfin-plugin-discover/issues/58) bounds the
-first and [#59](https://github.com/iderex/jellyfin-plugin-discover/issues/59)
+[#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) bounds the
+first and [#59](https://github.com/Flowfin/jellyfin-plugin-discover/issues/59)
 decides and tests the second.
 
 The server caches what a channel returned for three hours, on both lines, so the
@@ -126,7 +126,7 @@ delay a user sees is the sum of this plugin's cadence and the server's:
     v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:97:        private static TimeSpan CacheLength => TimeSpan.FromHours(3);
     v12.0-rc4:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:98:        private static TimeSpan CacheLength => TimeSpan.FromHours(3);
 
-[#61](https://github.com/iderex/jellyfin-plugin-discover/issues/61) owns that.
+[#61](https://github.com/Flowfin/jellyfin-plugin-discover/issues/61) owns that.
 
 An item's identity is derived from the external identifier and the channel's
 name together, so renaming the channel orphans every item it ever created:
@@ -138,10 +138,10 @@ name together, so renaming the channel orphans every item it ever created:
     v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs-933-            var id = _libraryManager.GetNewItemId(GetIdToHash(idString, channelName), typeof(T));
     v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs-934-
 
-[#60](https://github.com/iderex/jellyfin-plugin-discover/issues/60) owns that.
+[#60](https://github.com/Flowfin/jellyfin-plugin-discover/issues/60) owns that.
 
 What any of these costs an operator, rather than a developer, belongs in
-[#114](https://github.com/iderex/jellyfin-plugin-discover/issues/114) and is not
+[#114](https://github.com/Flowfin/jellyfin-plugin-discover/issues/114) and is not
 repeated here.
 
 ## What would reverse this
