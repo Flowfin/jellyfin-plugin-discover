@@ -21,9 +21,17 @@ restated here.
 
 A fixture is recorded by a route a maintainer runs deliberately. The suite never
 records one, because a suite that can record from a source is a suite that can
-reach one, and the headless rule and
-[#46](https://github.com/Flowfin/jellyfin-plugin-discover/issues/46) both refuse
-that.
+reach one, and a test that reaches a source is what
+[#46](https://github.com/Flowfin/jellyfin-plugin-discover/issues/46) exists to
+refuse.
+
+The headless rule is not what stops it. Its three prohibitions are a display,
+elevation and a machine trust store, and a network call is none of them. Where it
+touches this at all is the replacement it names for the refused trust-store test,
+one injected handler in front of every outbound call, and that handler does not
+exist yet:
+
+    git grep -n 'The handler does not exist yet' -- Jellyfin.Plugin.Template.Tests/HEADLESS.md
 
 That route does not exist. #48 owes it, and until it lands a fixture is captured
 by hand and this page is what says what may be kept from it.
