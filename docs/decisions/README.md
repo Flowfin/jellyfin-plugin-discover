@@ -9,17 +9,20 @@ reconstruction of it.
 
 ## The notes
 
-| Note                                                               | Decision                                                        | State                                                                       |
-| ------------------------------------------------------------------ | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| [0001](0001-a-discover-page-is-a-server-channel.md)                | A discover page is a server channel                             | Decided                                                                     |
-| [0002](0002-this-plugin-owns-the-catalogue.md)                     | This plugin owns the catalogue, a requests plugin owns requests | Decided                                                                     |
-| [0003](0003-the-catalogue-lives-in-the-plugins-own-data-folder.md) | Where the catalogue lives on disk                               | Decided                                                                     |
-| Not written                                                        | What crosses the seam to a requests plugin                      | Owed by [#94](https://github.com/iderex/jellyfin-plugin-discover/issues/94) |
+| Note                                                               | Decision                                                        | State                                |
+| ------------------------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------ |
+| [0001](0001-a-discover-page-is-a-server-channel.md)                | A discover page is a server channel                             | Decided                              |
+| [0002](0002-this-plugin-owns-the-catalogue.md)                     | This plugin owns the catalogue, a requests plugin owns requests | Decided                              |
+| [0003](0003-the-catalogue-lives-in-the-plugins-own-data-folder.md) | Where the catalogue lives on disk                               | Decided                              |
+| [0004](0004-what-crosses-the-seam-to-a-requests-plugin.md)         | What crosses the seam to a requests plugin                      | Decided, apart from the version rule |
 
-The last row is not an omission from this index. Issue #94 is where that
-contract is written and it stays open until the sibling repository exists and
-points at it, so the note it produces is that issue's deliverable rather than
-this one's.
+The last row is the one that is not finished, and the note says so at the top of
+itself rather than only here. It fixes the field set, the direction and what a
+receiver may not assume. It does not carry the rule for how the contract version
+changes, because that is
+[#101](https://github.com/Flowfin/jellyfin-plugin-discover/issues/101). Issue
+[#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94) also stays
+open until the sibling repository exists and points at the note.
 
 ## What a note holds
 
