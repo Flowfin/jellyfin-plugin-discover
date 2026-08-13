@@ -9,11 +9,11 @@ version: "0.0.0.0"
 # server line is decided, and the build fails when these two drift from it.
 targetAbi: "10.11.0.0"
 framework: "net9.0"
-overview: "Browse titles a server does not have. Under development, and none of that browsing is built yet."
+overview: "Browse titles a server does not have. Under development, and the Discover entry it adds today is empty."
 description: >
   This is being built so that a user can look through titles the server does not hold and see them alongside what it does hold.
 
-  None of that exists yet. What installs today is the plugin itself and a configuration page that carries no settings. There is no catalogue, nothing contacts a metadata source, and no new browsing appears anywhere in a client.
+  Almost none of that exists yet. What installs today is the plugin itself, a configuration page that carries no settings, and an entry called Discover that this plugin offers the server for browsing. Nothing contacts a metadata source and nothing is kept about any title, so there is nothing behind that entry to look at.
 
   Two things it will not do when it is built. It does not acquire anything: no downloading, no indexers, no queue. And it does not handle a request for a title beyond passing on that somebody asked, which is a separate plugin's job; this one is meant to be useful on a server where no such plugin is installed.
 category: "General"
