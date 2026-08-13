@@ -36,6 +36,40 @@ Push one tag at a time and wait for its run to finish. GitHub keeps at most one
 queued run per concurrency group, and although the group here is keyed on the tag,
 serialising them by hand is what keeps the release order readable.
 
+## Interoperability, before the tag is pushed
+
+A release is not cut while the interoperability matrix is red. The matrix is
+[#126](https://github.com/Flowfin/jellyfin-plugin-discover/issues/126): a server of
+each declared line booted twice, once with this plugin alone and once with the full
+set of supported siblings installed together, both coming up without startup errors,
+answering their routes, and passing a scan for collisions over routes, scheduled task
+names and configuration keys.
+
+A red matrix leaves two ways forward and neither of them is a tag. Either the
+collision is fixed, or the incompatibility is written down as a known limitation with
+the reason it was accepted, where somebody deciding whether to install reads it. The
+page for that is owed by
+[#114](https://github.com/Flowfin/jellyfin-plugin-discover/issues/114) and is not
+written, so until it exists the only place in this repository that states something
+against a version in this project's own words is `CHANGELOG.md`, and that is where
+such a limitation goes. Pushing the tag with neither ending is what this condition
+exists against, because the operator who then meets the collision has no way to tell
+it was already known.
+
+Nothing produces that verdict here today, and this condition must not be recorded as
+met until something does. No set of supported siblings is declared anywhere in the
+tree, so a matrix has nothing to install beside this plugin:
+
+```
+git grep -in 'supported plugin\|supported sibling\|plugin set' -- docs/ tools/ .github/ README.md
+```
+
+That prints nothing and exits 1. What does run is narrower and is a different claim.
+`plugin-loads.yml` unpacks the package a release would ship into a server of each
+declared line and reads the server's own log, with nothing else in the plugin
+directory. That is the alone half of the rule, on every push and every pull request,
+and it says nothing about the together half.
+
 ## What the run produces
 
 The workflow builds the plugin from the tagged commit, creates the GitHub release
