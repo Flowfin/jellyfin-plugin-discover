@@ -32,14 +32,14 @@ reader who wants to re-argue a decision can check whether the ground moved
 instead of re-running the argument from the start.
 
 A note carries no limit of its own. What this plugin cannot do belongs in
-[#114](https://github.com/iderex/jellyfin-plugin-discover/issues/114), and a
+[#114](https://github.com/Flowfin/jellyfin-plugin-discover/issues/114), and a
 note points there rather than repeating it, so there is one place a limit can be
 wrong.
 
 ## Decisions that are open
 
 The decisions this plan still needs are collected in
-[#2](https://github.com/iderex/jellyfin-plugin-discover/issues/2), and this
+[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2), and this
 index does not restate them. Two of that issue's ten touch the notes here
 without reopening them: which server lines are carried, question 1, and how long
 a fetched catalogue may be kept, question 8.

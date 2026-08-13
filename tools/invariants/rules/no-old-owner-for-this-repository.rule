@@ -1,0 +1,55 @@
+Id: no-old-owner-for-this-repository
+Pattern: iderex/jellyfin-plugin-discover
+Subject: *.md *.cs *.html *.csproj *.props *.sln *.json *.txt *.sh *.ps1 *.yml *.yaml
+Except: none
+Issue: 227
+
+This repository moved between accounts and the tree went on naming the old one.
+Sixty eight occurrences across seven files carried the superseded address, and
+twenty one files carried the current one, at the commit before the sweep that
+brought this rule:
+
+    git grep -o 'iderex/jellyfin-plugin-discover' 049d0bd | wc -l
+    68
+    git grep -l 'iderex/jellyfin-plugin-discover' 049d0bd | wc -l
+    7
+    git grep -l 'Flowfin/jellyfin-plugin-discover' 049d0bd | wc -l
+    21
+
+The split was by the date a page was written rather than by the page, so every
+recently written page was right and every older one was wrong, and nothing in a
+review of either one would show it. That is the shape a rule is for and a reading
+is not: the two spellings otherwise return a page at a time, for as long as
+anybody keeps writing pages.
+
+The pattern is the full repository name rather than the account, and the
+difference is load bearing. `docs/gate-parity.md` reads the gate on a different
+repository in the same older account, and that one is not this repository:
+
+    git grep -c 'iderex/jellyfin-plugin-sso' -- docs/gate-parity.md
+    docs/gate-parity.md:3
+
+A rule matching the account would take those three lines with it and point the
+parity page at a repository that does not exist, which is a worse failure than
+the one this rule refuses.
+
+The subject is the file types this tree's text is written in: the documentation
+and the changelog, the source, the configuration page, the project and solution
+files, the scripts and the workflows. A rule file is none of them, so the pattern
+does not reach the place it is written down.
+
+Nothing is excepted. Every address of this repository in tracked text is the
+current one, and no file needs the old spelling to say what it means. The five
+recorded commands and the four run links that carried it were each re-run under
+the current spelling before they moved, and each answered the same, so what moved
+was an address and not a claim. Those runs are in the pull request that landed
+this.
+
+What it cannot do. It reads tracked text one line at a time, so an address
+assembled from pieces, or built from a variable a workflow supplies at run time,
+is invisible to it. It says nothing about whether the old address still resolves:
+a redirect is a property of the account rather than of this tree, and it holds
+only while the old account has no repository of that name, which is a condition
+nothing in this checkout can read. And it judges this tree rather than the
+tracker, so an issue body, a pull request body or a commit message naming the old
+address is outside every pathspec above and stays where it was written.
