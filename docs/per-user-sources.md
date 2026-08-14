@@ -9,9 +9,8 @@ better key. It means each user on the server authorising this plugin against
 that service, this plugin holding something on that user's behalf afterwards,
 and keeping it working.
 
-This page exists so that the deferral is a decision somebody can argue with,
-rather than an obvious next step somebody adds in a hurry between two other
-changes.
+The deferral is a decision somebody can argue with, and not an obvious next
+step somebody adds in a hurry between two other changes.
 
 ## What a per-user token would require
 
