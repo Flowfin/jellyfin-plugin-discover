@@ -1,0 +1,665 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Jellyfin.Plugin.Template.Catalogue;
+using Jellyfin.Plugin.Template.Sources;
+using Jellyfin.Plugin.Template.Tests.Fixtures;
+using Xunit;
+
+namespace Jellyfin.Plugin.Template.Tests;
+
+/// <summary>
+/// What the first source adapter makes of what a source sends it.
+/// </summary>
+/// <remarks>
+/// Every test here supplies the reply itself, so what is judged is the reading
+/// half of the adapter: the address it builds, the fields it maps and which of
+/// the four outcomes it answers with. Nothing here reaches a network and
+/// nothing here has been run against the source. What a real request and a real
+/// answer do is unmeasured, and #38 is where a server is booted at all.
+///
+/// The bodies come from <see cref="TmdbFixtures"/> and were written by hand
+/// rather than captured, which is #48's position and the reason no provenance
+/// line is owed on any of them.
+/// </remarks>
+public class TmdbSourceAdapterTests
+{
+    /// <summary>
+    /// The adapter says which body it speaks for.
+    /// </summary>
+    /// <remarks>
+    /// Named rather than inferred, because a response commonly carries
+    /// identifiers from bodies other than the one that answered, and what a
+    /// caller needs this for is the key, the terms and the rate budget, all of
+    /// which belong to whoever was asked.
+    /// </remarks>
+    [Fact]
+    public void TheAdapterSpeaksForTheSourceItIsNamedAfter()
+    {
+        Assert.Equal(MetadataSource.Tmdb, Asked(TmdbFixtures.EmptyPage).Source);
+    }
+
+    /// <summary>
+    /// Every field a film's page carries reaches the record.
+    /// </summary>
+    /// <remarks>
+    /// The mapping this issue exists for, read off a fixture rather than
+    /// asserted field by field against a hand-built object. A wrong field name
+    /// here does not fail loudly: the value comes back null and the title is
+    /// drawn without it, so a test that only asked whether a title arrived
+    /// would stay green through the whole class of defect.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AFilmCarriesEveryFieldTheSourceGaveIt()
+    {
+        var answer = await Asked(TmdbFixtures.MoviePage)
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.Equal(2, answer.Titles.Count);
+        Assert.Equal(2, answer.TotalCount);
+
+        var film = answer.Titles[0];
+
+        Assert.Equal(DiscoverTitleKind.Movie, film.Kind);
+        Assert.Equal("A Film That Does Not Exist", film.Name);
+        Assert.Equal("A Film That Does Not Exist, As Its Own Language Spells It", film.OriginalName);
+        Assert.Equal(2019, film.ReleaseYear);
+        Assert.Equal("A synthetic description standing in for the one the source returned.", film.Summary);
+        Assert.Equal(
+            new Uri("https://image.tmdb.org/t/p/w500/synthetic-poster-one.jpg"),
+            film.ArtworkLocation);
+        Assert.Equal(
+            new[] { new ProviderIdentifier(MetadataSource.Tmdb, "100001") },
+            film.Identity.Identifiers);
+    }
+
+    /// <summary>
+    /// The four absences the source spells as presence arrive as absences.
+    /// </summary>
+    /// <remarks>
+    /// An empty description, a null artwork path, an empty release date and an
+    /// original title equal to the title. #64 asks that absence be a null
+    /// rather than an empty string or a zero, and each of these carried
+    /// through would put something in front of a user: an empty panel, a
+    /// broken picture, a year of zero, and a second name that is the first one
+    /// again.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AFieldTheSourceLeftEmptyIsAnAbsenceRatherThanAValue()
+    {
+        var answer = await Asked(TmdbFixtures.MoviePage)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        var film = answer.Titles[1];
+
+        Assert.Null(film.Summary);
+        Assert.Null(film.ArtworkLocation);
+        Assert.Null(film.ReleaseYear);
+        Assert.Null(film.OriginalName);
+        Assert.Equal("Another Film That Does Not Exist", film.Name);
+    }
+
+    /// <summary>
+    /// A series is read with the names the source spells a series with.
+    /// </summary>
+    /// <remarks>
+    /// Three field names differ from a film's, and the failure that follows
+    /// from reading a film's on this page is silent: every title loses its
+    /// name, every title is therefore dropped, and the answer is a source that
+    /// said it has nothing. That is indistinguishable from an empty shelf,
+    /// which is why the kind is a fixture of its own rather than one more case
+    /// on the film's.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ASeriesCarriesTheFieldsTheSourceSpellsDifferently()
+    {
+        var answer = await Asked(TmdbFixtures.SeriesPage)
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Series, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        var series = Assert.Single(answer.Titles);
+
+        Assert.Equal(DiscoverTitleKind.Series, series.Kind);
+        Assert.Equal("A Series That Does Not Exist", series.Name);
+        Assert.Equal("A Series That Does Not Exist, As Its Own Language Spells It", series.OriginalName);
+        Assert.Equal(2021, series.ReleaseYear);
+        Assert.Equal(
+            new[] { new ProviderIdentifier(MetadataSource.Tmdb, "200001") },
+            series.Identity.Identifiers);
+    }
+
+    /// <summary>
+    /// A page the source had nothing on is an answer rather than a failure.
+    /// </summary>
+    /// <remarks>
+    /// The distinction #79 rests on. A shelf whose source answered with nothing
+    /// is legitimately empty and #63 is what a client draws for it; a shelf
+    /// whose source failed keeps what it had. Collapsing the two makes the
+    /// second unimplementable.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ASourceWithNothingToGiveHasAnsweredRatherThanFailed()
+    {
+        var answer = await Asked(TmdbFixtures.EmptyPage)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.Empty(answer.Titles);
+        Assert.Equal(0, answer.TotalCount);
+    }
+
+    /// <summary>
+    /// A field this plugin does not know is ignored, and an entry it cannot map is dropped.
+    /// </summary>
+    /// <remarks>
+    /// Four entries in, one title out. The unknown field is nested so that a
+    /// reader walking the object would have met it. The entry with no
+    /// identifier cannot become an identity, the entry with no title would be
+    /// drawn as a blank row, and the entry that is a string where the source
+    /// puts an object is a response that disagrees with itself. None of the
+    /// three fails the page.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AnEntryThatCannotBeMappedIsDroppedAndTheRestOfThePageSurvives()
+    {
+        var answer = await Asked(TmdbFixtures.PageWithAnUnknownFieldAndEntriesThatCannotBeMapped)
+            .FetchAsync(new SourceQuery("top-rated", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+
+        var film = Assert.Single(answer.Titles);
+
+        Assert.Equal("A Film Carrying A Field This Plugin Does Not Know", film.Name);
+        Assert.Equal(4, answer.TotalCount);
+    }
+
+    /// <summary>
+    /// A body that stops in the middle is a failure the caller can retry, and never an exception.
+    /// </summary>
+    /// <remarks>
+    /// The near-miss is a parser that reads the beginning of a body and stops.
+    /// The first seventy bytes of this fixture are valid, and the whole of it
+    /// is not.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ABodyThatStopsInTheMiddleIsATemporaryFailure()
+    {
+        var answer = await Asked(TmdbFixtures.TruncatedBody)
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.TemporarilyFailed, answer.Outcome);
+        Assert.Empty(answer.Titles);
+    }
+
+    /// <summary>
+    /// A credential the source rejected is a source that has not been set up.
+    /// </summary>
+    /// <remarks>
+    /// The outcome that stops a retry. Asking again with a key the source has
+    /// refused spends its budget for an answer that cannot arrive, which its
+    /// own terms speak to, and no backoff in #78 would ever make it work. What
+    /// it costs is the source's own words about the refusal, because this
+    /// outcome carries no message.
+    /// </remarks>
+    /// <param name="status">The status the source refused with.</param>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Theory]
+    [InlineData(401)]
+    [InlineData(403)]
+    public async Task ARejectedCredentialReadsAsASourceThatIsNotSetUp(int status)
+    {
+        var answer = await Asked(TmdbFixtures.RefusalBody, status)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.NotConfigured, answer.Outcome);
+        Assert.Null(answer.SourceMessage);
+        Assert.Null(answer.RetryAfter);
+    }
+
+    /// <summary>
+    /// A refusal for rate carries the wait the source named and the words it used.
+    /// </summary>
+    /// <remarks>
+    /// The one outcome that carries how long to wait, because it is the one
+    /// where asking again too soon makes things worse rather than better. What
+    /// a caller does with the wait is #78 and is not decided here.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ARefusalForRateCarriesTheWaitAndTheSourcesOwnWords()
+    {
+        var answer = await Asked(TmdbFixtures.RateLimitBody, 429, TimeSpan.FromSeconds(17))
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.RateLimited, answer.Outcome);
+        Assert.Equal(TimeSpan.FromSeconds(17), answer.RetryAfter);
+        Assert.Equal(
+            "A synthetic rate refusal standing in for the words the source uses.",
+            answer.SourceMessage);
+    }
+
+    /// <summary>
+    /// A refusal for rate with no wait beside it is still a refusal for rate.
+    /// </summary>
+    /// <remarks>
+    /// The source may say nothing about how long, and it says it in a form this
+    /// plugin does not read whenever it states a date rather than a number of
+    /// seconds. Both arrive here as no wait, which the answer type has a
+    /// meaning for, rather than as a wait of zero, which a backoff would read
+    /// as permission to ask again at once.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ARefusalForRateWithNoWaitIsNotAWaitOfNothing()
+    {
+        var answer = await Asked(TmdbFixtures.RateLimitBody, 429)
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.RateLimited, answer.Outcome);
+        Assert.Null(answer.RetryAfter);
+    }
+
+    /// <summary>
+    /// A failure at the source carries the source's words, and a failure from something else carries none.
+    /// </summary>
+    /// <remarks>
+    /// An operator is shown what the source said or nothing at all. The second
+    /// fixture is what a server behind a gateway or a captive portal actually
+    /// receives, and the first line of somebody else's markup shown as the
+    /// source's message is worse than an empty field.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task OnlyTheSourcesOwnWordsAreCarriedToAnOperator()
+    {
+        var fromTheSource = await Asked(TmdbFixtures.RefusalBody, 500)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.TemporarilyFailed, fromTheSource.Outcome);
+        Assert.Equal(
+            "A synthetic refusal standing in for the words the source uses.",
+            fromTheSource.SourceMessage);
+
+        var fromSomethingElse = await Asked(TmdbFixtures.BodyFromSomethingThatIsNotTheSource, 502)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.TemporarilyFailed, fromSomethingElse.Outcome);
+        Assert.Null(fromSomethingElse.SourceMessage);
+    }
+
+    /// <summary>
+    /// A source that contradicts itself about its total is read as having said nothing about it.
+    /// </summary>
+    /// <remarks>
+    /// The record carrying an answer refuses a total smaller than the page it
+    /// describes, so passing the contradiction through would throw out of the
+    /// adapter and reach a refresh as an exception rather than as one of the
+    /// four outcomes. Null is what the answer type already means by "did not
+    /// say".
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ATotalSmallerThanThePageIsReadAsNoTotalRatherThanThrown()
+    {
+        var answer = await Asked(TmdbFixtures.PageWhoseTotalContradictsIt)
+            .FetchAsync(new SourceQuery("top-rated", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.Equal(2, answer.Titles.Count);
+        Assert.Null(answer.TotalCount);
+    }
+
+    /// <summary>
+    /// With no credential the source is not asked at all.
+    /// </summary>
+    /// <remarks>
+    /// A request that cannot be answered still costs the source a request and
+    /// this server a connection. The assertion that matters is the second one:
+    /// the outcome alone would be satisfied by an adapter that asked, was
+    /// refused, and read the refusal.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task WithNoCredentialNothingIsAsked()
+    {
+        var asked = new List<Uri>();
+
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) =>
+            {
+                asked.Add(address);
+                return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
+            },
+            configured: false);
+
+        var answer = await adapter
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.NotConfigured, answer.Outcome);
+        Assert.Empty(asked);
+    }
+
+    /// <summary>
+    /// A question this source has none of its own for is not guessed at.
+    /// </summary>
+    /// <remarks>
+    /// Which names a shelf may ask by is #86 and is not decided, so an adapter
+    /// that mapped an unknown name onto its nearest endpoint would be choosing
+    /// the shelf set rather than answering it. The source is not asked, which
+    /// keeps a shelf built wrongly from spending the budget the terms bound.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AQuestionThisSourceHasNoAnswerForIsNotAsked()
+    {
+        var asked = new List<Uri>();
+
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) =>
+            {
+                asked.Add(address);
+                return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
+            },
+            configured: true);
+
+        var answer = await adapter
+            .FetchAsync(
+                new SourceQuery("a-shelf-nobody-has-agreed-on", DiscoverTitleKind.Movie, null, null),
+                CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.NotConfigured, answer.Outcome);
+        Assert.Empty(asked);
+    }
+
+    /// <summary>
+    /// Each question this source answers is asked at its own address.
+    /// </summary>
+    /// <remarks>
+    /// The addresses are read back off the transport rather than off the
+    /// source, so what this establishes is the shape the adapter builds and not
+    /// that the source answers there. The near-miss is the pair a copy leaves
+    /// behind: a series question asked at the film endpoint answers with films
+    /// and every field name is then wrong, which arrives as an empty shelf.
+    /// </remarks>
+    /// <param name="name">The question, in the shelf vocabulary.</param>
+    /// <param name="kind">Which kind of title is wanted.</param>
+    /// <param name="expected">Where it has to be asked.</param>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Theory]
+    [InlineData("trending", DiscoverTitleKind.Movie, "https://api.themoviedb.org/3/trending/movie/week?page=1")]
+    [InlineData("trending", DiscoverTitleKind.Series, "https://api.themoviedb.org/3/trending/tv/week?page=1")]
+    [InlineData("popular", DiscoverTitleKind.Movie, "https://api.themoviedb.org/3/movie/popular?page=1")]
+    [InlineData("popular", DiscoverTitleKind.Series, "https://api.themoviedb.org/3/tv/popular?page=1")]
+    [InlineData("top-rated", DiscoverTitleKind.Movie, "https://api.themoviedb.org/3/movie/top_rated?page=1")]
+    [InlineData("top-rated", DiscoverTitleKind.Series, "https://api.themoviedb.org/3/tv/top_rated?page=1")]
+    public async Task EveryQuestionIsAskedAtItsOwnAddress(string name, DiscoverTitleKind kind, string expected)
+    {
+        var asked = await AddressOf(new SourceQuery(name, kind, null, null)).ConfigureAwait(true);
+
+        Assert.Equal(new Uri(expected), asked);
+    }
+
+    /// <summary>
+    /// A start index is turned into the page that holds it.
+    /// </summary>
+    /// <remarks>
+    /// The source pages in twenties and takes a page number rather than an
+    /// offset. The case worth having is the one that does not divide: a start
+    /// index of twenty-five is on the second page, and the five titles ahead of
+    /// it on that page are dropped rather than returned as though the index had
+    /// been twenty.
+    /// </remarks>
+    /// <param name="startIndex">How many titles to skip, or null for the beginning.</param>
+    /// <param name="page">The page that holds it.</param>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Theory]
+    [InlineData(null, 1)]
+    [InlineData(0, 1)]
+    [InlineData(19, 1)]
+    [InlineData(20, 2)]
+    [InlineData(25, 2)]
+    [InlineData(40, 3)]
+    public async Task AStartIndexAsksForThePageThatHoldsIt(int? startIndex, int page)
+    {
+        var asked = await AddressOf(new SourceQuery("popular", DiscoverTitleKind.Movie, startIndex, null))
+            .ConfigureAwait(true);
+
+        Assert.Equal(
+            new Uri(FormattableString.Invariant($"https://api.themoviedb.org/3/movie/popular?page={page}")),
+            asked);
+    }
+
+    /// <summary>
+    /// A start index inside a page skips what is ahead of it, and a limit stops at what was asked for.
+    /// </summary>
+    /// <remarks>
+    /// Both are read off the page rather than asked of the source, because the
+    /// source takes a page and not an offset. A start index of one on a page of
+    /// two therefore leaves the second title and not the first, and a limit of
+    /// one leaves the first.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task WhatIsAheadOfTheStartIndexIsDroppedAndTheLimitIsHonoured()
+    {
+        var skipped = await Asked(TmdbFixtures.MoviePage)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, 1, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal("Another Film That Does Not Exist", Assert.Single(skipped.Titles).Name);
+
+        var limited = await Asked(TmdbFixtures.MoviePage)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, 1), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal("A Film That Does Not Exist", Assert.Single(limited.Titles).Name);
+    }
+
+    /// <summary>
+    /// An artwork path shaped like anything but a path is dropped rather than put in a URL.
+    /// </summary>
+    /// <remarks>
+    /// The one piece of a response that ends up inside a URL. It is admitted by
+    /// shape rather than escaped, so a path carrying a traversal, a host, a
+    /// query or a space costs a title its picture and cannot point a client
+    /// anywhere but at the source's own artwork host. The near-miss is the
+    /// first one: a path that reads as a file name to a person and climbs out
+    /// of the size directory when a client resolves it.
+    /// </remarks>
+    /// <param name="path">The artwork path the source gave.</param>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Theory]
+    [InlineData("/../../etc/passwd")]
+    [InlineData("//somewhere-else.example/poster.jpg")]
+    [InlineData("/poster.jpg?followed=by-a-query")]
+    [InlineData("/poster with a space.jpg")]
+    [InlineData("/")]
+    [InlineData("")]
+    public async Task AnArtworkPathThatIsNotOneIsDropped(string path)
+    {
+        var body = FormattableString.Invariant(
+            $"{{\"results\":[{{\"id\":1,\"title\":\"A Film With An Artwork Path Like That\",\"poster_path\":\"{path}\"}}]}}");
+
+        var answer = await new TmdbSourceAdapter(
+                (address, cancellationToken) => Task.FromResult(new SourceTransportReply(200, body, null)),
+                configured: true)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Null(Assert.Single(answer.Titles).ArtworkLocation);
+    }
+
+    /// <summary>
+    /// Cancellation is a fault rather than one of the four answers.
+    /// </summary>
+    /// <remarks>
+    /// The interface says so: a source that could not answer is an outcome, and
+    /// a caller that stopped asking is not. A refresh that read cancellation as
+    /// a temporary failure would report the shelf as broken every time the
+    /// server shut down during one.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task CancellationIsThrownRatherThanReportedAsAFailure()
+    {
+        using var stopped = new CancellationTokenSource();
+        await stopped.CancelAsync().ConfigureAwait(true);
+
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.FromResult(new SourceTransportReply(200, null, null));
+            },
+            configured: true);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => adapter.FetchAsync(
+                    new SourceQuery("popular", DiscoverTitleKind.Movie, null, null),
+                    stopped.Token))
+            .ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Nothing else in the plugin names this adapter.
+    /// </summary>
+    /// <remarks>
+    /// #74's first condition, held as a property rather than as an inspection
+    /// that goes stale. What it refuses is the shape that spreads: a field, a
+    /// constructor parameter or a return type somewhere else in the plugin
+    /// naming the concrete adapter, after which the source behind the interface
+    /// is knowledge every caller has and a second source is a change to all of
+    /// them.
+    ///
+    /// Its bound is what reflection can see. A local variable inside a method
+    /// body naming the adapter is invisible here, so this catches the defect
+    /// where it would last rather than everywhere it could be typed.
+    /// </remarks>
+    [Fact]
+    public void NothingElseInThePluginNamesTheAdapter()
+    {
+        var adapter = typeof(TmdbSourceAdapter);
+        var everywhere = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+
+        var naming = new List<string>();
+
+        foreach (var type in adapter.Assembly.GetTypes().Where(candidate => Elsewhere(candidate, adapter)))
+        {
+            foreach (var field in type.GetFields(everywhere).Where(field => field.FieldType == adapter))
+            {
+                naming.Add($"{type.FullName} holds {field.Name}");
+            }
+
+            foreach (var method in type.GetMethods(everywhere).Where(method => Names(method, adapter)))
+            {
+                naming.Add($"{type.FullName}.{method.Name} names it");
+            }
+
+            foreach (var constructor in type.GetConstructors(everywhere)
+                         .Where(constructor => constructor.GetParameters().Any(parameter => parameter.ParameterType == adapter)))
+            {
+                naming.Add($"{type.FullName} takes one in a constructor: {constructor}");
+            }
+        }
+
+        Assert.Empty(naming);
+    }
+
+    /// <summary>
+    /// Whether a type is somewhere else in the plugin rather than part of the adapter itself.
+    /// </summary>
+    /// <param name="candidate">The type found in the assembly.</param>
+    /// <param name="adapter">The adapter.</param>
+    /// <returns>True where a reference from it would be the adapter spreading.</returns>
+    /// <remarks>
+    /// What this excludes is the adapter and what the compiler wrote for it.
+    /// The lambda the adapter builds its transport in becomes a class nested
+    /// inside it holding a field of the adapter's type, which is the adapter
+    /// referring to itself and reads as the defect this test is for. It was
+    /// found by the test failing on the day it was written rather than by
+    /// anybody predicting it.
+    /// </remarks>
+    private static bool Elsewhere(Type candidate, Type adapter)
+    {
+        for (var type = candidate; type is not null; type = type.DeclaringType)
+        {
+            if (type == adapter)
+            {
+                return false;
+            }
+        }
+
+        return !candidate.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false);
+    }
+
+    /// <summary>
+    /// Whether a method's signature mentions a type.
+    /// </summary>
+    /// <param name="method">The method.</param>
+    /// <param name="type">The type to look for.</param>
+    /// <returns>True where the return type or any parameter is that type.</returns>
+    private static bool Names(MethodInfo method, Type type) =>
+        method.ReturnType == type || method.GetParameters().Any(parameter => parameter.ParameterType == type);
+
+    /// <summary>
+    /// An adapter that answers every question with one fixture.
+    /// </summary>
+    /// <param name="fixture">The body it answers with.</param>
+    /// <param name="status">The status it answers with.</param>
+    /// <param name="retryAfter">The wait the source named, if any.</param>
+    /// <returns>The adapter.</returns>
+    private static TmdbSourceAdapter Asked(string fixture, int status = 200, TimeSpan? retryAfter = null) =>
+        new(
+            (address, cancellationToken) =>
+                Task.FromResult(new SourceTransportReply(status, TmdbFixtures.Body(fixture), retryAfter)),
+            configured: true);
+
+    /// <summary>
+    /// The address an adapter asks a question at.
+    /// </summary>
+    /// <param name="query">The question.</param>
+    /// <returns>Where it was asked.</returns>
+    private static async Task<Uri> AddressOf(SourceQuery query)
+    {
+        Uri? asked = null;
+
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) =>
+            {
+                asked = address;
+                return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
+            },
+            configured: true);
+
+        await adapter.FetchAsync(query, CancellationToken.None).ConfigureAwait(false);
+
+        Assert.NotNull(asked);
+
+        return asked;
+    }
+}

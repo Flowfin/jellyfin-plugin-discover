@@ -52,3 +52,17 @@ netstandard
 System.Memory
 System.Security.Cryptography
 System.Threading
+
+# What the first source adapter reaches for, and the whole of what #74 added to
+# this list. System.Net.Http and System.Net.Primitives are the request and the
+# status it comes back with; Microsoft.Extensions.Http is the factory the server
+# hands out clients through, so the handler, its lifetime and its pooling stay
+# the server's rather than becoming this plugin's. System.Text.Json is the
+# reader the response is parsed with, chosen because it is already in the
+# runtime the server runs on: the alternative was a client library for one
+# source, which #74 declines in the one process in this plugin that holds a
+# credential. None of the four is packaged.
+Microsoft.Extensions.Http
+System.Net.Http
+System.Net.Primitives
+System.Text.Json
