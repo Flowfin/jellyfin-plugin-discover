@@ -20,6 +20,16 @@ namespace Jellyfin.Plugin.Template.Tests;
 public class SourceAnswerTests
 {
     /// <summary>
+    /// The instant these fixtures were fetched at.
+    /// </summary>
+    /// <remarks>
+    /// A fixed value rather than a read of any clock, so a record built here
+    /// carries the same age on every run. Nothing in this file asserts against
+    /// it; it is here because the record refuses to be built without one.
+    /// </remarks>
+    private static readonly DateTimeOffset _fetched = new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
+
+    /// <summary>
     /// The four answers are told apart by their outcome and not by whether titles came with them.
     /// </summary>
     /// <remarks>
@@ -220,6 +230,7 @@ public class SourceAnswerTests
         Identity = new DiscoverTitleIdentity(
             new List<ProviderIdentifier> { new ProviderIdentifier(MetadataSource.Tmdb, identifier) }),
         Kind = DiscoverTitleKind.Movie,
+        FetchedAt = _fetched,
         Name = name
     };
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Template.Catalogue;
@@ -44,6 +45,24 @@ public interface IMetadataSource
     /// the rate budget, all of which belong to whoever was asked.
     /// </remarks>
     MetadataSource Source { get; }
+
+    /// <summary>
+    /// Gets the longest this source's terms allow anything it answered with to be kept.
+    /// </summary>
+    /// <remarks>
+    /// Here rather than in a table beside the retention setting, because a
+    /// second source with a different clause would otherwise be a second row
+    /// somebody has to remember to add, and the failure of forgetting is that
+    /// this plugin keeps a source's content longer than that source allows.
+    /// #68's fifth condition is that this lives with the adapter, and the
+    /// adapter is what has read the terms.
+    ///
+    /// A ceiling and not a plan. What is actually kept is a configured number
+    /// under this, which is the rest of #68, and a source that imposes no limit
+    /// still answers with one so that a caller reads a duration rather than an
+    /// absence it has to interpret.
+    /// </remarks>
+    TimeSpan RetentionCeiling { get; }
 
     /// <summary>
     /// Asks this source one question.

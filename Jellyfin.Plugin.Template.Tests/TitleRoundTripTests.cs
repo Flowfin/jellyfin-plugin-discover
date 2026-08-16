@@ -39,6 +39,18 @@ namespace Jellyfin.Plugin.Template.Tests;
 public class TitleRoundTripTests
 {
     /// <summary>
+    /// The instant the clock these adapters are given reads.
+    /// </summary>
+    /// <remarks>
+    /// Fixed rather than read from the machine, so a record the adapter stamps
+    /// carries a value a test can name. It never advances: nothing here needs
+    /// time to pass, and a clock that moved between two reads would make the
+    /// stamp on one answer's titles a thing to compare rather than a thing to
+    /// assert.
+    /// </remarks>
+    private static readonly DateTimeOffset _fetched = new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
+
+    /// <summary>
     /// A title reaches an entry and its address reads back as the identifier the response carried.
     /// </summary>
     /// <param name="kind">Which kind of page the source answered with.</param>
@@ -346,5 +358,6 @@ public class TitleRoundTripTests
         new(
             (address, cancellationToken) =>
                 Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(fixture), null)),
-            configured: true);
+            configured: true,
+            new ClockATestAdvances(_fetched));
 }

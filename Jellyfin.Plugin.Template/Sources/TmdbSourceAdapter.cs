@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Template.Catalogue;
+using Jellyfin.Plugin.Template.Time;
 
 namespace Jellyfin.Plugin.Template.Sources;
 
@@ -68,6 +69,8 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
     private readonly Func<Uri, CancellationToken, Task<SourceTransportReply>> _transport;
 
+    private readonly IClock _clock;
+
     private readonly bool _configured;
 
     /// <summary>
@@ -79,11 +82,14 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// key it is and where it was stored is #77 and is not this type's
     /// business; all it does with the absence is decline to ask.
     /// </param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/> is null.</exception>
-    public TmdbSourceAdapter(IHttpClientFactory httpClientFactory, string? accessToken)
+    /// <param name="clock">What the instant on each record is read from.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/> or <paramref name="clock"/> is null.</exception>
+    public TmdbSourceAdapter(IHttpClientFactory httpClientFactory, string? accessToken, IClock clock)
     {
         ArgumentNullException.ThrowIfNull(httpClientFactory);
+        ArgumentNullException.ThrowIfNull(clock);
 
+        _clock = clock;
         _configured = !string.IsNullOrWhiteSpace(accessToken);
         _transport = (address, cancellationToken) => SendAsync(httpClientFactory, accessToken, address, cancellationToken);
     }
@@ -93,6 +99,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// </summary>
     /// <param name="transport">What carries a request and brings a reply back.</param>
     /// <param name="configured">Whether a credential has been supplied.</param>
+    /// <param name="clock">What the instant on each record is read from.</param>
     /// <remarks>
     /// This is the constructor a test uses, and the reason it exists is on
     /// <see cref="SourceTransportReply"/>. It is public rather than hidden
@@ -100,17 +107,35 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// constructor's transport without breaking the rule that keeps outbound
     /// calls in adapters.
     /// </remarks>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="transport"/> is null.</exception>
-    public TmdbSourceAdapter(Func<Uri, CancellationToken, Task<SourceTransportReply>> transport, bool configured)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="transport"/> or <paramref name="clock"/> is null.</exception>
+    public TmdbSourceAdapter(Func<Uri, CancellationToken, Task<SourceTransportReply>> transport, bool configured, IClock clock)
     {
         ArgumentNullException.ThrowIfNull(transport);
+        ArgumentNullException.ThrowIfNull(clock);
 
         _transport = transport;
+        _clock = clock;
         _configured = configured;
     }
 
     /// <inheritdoc/>
     public MetadataSource Source => MetadataSource.Tmdb;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Clause 1.C of the terms this adapter was written against prohibits
+    /// caching anything obtained from the API for longer than six months, and
+    /// the row for it is in <c>docs/sources/tmdb.md</c>.
+    ///
+    /// A hundred and eighty days rather than six months, because six calendar
+    /// months is not one duration. The shortest run of six consecutive months
+    /// is a hundred and eighty-one days, February to July in a year that is not
+    /// a leap year, so a hundred and eighty is under every reading of the
+    /// clause and needs no argument about which months a retention happened to
+    /// span. The four days that costs are freshness, which is the direction an
+    /// error here should point.
+    /// </remarks>
+    public TimeSpan RetentionCeiling => TimeSpan.FromDays(180);
 
     /// <inheritdoc/>
     public async Task<SourceAnswer> FetchAsync(SourceQuery query, CancellationToken cancellationToken)
@@ -145,7 +170,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
             return SourceAnswer.TemporarilyFailed(null);
         }
 
-        return Read(reply, asked, page);
+        return Read(reply, asked, page, _clock.UtcNow);
     }
 
     /// <summary>
@@ -154,6 +179,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// <param name="reply">What came back.</param>
     /// <param name="query">What was asked, for the kind and how much of the page to keep.</param>
     /// <param name="page">Which page was asked for, so the start index inside it can be dropped.</param>
+    /// <param name="fetchedAt">When the source answered, read once for the whole reply.</param>
     /// <returns>The answer, never an exception.</returns>
     /// <remarks>
     /// A credential the source rejected is <see cref="SourceOutcome.NotConfigured"/>
@@ -166,7 +192,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// absent, wrong or revoked its key is. #92 is where an operator is shown
     /// the state of a shelf, and this is the case it will find thinnest.
     /// </remarks>
-    private static SourceAnswer Read(SourceTransportReply reply, SourceQuery query, int page)
+    private static SourceAnswer Read(SourceTransportReply reply, SourceQuery query, int page, DateTimeOffset fetchedAt)
     {
         var status = (HttpStatusCode)reply.StatusCode;
 
@@ -203,7 +229,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
         using (document)
         {
-            return Titles(document.RootElement, query, page);
+            return Titles(document.RootElement, query, page, fetchedAt);
         }
     }
 
@@ -213,6 +239,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// <param name="root">The parsed body.</param>
     /// <param name="query">What was asked, for the kind and the limit.</param>
     /// <param name="page">Which page this is, so the start index inside it can be dropped.</param>
+    /// <param name="fetchedAt">When the source answered, carried onto every record this page produces.</param>
     /// <returns>What the page held, with everything unmappable left out.</returns>
     /// <remarks>
     /// An entry this plugin cannot map is dropped rather than carried, and the
@@ -227,7 +254,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// contradiction on would throw out of the adapter, and #73 asks that this
     /// method not throw to report anything about a source.
     /// </remarks>
-    private static SourceAnswer Titles(JsonElement root, SourceQuery query, int page)
+    private static SourceAnswer Titles(JsonElement root, SourceQuery query, int page, DateTimeOffset fetchedAt)
     {
         if (root.ValueKind != JsonValueKind.Object
             || !root.TryGetProperty("results", out var results)
@@ -254,7 +281,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
                 break;
             }
 
-            var title = Title(entry, query.Kind);
+            var title = Title(entry, query.Kind, fetchedAt);
 
             if (title is not null)
             {
@@ -280,6 +307,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// </summary>
     /// <param name="entry">One title as the source spells it.</param>
     /// <param name="kind">Which kind was asked for, which is what decides the field names.</param>
+    /// <param name="fetchedAt">When the source answered.</param>
     /// <returns>The record, or null where the entry carries too little to be one.</returns>
     /// <remarks>
     /// The kind comes from the question rather than from the entry. The source
@@ -287,7 +315,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// with series, and its entries carry no type of their own on these routes,
     /// so reading one back out would be reading a field that is not there.
     /// </remarks>
-    private static DiscoverTitle? Title(JsonElement entry, DiscoverTitleKind kind)
+    private static DiscoverTitle? Title(JsonElement entry, DiscoverTitleKind kind, DateTimeOffset fetchedAt)
     {
         if (entry.ValueKind != JsonValueKind.Object)
         {
@@ -316,6 +344,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
                 }),
             Kind = kind,
             Name = name,
+            FetchedAt = fetchedAt,
             OriginalName = string.Equals(original, name, StringComparison.Ordinal) ? null : original,
             ReleaseYear = Year(Text(entry, isSeries ? "first_air_date" : "release_date")),
             Summary = Text(entry, "overview"),

@@ -23,6 +23,16 @@ namespace Jellyfin.Plugin.Template.Tests;
 public class TitleAddressTests
 {
     /// <summary>
+    /// The instant these fixtures were fetched at.
+    /// </summary>
+    /// <remarks>
+    /// A fixed value rather than a read of any clock, so a record built here
+    /// carries the same age on every run. Nothing in this file asserts against
+    /// it; it is here because the record refuses to be built without one.
+    /// </remarks>
+    private static readonly DateTimeOffset _fetched = new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
+
+    /// <summary>
     /// Two refreshes that found the same title address it the same way.
     /// </summary>
     /// <remarks>
@@ -38,6 +48,7 @@ public class TitleAddressTests
         {
             Identity = IdentityOf((MetadataSource.Tmdb, "329865"), (MetadataSource.Imdb, "tt2543164")),
             Kind = DiscoverTitleKind.Movie,
+            FetchedAt = _fetched,
             Name = "Arrival",
             ReleaseYear = 2016,
             Summary = "A linguist is asked to talk to something that has landed.",
@@ -48,6 +59,7 @@ public class TitleAddressTests
         {
             Identity = IdentityOf((MetadataSource.Imdb, "tt2543164"), (MetadataSource.Tmdb, "329865")),
             Kind = DiscoverTitleKind.Movie,
+            FetchedAt = _fetched,
             Name = "Ankunft"
         };
 
@@ -75,6 +87,7 @@ public class TitleAddressTests
         {
             Identity = IdentityOf((MetadataSource.Tmdb, "329865")),
             Kind = DiscoverTitleKind.Movie,
+            FetchedAt = _fetched,
             Name = "Arrival"
         };
 
@@ -109,6 +122,7 @@ public class TitleAddressTests
         {
             Identity = IdentityOf((MetadataSource.Imdb, "tt2543164")),
             Kind = DiscoverTitleKind.Movie,
+            FetchedAt = _fetched,
             Name = "Ankunft",
             OriginalName = "Arrival",
             ReleaseYear = 2016,
@@ -248,6 +262,7 @@ public class TitleAddressTests
     {
         Identity = IdentityOf((MetadataSource.Tmdb, "693134")),
         Kind = DiscoverTitleKind.Movie,
+        FetchedAt = _fetched,
         Name = "Dune: Part Two"
     };
 

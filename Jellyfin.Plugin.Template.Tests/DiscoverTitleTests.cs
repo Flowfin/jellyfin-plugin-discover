@@ -17,6 +17,16 @@ namespace Jellyfin.Plugin.Template.Tests;
 public class DiscoverTitleTests
 {
     /// <summary>
+    /// The instant these fixtures were fetched at.
+    /// </summary>
+    /// <remarks>
+    /// A fixed value rather than a read of any clock, so a record built here
+    /// carries the same age on every run. Nothing in this file asserts against
+    /// it; it is here because the record refuses to be built without one.
+    /// </remarks>
+    private static readonly DateTimeOffset _fetched = new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
+
+    /// <summary>
     /// Two responses describing the same title produce records that compare equal on identity.
     /// </summary>
     /// <remarks>
@@ -35,6 +45,7 @@ public class DiscoverTitleTests
         {
             Identity = IdentityOf((MetadataSource.Tmdb, "329865"), (MetadataSource.Imdb, "tt2543164")),
             Kind = DiscoverTitleKind.Movie,
+            FetchedAt = _fetched,
             Name = "Arrival",
             ReleaseYear = 2016,
             Summary = "A linguist is asked to talk to something that has landed.",
@@ -45,6 +56,7 @@ public class DiscoverTitleTests
         {
             Identity = IdentityOf((MetadataSource.Imdb, "tt2543164"), (MetadataSource.Tmdb, "329865")),
             Kind = DiscoverTitleKind.Movie,
+            FetchedAt = _fetched,
             Name = "Ankunft",
             ReleaseYear = 2016
         };
@@ -227,6 +239,7 @@ public class DiscoverTitleTests
         {
             Identity = IdentityOf((MetadataSource.Tmdb, "1241982")),
             Kind = DiscoverTitleKind.Series,
+            FetchedAt = _fetched,
             Name = "Something announced and not released"
         };
 
@@ -234,6 +247,50 @@ public class DiscoverTitleTests
         Assert.Null(sparse.ReleaseYear);
         Assert.Null(sparse.Summary);
         Assert.Null(sparse.ArtworkLocation);
+    }
+
+    /// <summary>
+    /// The record carries the instant its source answered.
+    /// </summary>
+    /// <remarks>
+    /// #68's first condition. Everything a retention rule can do rests on this
+    /// value: without it there is no age to compare a ceiling against, and a
+    /// catalogue that cannot say how old it is cannot be held to a source's
+    /// terms. It is not absence-tolerant like the fields above, because a
+    /// record with no age would either be served forever or discarded at once,
+    /// and which of the two is a property of whoever wrote the comparison.
+    /// </remarks>
+    [Fact]
+    public void TheRecordSaysWhenItWasFetched()
+    {
+        Assert.Equal(_fetched, ArrivalFromTmdb().FetchedAt);
+        Assert.Equal(TimeSpan.Zero, ArrivalFromTmdb().FetchedAt.Offset);
+    }
+
+    /// <summary>
+    /// A fetch time that was never set, and one that is not in UTC, are both refused.
+    /// </summary>
+    /// <remarks>
+    /// Two one-character mistakes rather than two hypotheticals. Leaving the
+    /// member out is refused by the compiler because it is required; setting it
+    /// from a default is not, and <see cref="DateTimeOffset.MinValue"/> reads
+    /// as the year one, so every retention comparison would discard the record
+    /// the moment it was written. Filling it from a local-time value through a
+    /// conversion is the other: it carries the machine's offset, so a server
+    /// that moves offset twice a year moves the stored age under the code that
+    /// reads it, and a record written in summer is an hour younger in winter.
+    ///
+    /// The second arm is what the plugin's own clock already promises in UTC.
+    /// This is the record refusing to be filled from anywhere else.
+    /// </remarks>
+    [Fact]
+    public void AFetchTimeThatIsUnsetOrNotInUtcIsRefused()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => ArrivalFromTmdb() with { FetchedAt = default });
+
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => ArrivalFromTmdb() with { FetchedAt = new DateTimeOffset(2026, 3, 1, 13, 0, 0, TimeSpan.FromHours(1)) });
     }
 
     /// <summary>
@@ -259,6 +316,7 @@ public class DiscoverTitleTests
     {
         Identity = IdentityOf((MetadataSource.Tmdb, "329865"), (MetadataSource.Imdb, "tt2543164")),
         Kind = DiscoverTitleKind.Movie,
+        FetchedAt = _fetched,
         Name = "Arrival",
         ReleaseYear = 2016
     };
