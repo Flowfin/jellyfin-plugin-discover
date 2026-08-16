@@ -6,16 +6,26 @@ here rather than only on
 [#48](https://github.com/Flowfin/jellyfin-plugin-discover/issues/48) because the
 next person adding a fixture will read the directory.
 
-This directory holds no fixture yet. Nothing in this repository parses a source
-response, so there is nothing to record:
+There is a parser now, and the set has its first members:
 
-    git grep -l ': IMetadataSource' -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
-    exit=1
+    git grep -l ': IMetadataSource' -- 'Jellyfin.Plugin.Template/*.cs'
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
 
-The first parser is
-[#74](https://github.com/Flowfin/jellyfin-plugin-discover/issues/74). What the
-set of fixtures then has to cover is the fifth condition on #48 and is not
-restated here.
+They are in [`TmdbFixtures.cs`](TmdbFixtures.cs) beside this page rather than in
+files of their own, which is what "base64 in source" below means taken
+literally: a constant a test reads, with the reason each one exists written at
+it. Nine of them, covering the six shapes the fifth condition on
+[#48](https://github.com/Flowfin/jellyfin-plugin-discover/issues/48) asks for
+and three the adapter's own mapping needs. What each shape is for is at the
+constant and is not restated here.
+
+**None of them was captured.** Every byte in that file was written by hand, so
+no row of a source's terms bears on any of it, no provenance line is owed on any
+of it, and the question of what claim would let a real value sit in a public
+repository does not arise for the set as it stands. The field names are the
+source's and the values are not, which is the whole of what the section on what
+may be committed asks for. The next person adding one from a real response is
+the reader that section is written for.
 
 ## Nothing captures a fixture during a test run
 
