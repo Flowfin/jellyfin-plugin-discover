@@ -49,8 +49,8 @@ what the catalogue costs on disk and in the database, and
 source's own limits are respected. When either lands, its entry here states the
 number and the command that produced it.
 
-This section exists now rather than later so that the first expensive setting
-arrives into a page that already has a place for its cost.
+A setting that costs something states its cost here on arrival, and the place
+for it is open before the first one lands.
 
 ## What the check holds, and what it does not
 
