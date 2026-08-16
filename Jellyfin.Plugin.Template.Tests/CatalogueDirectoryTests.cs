@@ -111,6 +111,124 @@ public class CatalogueDirectoryTests
     }
 
     /// <summary>
+    /// One operation removes everything this plugin wrote, and what it removed
+    /// is derived from the store rather than from a list here.
+    /// </summary>
+    /// <remarks>
+    /// #72's second condition. The documents are put there by the store rather
+    /// than by this test writing files it chose, so what is asserted gone is
+    /// what a real write path produces: the store creates the directory on the
+    /// way to replacing a document, and the assertion afterwards is over
+    /// <see cref="CatalogueDirectory.FullPath"/> rather than over the names
+    /// that went in. A purge that missed a file a future writer adds would fail
+    /// this without anybody having to remember to extend it.
+    ///
+    /// The plugin's own folder is asserted to survive. The catalogue is a
+    /// directory inside it, and a purge that took the parent would take
+    /// whatever else the plugin comes to keep beside the catalogue with it.
+    /// </remarks>
+    [Fact]
+    public void OneOperationRemovesEverythingThisPluginWrote()
+    {
+        var folder = Folder("a-purge");
+        Remove(folder);
+        try
+        {
+            var directory = new CatalogueDirectory(folder);
+            var store = new CatalogueDocumentStore(directory, new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>());
+
+            store.Write("shelves", new MemoryStream(new byte[] { 1, 2, 3 }));
+            store.Write("trending", new MemoryStream(new byte[] { 4, 5, 6 }));
+
+            Assert.Equal(2, directory.ListDocuments().Count);
+
+            directory.RemoveEverything();
+
+            Assert.Empty(directory.ListDocuments());
+            Assert.False(Directory.Exists(directory.FullPath));
+            Assert.True(Directory.Exists(folder));
+        }
+        finally
+        {
+            Remove(folder);
+        }
+    }
+
+    /// <summary>
+    /// Purging a fresh install is not an error, and purging twice is not an
+    /// error.
+    /// </summary>
+    /// <remarks>
+    /// #72's fourth condition. Both are the ordinary case rather than misuse: a
+    /// removal reaches a server that was installed and never configured, and an
+    /// operator who did not see the first purge finish does it again. A method
+    /// that threw on either would put an error in the log of every such server,
+    /// and an uninstall path that treated that as a failure would stop halfway
+    /// through cleaning up.
+    /// </remarks>
+    [Fact]
+    public void PurgingAFreshInstallAndPurgingTwiceAreBothQuiet()
+    {
+        var folder = Folder("a-purge-twice");
+        Remove(folder);
+        try
+        {
+            var directory = new CatalogueDirectory(folder);
+
+            directory.RemoveEverything();
+            Assert.False(Directory.Exists(directory.FullPath));
+
+            directory.EnsureExists();
+            directory.RemoveEverything();
+            directory.RemoveEverything();
+
+            Assert.False(Directory.Exists(directory.FullPath));
+            Assert.Empty(directory.ListDocuments());
+        }
+        finally
+        {
+            Remove(folder);
+        }
+    }
+
+    /// <summary>
+    /// A write after a purge brings the directory back, which is why gone and
+    /// staying gone are two claims.
+    /// </summary>
+    /// <remarks>
+    /// Asserted rather than warned about in prose, because the difference
+    /// decides what an uninstall has to do. The store creates the directory on
+    /// the way to writing, so a purge that runs while anything is still able to
+    /// write leaves a catalogue behind that was made after the operator asked
+    /// for it to be gone. Whoever wires a purge to a page or to a removal has
+    /// to stop the writers first, and this is the test that says so.
+    /// </remarks>
+    [Fact]
+    public void AWriteAfterAPurgeBringsTheDirectoryBack()
+    {
+        var folder = Folder("a-write-after-a-purge");
+        Remove(folder);
+        try
+        {
+            var directory = new CatalogueDirectory(folder);
+            var store = new CatalogueDocumentStore(directory, new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>());
+
+            store.Write("shelves", new MemoryStream(new byte[] { 1, 2, 3 }));
+            directory.RemoveEverything();
+            Assert.False(Directory.Exists(directory.FullPath));
+
+            store.Write("shelves", new MemoryStream(new byte[] { 4, 5, 6 }));
+
+            Assert.True(Directory.Exists(directory.FullPath));
+            Assert.Equal("shelves", Assert.Single(directory.ListDocuments()));
+        }
+        finally
+        {
+            Remove(folder);
+        }
+    }
+
+    /// <summary>
     /// Every name that would put a document outside the one directory this
     /// plugin writes to is refused.
     /// </summary>
