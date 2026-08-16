@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,13 +34,22 @@ internal sealed class SourceThatAnswersFromWhatATestGaveIt : IMetadataSource
     /// Initializes a new instance of the <see cref="SourceThatAnswersFromWhatATestGaveIt"/> class.
     /// </summary>
     /// <param name="source">Which body this fake stands in for.</param>
-    public SourceThatAnswersFromWhatATestGaveIt(MetadataSource source)
+    /// <param name="retentionCeiling">
+    /// The longest this stand-in's terms allow anything it answered with to be
+    /// kept. Defaults to a day, which is short enough that a test relying on
+    /// the ceiling has to state its own rather than inherit a plausible one.
+    /// </param>
+    public SourceThatAnswersFromWhatATestGaveIt(MetadataSource source, TimeSpan? retentionCeiling = null)
     {
         Source = source;
+        RetentionCeiling = retentionCeiling ?? TimeSpan.FromDays(1);
     }
 
     /// <inheritdoc />
     public MetadataSource Source { get; }
+
+    /// <inheritdoc />
+    public TimeSpan RetentionCeiling { get; }
 
     /// <summary>
     /// Gets every question this source was asked, in the order it was asked them.

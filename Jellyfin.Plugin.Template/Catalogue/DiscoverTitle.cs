@@ -41,6 +41,7 @@ public sealed record DiscoverTitle
     private readonly DiscoverTitleIdentity _identity = null!;
     private readonly DiscoverTitleKind _kind;
     private readonly string _name = null!;
+    private readonly DateTimeOffset _fetchedAt;
     private readonly Uri? _artworkLocation;
 
     /// <summary>
@@ -128,6 +129,61 @@ public sealed record DiscoverTitle
             }
 
             _name = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the instant the source answered with this title. Never absent.
+    /// </summary>
+    /// <remarks>
+    /// The moment the source spoke rather than the moment a catalogue was
+    /// saved, and the two are different by however long a refresh takes. It is
+    /// the first that a source's retention clause is about, so it is the one
+    /// stored: TMDB's clause 1.C caps how long anything obtained from the API
+    /// may be cached, and a stamp taken at the end of a refresh understates the
+    /// age of everything fetched at the start of it.
+    ///
+    /// Read from <see cref="Time.IClock"/> in the adapter, which is the only
+    /// thing in this plugin that answers what time it is, so a test can hold a
+    /// record's age still rather than sleeping. Every title in one answer
+    /// carries the same instant, because one answer is one thing the source
+    /// said.
+    ///
+    /// What is done with it is #68: a record past the configured retention is
+    /// neither served nor kept. That retention is not here and this record does
+    /// not know it, because the number is a setting and the ceiling above it
+    /// belongs to whichever source answered.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the value is <see cref="DateTimeOffset.MinValue"/>, which is
+    /// what an unset field reads as, or carries an offset other than UTC. A
+    /// record stamped with the default would read as fetched in the year one
+    /// and be discarded as expired by every comparison; a record stamped in
+    /// local time moves under the code that reads it the next time the server's
+    /// offset changes.
+    /// </exception>
+    public required DateTimeOffset FetchedAt
+    {
+        get => _fetchedAt;
+        init
+        {
+            if (value == DateTimeOffset.MinValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    value,
+                    "A discover title carries the instant its source answered. MinValue is what an unset field reads as, and a record holding it would be read as older than any retention allows.");
+            }
+
+            if (value.Offset != TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    value,
+                    "A discover title's fetch time is in UTC, because it outlives the session that wrote it and a server that changes offset twice a year would otherwise move a stored age under the code that reads it.");
+            }
+
+            _fetchedAt = value;
         }
     }
 

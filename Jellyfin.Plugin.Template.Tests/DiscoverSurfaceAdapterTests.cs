@@ -31,6 +31,16 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// </remarks>
 public class DiscoverSurfaceAdapterTests
 {
+    /// <summary>
+    /// The instant these fixtures were fetched at.
+    /// </summary>
+    /// <remarks>
+    /// A fixed value rather than a read of any clock, so a record built here
+    /// carries the same age on every run. Nothing in this file asserts against
+    /// it; it is here because the record refuses to be built without one.
+    /// </remarks>
+    private static readonly DateTimeOffset _fetched = new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
+
     private static readonly Guid _somebody = new Guid("2c1f0f4a-6d5e-4b2a-9f0c-73f5b8a1d900");
     private static readonly Guid _somebodyElse = new Guid("9b6e1d33-5a20-4f81-8c44-1e0d7a6f2b11");
 
@@ -171,6 +181,7 @@ public class DiscoverSurfaceAdapterTests
                     new ProviderIdentifier(MetadataSource.Imdb, "tt2543164")
                 }),
             Kind = DiscoverTitleKind.Movie,
+            FetchedAt = _fetched,
             Name = "Arrival",
             OriginalName = "Arrival",
             ReleaseYear = 2016,
@@ -222,6 +233,7 @@ public class DiscoverSurfaceAdapterTests
                         {
                             Identity = new DiscoverTitleIdentity(new[] { new ProviderIdentifier(MetadataSource.Tmdb, "1399") }),
                             Kind = DiscoverTitleKind.Series,
+                            FetchedAt = _fetched,
                             Name = "A series nobody here has"
                         })
                 },
@@ -261,6 +273,7 @@ public class DiscoverSurfaceAdapterTests
                         {
                             Identity = new DiscoverTitleIdentity(new[] { new ProviderIdentifier(MetadataSource.Tmdb, "1") }),
                             Kind = DiscoverTitleKind.Movie,
+                            FetchedAt = _fetched,
                             Name = "Announced and not released"
                         })
                 },

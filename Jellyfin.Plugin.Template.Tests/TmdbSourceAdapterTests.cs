@@ -30,6 +30,18 @@ namespace Jellyfin.Plugin.Template.Tests;
 public class TmdbSourceAdapterTests
 {
     /// <summary>
+    /// The instant the clock these adapters are given reads.
+    /// </summary>
+    /// <remarks>
+    /// Fixed rather than read from the machine, so a record the adapter stamps
+    /// carries a value a test can name. It never advances: nothing here needs
+    /// time to pass, and a clock that moved between two reads would make the
+    /// stamp on one answer's titles a thing to compare rather than a thing to
+    /// assert.
+    /// </remarks>
+    private static readonly DateTimeOffset _fetched = new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
+
+    /// <summary>
     /// The adapter says which body it speaks for.
     /// </summary>
     /// <remarks>
@@ -353,7 +365,8 @@ public class TmdbSourceAdapterTests
                 asked.Add(address);
                 return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
             },
-            configured: false);
+            configured: false,
+            new ClockATestAdvances(_fetched));
 
         var answer = await adapter
             .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
@@ -384,7 +397,8 @@ public class TmdbSourceAdapterTests
                 asked.Add(address);
                 return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
             },
-            configured: true);
+            configured: true,
+            new ClockATestAdvances(_fetched));
 
         var answer = await adapter
             .FetchAsync(
@@ -507,7 +521,8 @@ public class TmdbSourceAdapterTests
 
         var answer = await new TmdbSourceAdapter(
                 (address, cancellationToken) => Task.FromResult(new SourceTransportReply(200, body, null)),
-                configured: true)
+                configured: true,
+                new ClockATestAdvances(_fetched))
             .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
             .ConfigureAwait(true);
 
@@ -536,7 +551,8 @@ public class TmdbSourceAdapterTests
                 cancellationToken.ThrowIfCancellationRequested();
                 return Task.FromResult(new SourceTransportReply(200, null, null));
             },
-            configured: true);
+            configured: true,
+            new ClockATestAdvances(_fetched));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => adapter.FetchAsync(
@@ -627,6 +643,70 @@ public class TmdbSourceAdapterTests
         method.ReturnType == type || method.GetParameters().Any(parameter => parameter.ParameterType == type);
 
     /// <summary>
+    /// Every title in one answer carries the instant the source answered, not the instant it was asked.
+    /// </summary>
+    /// <remarks>
+    /// The near-miss is a clock read at the top of the fetch rather than after
+    /// the reply. Both compile, both stamp a plausible time, and the difference
+    /// is however long the source took, which is the direction that understates
+    /// a record's age against a retention ceiling. The clock here advances by an
+    /// hour inside the transport, so a stamp taken before the call reads 12:00
+    /// and one taken after reads 13:00, and only one of the two is asserted.
+    ///
+    /// The second assertion is that one answer is one instant. Reading the clock
+    /// per title would give the records in a page different ages for no reason
+    /// a reader could explain, and a retention pass would then expire a page in
+    /// pieces.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task EveryTitleCarriesTheInstantTheSourceAnswered()
+    {
+        var clock = new ClockATestAdvances(_fetched);
+
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) =>
+            {
+                clock.Advance(TimeSpan.FromHours(1));
+                return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.MoviePage), null));
+            },
+            configured: true,
+            clock);
+
+        var answer = await adapter
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.NotEmpty(answer.Titles);
+        Assert.All(answer.Titles, title => Assert.Equal(_fetched + TimeSpan.FromHours(1), title.FetchedAt));
+        Assert.Single(answer.Titles.Select(title => title.FetchedAt).Distinct());
+    }
+
+    /// <summary>
+    /// This source says how long its own terms allow anything it answered with to be kept.
+    /// </summary>
+    /// <remarks>
+    /// #68's fifth condition, asserted as the property rather than as the
+    /// literal. Clause 1.C of the terms in <c>docs/sources/tmdb.md</c> caps a
+    /// cache at six months, and six calendar months is not one duration: the
+    /// shortest run of six consecutive months is a hundred and eighty-one days,
+    /// February to July outside a leap year. So the assertion is that the
+    /// ceiling is under the shortest reading of the clause and is a real
+    /// duration, which a value edited upward to a comfortable number would
+    /// fail. Asserting the literal back would assert that a value equals itself.
+    /// </remarks>
+    [Fact]
+    public void ThisSourceCarriesTheCeilingItsTermsImpose()
+    {
+        var shortestSixMonths = TimeSpan.FromDays(181);
+
+        var ceiling = Asked(TmdbFixtures.EmptyPage).RetentionCeiling;
+
+        Assert.True(ceiling > TimeSpan.Zero, $"A ceiling of {ceiling} would forbid keeping anything at all.");
+        Assert.True(ceiling < shortestSixMonths, $"A ceiling of {ceiling} can exceed the six months clause 1.C allows.");
+    }
+
+    /// <summary>
     /// An adapter that answers every question with one fixture.
     /// </summary>
     /// <param name="fixture">The body it answers with.</param>
@@ -637,7 +717,8 @@ public class TmdbSourceAdapterTests
         new(
             (address, cancellationToken) =>
                 Task.FromResult(new SourceTransportReply(status, TmdbFixtures.Body(fixture), retryAfter)),
-            configured: true);
+            configured: true,
+            new ClockATestAdvances(_fetched));
 
     /// <summary>
     /// The address an adapter asks a question at.
@@ -654,7 +735,8 @@ public class TmdbSourceAdapterTests
                 asked = address;
                 return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
             },
-            configured: true);
+            configured: true,
+            new ClockATestAdvances(_fetched));
 
         await adapter.FetchAsync(query, CancellationToken.None).ConfigureAwait(false);
 
