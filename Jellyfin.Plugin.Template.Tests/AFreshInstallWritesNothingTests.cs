@@ -23,11 +23,15 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// count of calls says nothing about a type that reaches the file system
 /// directly, which <see cref="CatalogueDocumentStore"/> does.
 ///
-/// This is one half of the first condition on
-/// https://github.com/Flowfin/jellyfin-plugin-discover/issues/104. The other
-/// half is that no outbound call is made, and that half is not asserted anywhere
-/// yet because nothing in the plugin can make one; a count of zero over a plugin
-/// with no route out is a number about the tree rather than about the property.
+/// This is one half of the first condition on #104. The other half is that no
+/// outbound call is made, and that half is not asserted anywhere yet because
+/// nothing in the plugin can make one; a count of zero over a plugin with no
+/// route out is a number about the tree rather than about the property.
+///
+/// The issue is named as a number rather than as a link because a link puts a
+/// hostname in the plugin's C#, and `source-terms` reads every hostname there as
+/// a metadata source owing a terms page. It refused the first spelling of this
+/// file for exactly that.
 ///
 /// The folder these assertions read is the one the base plugin class derived
 /// from the paths fake, under the temporary directory. Nothing here creates it
