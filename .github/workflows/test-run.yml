@@ -96,6 +96,22 @@ jobs:
             unshare --net -- sh -eu -c '
               ip link set lo up
 
+              # Two probes, because each is blind to the other half. The first
+              # asks what the namespace holds and refuses anything but
+              # loopback: a positive statement, so a missing tool fails the
+              # step under `set -e` rather than reading as isolation. The
+              # second asks a host a question, which is the thing the suite
+              # would do, and a route the first probe cannot see still answers
+              # it.
+              beyond_loopback="$(ip -oneline link show | grep -v " lo:" || true)"
+
+              if [ -n "$beyond_loopback" ]; then
+                echo "::error::The namespace this suite runs in holds an interface other than loopback, so the run says nothing about the suite making no connection: ${beyond_loopback}"
+                exit 1
+              fi
+
+              echo "Nothing but loopback in this namespace."
+
               if curl --silent --show-error --max-time 20 --output /dev/null "$PROBED_HOST"; then
                 echo "::error::A request reached ${PROBED_HOST} from inside the namespace this suite runs in, so this run says nothing about the suite making no connection. Failing rather than reporting a green suite that had a route out."
                 exit 1
