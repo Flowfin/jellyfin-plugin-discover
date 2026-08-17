@@ -106,10 +106,18 @@ public sealed record DiscoverTitle
     /// Gets the title as the source spells it. Never absent.
     /// </summary>
     /// <remarks>
-    /// Comes from the source, in the language and region the server asked for,
-    /// which is #81. It is what a client shows and it is not part of identity:
-    /// asking one source twice in two languages returns two names for one
-    /// title, and both records are the same title.
+    /// Comes from the source, in whatever language it answers with when it is
+    /// asked for none. Nothing in this plugin asks for one: the query type
+    /// carries neither a language nor a region and says so, and the request the
+    /// one adapter builds puts a page number on it and nothing else. Which
+    /// language a title should arrive in is #81 and is undecided, and this
+    /// record does not carry which language it did arrive in, so a catalogue
+    /// filled from two answers in two languages holds both with nothing on
+    /// either saying which.
+    ///
+    /// It is what a client shows and it is not part of identity: asking one
+    /// source twice in two languages returns two names for one title, and both
+    /// records are the same title.
     /// </remarks>
     /// <exception cref="ArgumentException">
     /// Thrown when the value is null, empty or whitespace. There is no such
@@ -192,7 +200,8 @@ public sealed record DiscoverTitle
     /// </summary>
     /// <remarks>
     /// Comes from the source. May be absent: a source has one only where it
-    /// knows the original language differs from the one asked for. It is here
+    /// knows the original language differs from the one it answered in. It is
+    /// here
     /// so that a client or an operator can tell two translations of one film
     /// apart without this plugin composing a string that holds both.
     /// </remarks>
