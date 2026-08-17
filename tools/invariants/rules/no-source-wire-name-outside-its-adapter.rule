@@ -1,0 +1,45 @@
+Id: no-source-wire-name-outside-its-adapter
+Pattern: "(first_air_date|original_name|original_title|poster_path|release_date|status_message|total_results|overview|results)"
+Subject: *.cs
+Except: :!*SourceAdapter.cs :!*SourceAdapterTests.cs :!*TitleRoundTripTests.cs
+Issue: 73
+
+A source's field names are that source's, and they stop at its adapter. The
+interface in front of a source is written in this plugin's own types, so a
+caller that reads `poster_path` has gone around it, and adding a second source
+then means changing whoever did.
+
+The pattern is the names the one adapter reads out of a response, quoted, which
+is how a field name is spelled when it is used. Nine of them rather than every
+name in the response: `id`, `name`, `title` and `page` are words this codebase
+uses for its own things, and a rule matching those would fire on ordinary work
+for a reason its prose does not name. What is left is the vocabulary that could
+only have come from this source, so a match is a caller reading the wire rather
+than a coincidence.
+
+That bound is real and this rule does not hide it. A caller reading `id` off a
+response is doing the thing this rule is about and is invisible here. What
+catches that instead is the interface: `IMetadataSource` answers in
+`DiscoverTitle`, and a caller with no response in its hands has no `id` to read.
+
+The other half of #73's second condition is a source's client library, and it
+has no vocabulary because there is no such library. The adapter speaks to the
+source directly, which #74 decided, and what holds it is
+`Jellyfin.Plugin.Template.Tests/allowed-assembly-references.txt` read by
+`AssemblyReferencesTests`: a reference the list does not name fails, so adding a
+client library is a deliberate edit to that file rather than something that
+arrives quietly. A pattern here could name nothing today, and a rule matching
+nothing is one a reader counts.
+
+Three exceptions, and two of them are the file suffixes this tree already uses
+for the seam to a source. The adapter is where the vocabulary belongs, and its
+own tests have to speak it to assert what it maps.
+
+The third is `TitleRoundTripTests.cs`, which is not an adapter's file and reads
+the wire on purpose. It follows a title from a source's bytes out to a client
+and back to the identifier it started with, so it reads the field a value came
+from and compares it with the value that arrived; that is #55's assertion and it
+cannot be made without naming both ends. It is excepted by name rather than by a
+suffix because it is one file and there is no convention to derive it from, and
+naming it here is what stops the exception growing into a list nobody can
+re-derive.

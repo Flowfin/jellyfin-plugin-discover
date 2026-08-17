@@ -8,16 +8,26 @@ brings the rule.
 Nothing refuses an entry that should be here and is not. This file is prose, and
 the run says nothing about it.
 
-## No source library type and no source wire type outside its adapter
+## No source library type outside its adapter
 
-From #33, and the subject is #73 and #74. Whether the first adapter depends on a
-client library at all is decided in #74, and the wire types are whatever the
-response shape turns out to be, so there is no name to match today. A rule
-written now would either match nothing or guess at a vocabulary that has not
-been chosen.
+From #33, and the subject was #73 and #74. The wire half of this entry has left
+it: #74 chose the response shape, so the names exist, and
+`no-source-wire-name-outside-its-adapter` is the rule over them.
 
-`no-network-outside-source-adapter` holds the part of it that can be held
-already: whatever the adapter is made of, everything that leaves this server for
+The library half stays here and the reason changed. It is no longer that the
+decision is open. #74 took it, and the adapter speaks to the source directly, so
+there is no client library and therefore no type name for a pattern to match. A
+rule written now would match nothing, and a rule matching nothing is one a reader
+counts.
+
+What holds it meanwhile is not a pattern.
+`Jellyfin.Plugin.Template.Tests/allowed-assembly-references.txt` is a closed list
+read by `AssemblyReferencesTests`, so a client library cannot arrive without an
+edit to that file made on purpose. The day one does, this entry is what says a
+rule is owed over where its types may be named.
+
+`no-network-outside-source-adapter` holds the part of it that was always
+holdable: whatever the adapter is made of, everything that leaves this server for
 a third party leaves through it.
 
 ## No server type in a test outside the adapter's own tests
