@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Template.Catalogue;
@@ -559,6 +561,59 @@ public class TmdbSourceAdapterTests
                     new SourceQuery("popular", DiscoverTitleKind.Movie, null, null),
                     stopped.Token))
             .ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// A connection whose certificate did not verify fails, and the source is not asked a second time.
+    /// </summary>
+    /// <remarks>
+    /// #45's third condition. A transport that cannot verify the endpoint hands
+    /// the adapter the shape the runtime produces for it, an
+    /// <see cref="HttpRequestException"/> wrapping an
+    /// <see cref="AuthenticationException"/>, and what is asserted is that the
+    /// fetch ends there: one outcome saying the source could not answer, no
+    /// titles, and exactly one question asked.
+    ///
+    /// The count is the assertion, not the outcome. Falling back to a
+    /// connection that skips verification is a second request, so a run in
+    /// which the transport was reached once is a run in which no such fallback
+    /// was made. A retry added later that asks again on any failure reddens
+    /// this before it reaches a server, which is the near-miss it was written
+    /// against; #78 owns whatever retry does arrive and this is the bound it
+    /// has to be built inside.
+    ///
+    /// Its reach stops at this adapter. The transport is supplied here, so what
+    /// verification a real client performs is not observed by this test, and
+    /// what a real endpoint presents is not a property any test in this tree
+    /// holds. That nothing in the plugin turns verification off is a separate
+    /// statement and is held by <c>no-machine-trust-store</c> over the tracked
+    /// text rather than here.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AConnectionThatCouldNotBeVerifiedFailsAndIsNotAskedAgain()
+    {
+        var asked = 0;
+
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) =>
+            {
+                asked++;
+
+                throw new HttpRequestException(
+                    "The SSL connection could not be established, see inner exception.",
+                    new AuthenticationException("The remote certificate is invalid according to the validation procedure."));
+            },
+            configured: true,
+            new ClockATestAdvances(_fetched));
+
+        var answer = await adapter
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.TemporarilyFailed, answer.Outcome);
+        Assert.Empty(answer.Titles);
+        Assert.Equal(1, asked);
     }
 
     /// <summary>
