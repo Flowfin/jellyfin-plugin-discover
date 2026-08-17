@@ -72,6 +72,12 @@ client='MediaBrowser Client="discover-probe", Device="gate", DeviceId="discover-
 # say <method> <path> [body] performs one request and prints the body. A status
 # outside 2xx fails here rather than three lines later where the failure would
 # read as the server answering something unexpected.
+#
+# The refusal goes to standard error rather than standard output, and that is
+# not tidiness. Every call whose answer is not wanted sends standard output to
+# /dev/null, so a refusal written there is thrown away and the run ends with the
+# step's exit code and no line saying what the server refused. It did, on the
+# first run of this script.
 say() {
   local method="$1" path="$2" body="${3:-}"
   local out status
@@ -91,8 +97,9 @@ say() {
   case "$status" in
     2*) ;;
     *)
-      echo "::error::${method} ${path} answered ${status}."
-      cat "$out"
+      echo "::error::${method} ${path} answered ${status}." >&2
+      cat "$out" >&2
+      echo >&2
       rm -f "$out"
       return 1
       ;;
