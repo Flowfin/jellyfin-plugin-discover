@@ -194,4 +194,44 @@ public sealed class CatalogueDirectory
     {
         Directory.CreateDirectory(_fullPath);
     }
+
+    /// <summary>
+    /// Removes the directory and everything this plugin wrote under it.
+    /// </summary>
+    /// <remarks>
+    /// The operation three moments need, which is why it is one operation and
+    /// not three: an operator starting again, a source whose terms were broken
+    /// by keeping the catalogue, and a removal. #72 is where that is argued.
+    ///
+    /// It removes a directory rather than a list of names, which is the whole
+    /// reason the catalogue was given a directory of its own. A purge written
+    /// as a list has to be kept in step with every writer, and the failure of
+    /// forgetting one is a file left behind after the plugin was removed, which
+    /// the operator cannot see the source of.
+    ///
+    /// Absent is done rather than an error, in both directions. A fresh install
+    /// has never written anything, and an operator who purges twice meant the
+    /// same thing the second time. Neither is a case worth putting an error in
+    /// a log for.
+    ///
+    /// What it does not promise is that the directory stays gone. A write calls
+    /// <see cref="EnsureExists"/>, so anything that runs after this and writes
+    /// brings the directory back, and on a server with a refresh on a schedule
+    /// those are two different claims. Stopping the writers is the caller's,
+    /// not this method's.
+    ///
+    /// It reaches only <see cref="FullPath"/>, which is the path built in the
+    /// constructor from the folder the server derived. Nothing a caller passes
+    /// reaches this, so there is no name by which it could be aimed anywhere
+    /// else.
+    /// </remarks>
+    public void RemoveEverything()
+    {
+        if (!Directory.Exists(_fullPath))
+        {
+            return;
+        }
+
+        Directory.Delete(_fullPath, true);
+    }
 }
