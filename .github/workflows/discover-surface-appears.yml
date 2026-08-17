@@ -1,0 +1,203 @@
+# Does the discover surface reach a signed-in user on a real server (#38).
+#
+# `plugin-loads.yml` answers whether the server accepts the package. It reads
+# the server's own log and stops there, so a plugin that loads and offers the
+# server nothing passes it. This asks the next question, over HTTP, as a user
+# who signed in: is the surface among the views that user is handed. That is the
+# claim the plan rests on, because it is what makes the surface reach every
+# client without a client change.
+#
+# The reading is in tools/discover-surface-appears.sh rather than here, so it
+# can be pointed at a server somebody started by hand. Its header carries what
+# the server does with the request and where that was read.
+#
+# Two servers are started on each declared line, and the second is what makes
+# the first mean anything. One carries the package a release would ship and is
+# asked to show the surface. One carries nothing and is asked the same question,
+# and the run fails if it answers yes. A probe that only ever meets a server
+# with the plugin installed cannot tell a surface that appeared from a reader
+# that says yes to whatever it is given.
+#
+# The cadence is deliberate and is the condition on #38 most easily lost. This
+# runs nightly and when a pull request touches the harness, never on every push,
+# because two servers per line is minutes of runner time for a question that
+# does not change between one commit and the next. It is therefore not a check
+# that can end up in the required set #40 raises.
+#
+# It needs no display, the containers run as the unprivileged runner user, and
+# no machine trust store is touched, per Jellyfin.Plugin.Template.Tests/HEADLESS.md
+# and #42.
+#
+# What it does not cover. What a client draws with the answer is #115. What is
+# underneath the surface is not asked at all, because every level answers empty
+# until a shelf exists (#85, #86), and a user the surface is hidden from is not
+# asked about either, because nothing hides it from anybody yet (#57).
+name: discover-surface-appears
+
+on:
+  schedule:
+    - cron: "35 3 * * *"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/discover-surface-appears.yml"
+      - "tools/discover-surface-appears.sh"
+  workflow_dispatch:
+
+# Deny-all at workflow level; each job grants only what it needs.
+permissions: {}
+
+concurrency:
+  group: discover-surface-appears-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lines:
+    name: Read the targeted server lines
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.read.outputs.matrix }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Derive one job per declared line
+        id: read
+        # Asked of MSBuild rather than parsed out of the XML, so this is the
+        # same answer the build gets. The same derivation is in
+        # plugin-loads.yml, which is a second copy of these lines rather than a
+        # shared one; folding them together is worth doing the day a third
+        # workflow needs it, and doing it now would move a file that gate runs
+        # from.
+        run: |
+          set -euo pipefail
+
+          declared=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinDeclaredLines)
+          declared=$(printf '%s' "$declared" | tr -d '\r' | tr ';,' '  ')
+
+          if [ -z "${declared// /}" ]; then
+            echo "::error::Directory.Build.props declares no server line, so there is no server to ask."
+            exit 1
+          fi
+
+          entries=''
+          for line in $declared; do
+            abi=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinTargetAbi -p:JellyfinLine="$line" | tr -d '\r')
+            package=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinPackageVersion -p:JellyfinLine="$line" | tr -d '\r')
+            framework=$(dotnet msbuild Directory.Build.props -getProperty:JellyfinTargetFramework -p:JellyfinLine="$line" | tr -d '\r')
+
+            if [ -z "$abi" ] || [ -z "$package" ] || [ -z "$framework" ]; then
+              echo "::error::Line ${line} is in JellyfinDeclaredLines and has no values in Directory.Build.props."
+              exit 1
+            fi
+
+            sdk="${framework#net}.x"
+
+            entries="${entries}{\"line\":\"${line}\",\"abi\":\"${abi}\",\"package\":\"${package}\",\"framework\":\"${framework}\",\"sdk\":\"${sdk}\"},"
+          done
+
+          matrix="[${entries%,}]"
+          echo "$matrix"
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+  appears:
+    name: Reaches a signed-in user on ${{ matrix.line }}
+    needs: lines
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.lines.outputs.matrix) }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ matrix.sdk }}
+
+      - name: Build the package a release would ship
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        id: jprm
+        with:
+          dotnet-target: ${{ matrix.framework }}
+
+      - name: Ask a server carrying the plugin, and one carrying nothing
+        env:
+          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
+          IMAGE: jellyfin/jellyfin:${{ matrix.package }}
+          LINE: ${{ matrix.line }}
+        run: |
+          set -euo pipefail
+
+          # The name the surface carries is the name a user reads on the tile,
+          # and it is read out of the source rather than typed here, so a rename
+          # moves this with it instead of leaving a probe looking for a name
+          # nothing answers to.
+          surface=$(sed -n 's/^[[:space:]]*Name = "\(.*\)",$/\1/p' \
+            Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs | sed -n 1p)
+
+          if [ -z "$surface" ]; then
+            echo "::error::No surface name was read out of DiscoverSurface.cs, so there is nothing to look for."
+            exit 1
+          fi
+
+          echo "The surface this build offers is called '${surface}'."
+
+          plugin_name=$(sed -n -e 's/^name:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$/\1/p' -e '/^name:/q' build.yaml)
+          if [ -z "$plugin_name" ]; then
+            echo "::error::build.yaml carries no name, so the package has nowhere to be installed."
+            exit 1
+          fi
+
+          # start <name> <root> <port> starts a server with that config
+          # directory and answers once it is serving. The plugin is installed by
+          # unzipping the built package under the server's plugin directory,
+          # which is what an install does and needs no elevation.
+          start() {
+            mkdir -p "$2/config" "$2/cache"
+
+            docker run -d --rm --name "$1" \
+              --user "$(id -u):$(id -g)" \
+              -p "$3:8096" \
+              -v "$2/config:/config" \
+              -v "$2/cache:/cache" \
+              "$IMAGE" > /dev/null
+          }
+
+          with="$RUNNER_TEMP/with-the-plugin"
+          mkdir -p "${with}/config/plugins/${plugin_name}"
+          unzip -q -o "$ARTIFACT" -d "${with}/config/plugins/${plugin_name}"
+          start with-the-plugin "$with" 8096
+
+          without="$RUNNER_TEMP/without-the-plugin"
+          start without-the-plugin "$without" 8097
+
+          echo "=== a server on line ${LINE} carrying the plugin ==="
+          if ! tools/discover-surface-appears.sh http://127.0.0.1:8096 "$surface" present; then
+            echo "--- what that server logged about plugins ---"
+            docker logs with-the-plugin 2>&1 | grep 'PluginManager' || true
+            docker stop with-the-plugin without-the-plugin > /dev/null
+            exit 1
+          fi
+
+          echo "=== a server on line ${LINE} carrying nothing ==="
+          if ! tools/discover-surface-appears.sh http://127.0.0.1:8097 "$surface" absent; then
+            docker stop with-the-plugin without-the-plugin > /dev/null
+            exit 1
+          fi
+
+          docker stop with-the-plugin without-the-plugin > /dev/null
