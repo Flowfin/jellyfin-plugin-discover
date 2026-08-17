@@ -1,5 +1,5 @@
 Id: no-random
-Pattern: (\bnew[[:space:]]+Random\(|\bRandom\.Shared|\bGuid\.NewGuid\()
+Pattern: (\bnew[[:space:]]+Random\(|\bRandom\.Shared|\bGuid\.NewGuid\(|\bGuid\.CreateVersion7\(|\bPath\.GetRandomFileName\()
 Subject: *.cs
 Except: :!*SystemRandomSource.cs
 Issue: 47
@@ -13,3 +13,24 @@ The exception is the one implementation of IRandomSource, which #47 added, and
 it is written as a file suffix for the reason on no-wall-clock. Nothing behind
 it is cryptographic: a key or a token needs a generator chosen for that job and
 this rule does not stand in for that choice.
+
+
+TWO SPELLINGS OF AN UNPREDICTABLE ANSWER ARE HERE AND THE FIRST THREE DID NOT
+REACH THEM. Guid.CreateVersion7 is the runtime's newer identifier and this
+project builds on the framework that added it, so a reader who knows the type
+reaches for it rather than for NewGuid, and a rule naming only NewGuid was
+silent on the same draw one method along. The place it would arrive is a want
+identifier or an item identity, which is exactly where #99 says the value has to
+be derived and stable rather than generated.
+
+Path.GetRandomFileName is the same defect wearing a filename. A store that
+writes through a name a test cannot predict cannot be asserted against, and the
+alternative is already in the tree: the catalogue writes through a fixed suffix
+and moves it into place, so nothing here needs a drawn name.
+
+A CRYPTOGRAPHIC GENERATOR IS DELIBERATELY NOT REFUSED. The sentence above says
+this rule does not stand in for that choice, and refusing
+RandomNumberGenerator would refuse the one draw a key or a token is supposed to
+be made with, which is #77 and #80 rather than this. What that leaves is a bound
+rather than a gap: a value drawn that way is unpredictable to a test in exactly
+the way this rule is otherwise about, and nothing here refuses it.
