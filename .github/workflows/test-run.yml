@@ -12,6 +12,19 @@ name: Test
 
 on:
   workflow_call:
+    inputs:
+      deep-fuzz-budget:
+        description: >-
+          How far the depth-two leg of the source response fuzz campaign walks,
+          per recorded fixture. Left empty by every caller that is a gate, so a
+          pull request runs the small default written into the test; the
+          scheduled campaign in fuzz-the-source-reader.yml is what raises it
+          (#37). The value is read by the suite rather than by this file, so a
+          number this workflow cannot make sense of fails the test that reads it
+          rather than being ignored here.
+        required: false
+        type: string
+        default: ""
 
 permissions: {}
 
@@ -89,9 +102,10 @@ jobs:
         env:
           DOTNET_CLI_TELEMETRY_OPTOUT: "1"
           PROBED_HOST: https://api.themoviedb.org/3/
+          DISCOVER_FUZZ_DEPTH2_BUDGET: ${{ inputs.deep-fuzz-budget }}
         run: |
           set -euo pipefail
-          sudo --preserve-env=DOTNET_ROOT,DOTNET_CLI_TELEMETRY_OPTOUT,PROBED_HOST \
+          sudo --preserve-env=DOTNET_ROOT,DOTNET_CLI_TELEMETRY_OPTOUT,PROBED_HOST,DISCOVER_FUZZ_DEPTH2_BUDGET \
             env "PATH=$PATH" \
             unshare --net -- sh -eu -c '
               ip link set lo up

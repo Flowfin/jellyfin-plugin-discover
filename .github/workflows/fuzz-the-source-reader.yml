@@ -1,0 +1,62 @@
+# The deep half of the source response fuzz campaign (#37).
+#
+# Everything a discover page shows arrives as a response from a third party, is
+# parsed, normalised and ends up as a record written into an operator's library
+# database. That is where untrusted bytes enter this plugin, and the campaign
+# that walks them lives in the suite rather than in a harness of its own, so a
+# pull request already runs it.
+#
+# What it runs on a pull request is the whole of the single-byte space and a
+# small window of the pair space. The pair space of one recorded fixture is the
+# square of its single-byte space, which is tens of millions of bodies for the
+# smallest of them, so no run covers it and a bigger window is worth wall clock
+# nobody should spend on every push. That is the only thing this file changes:
+# the same suite, the same isolation, a window two hundred times wider.
+#
+# A DETERMINISTIC CAMPAIGN ANSWERS THE SAME QUESTION EVERY NIGHT UNLESS THE TREE
+# MOVED, AND THAT IS THE POINT RATHER THAN A DEFECT. There is no draw here and
+# no seed to record: a body is a function of a fixture and two numbers, so a
+# failure carries what reproduces it. What the schedule buys is a bound on how
+# long a change that landed without this window can sit unmet, which is a day
+# rather than however long until somebody thinks to run it.
+#
+# It calls test-run.yml rather than running dotnet itself. The suite is asked to
+# make no connection at all (#46), and the way that is held is a network
+# namespace built in that file; a second copy of those steps here would be a
+# second thing to keep in step, and the one that drifted would be the one
+# running the longer campaign.
+#
+# This is not a check a merge waits for and must not become one. It is minutes
+# of runner time for a question that does not change between one commit and the
+# next, which is the same argument discover-surface-appears.yml makes for its
+# own cadence, and #40 is where the required set is chosen.
+#
+# What it does not cover. A mutant is a body a connection could have produced
+# and not one that was observed: no request has been made to the source from
+# this tree, and the corpus is fixtures written by hand rather than captured, so
+# a field a real response carries and no fixture does is reached by nothing
+# here. A failure is reported by the run going red and by nothing else; raising
+# an alert where a scheduled workflow fails is #121 and is not built here.
+name: fuzz-the-source-reader
+
+on:
+  schedule:
+    - cron: "50 2 * * *"
+  workflow_dispatch:
+
+# Deny-all at workflow level; the called workflow grants only what it needs.
+permissions: {}
+
+jobs:
+  campaign:
+    permissions:
+      contents: read # checkout only
+    uses: ./.github/workflows/test-run.yml
+    with:
+      # Four hundred thousand pairs per fixture, which is two hundred times the
+      # window a pull request walks. The number is a wall-clock budget rather
+      # than a property of the space: it is what fits inside the called
+      # workflow's own timeout with the restore and the build in front of it,
+      # measured rather than guessed, and it is stated here rather than in the
+      # test so that raising it is a change somebody argues for.
+      deep-fuzz-budget: "400000"
