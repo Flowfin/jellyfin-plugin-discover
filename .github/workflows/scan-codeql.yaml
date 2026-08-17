@@ -87,16 +87,25 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: +security-and-quality
-          # Path filtering for the ANALYSIS. The paths-ignore under `on:` above
-          # decides when this workflow runs, not what CodeQL reads, so without
-          # this block the generated sources under obj/ are analysed too. They
-          # are not in the tree, nobody can change them, and the source
-          # generator that writes them does not follow these rules - so every
-          # finding there is one that cannot be acted on.
-          config: |
-            paths-ignore:
-              - "**/obj/**"
-              - "**/bin/**"
+          # No analysis path filter, and its absence is deliberate (#249).
+          #
+          # A `paths-ignore` in the analysis config is honoured for an
+          # interpreted language and for a compiled one analysed without being
+          # built. The csharp leg above builds, so what is analysed is what the
+          # compilation contains, and the generated sources under obj/ are part
+          # of that compilation. A block excluding obj/ and bin/ stood here and
+          # the findings under obj/ went on being reported at every commit after
+          # it, so it claimed an effect it did not have. The measurement is in
+          # #249.
+          #
+          # A finding in generated output is closed by dismissing it, because a
+          # source generator's output cannot be kept out of the build that
+          # produces it. The actions leg does not build and would honour a
+          # filter, but obj/ and bin/ hold build output rather than workflow
+          # files, so there was nothing there for it to exclude either.
+          #
+          # The `paths-ignore` under `on:` above is a different setting and does
+          # work: it decides when this workflow runs, not what CodeQL reads.
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
