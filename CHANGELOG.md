@@ -20,6 +20,26 @@ hand to keep working. A setting that is read differently, stored data an older
 or newer build refuses, and a change to the contract a sibling plugin talks to
 are all breaking. New behaviour that an existing install ignores is not.
 
+A release that moves the identity of the items this plugin created is breaking
+as well. That widens the sentence above rather than following from it, and the
+widening is deliberate: such a release asks nobody to do anything, and the
+titles come back at the next refresh on their own. What changes is the rows they
+come back as. A favourite or a played mark a user set sits on the row that was
+there before, and when that row goes the mark is detached rather than deleted,
+with nothing scheduled to delete it afterwards on a default install. Whether it
+reattaches to the new row is not established. So what such a release costs an
+operator is stated as the marks surviving the removal and their destination
+being an open question, and no further than that. It is named here because it is
+the one thing in this plugin that an operator cannot act on before taking the
+upgrade and cannot undo after it.
+
+Which changes move an identity is not written out here, because a second list
+drifts against the first and the version a reader meets would be the stale one.
+[docs/title-identity.md](docs/title-identity.md) is the page that decides it, and
+it carries what an identity is made of, what a rename of the surface costs, and
+what moves one without anybody choosing to. A release doing any of them says so
+under its own heading.
+
 There is no beta suffix, because a four-number version has nowhere to put one. A
 pre-release is a GitHub release marked as a prerelease, which
 `.github/workflows/publish.yaml` passes on as `is-unstable`. Which channel that
