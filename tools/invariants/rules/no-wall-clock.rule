@@ -1,5 +1,5 @@
 Id: no-wall-clock
-Pattern: \b(DateTime\.(Now|UtcNow|Today)|DateTimeOffset\.(Now|UtcNow)|Environment\.TickCount)
+Pattern: \b(DateTime\.(Now|UtcNow|Today)|DateTimeOffset\.(Now|UtcNow)|Environment\.TickCount|Stopwatch|TimeProvider\.System)
 Subject: *.cs
 Except: :!*SystemClock.cs
 Issue: 47
@@ -17,3 +17,25 @@ path would turn that rename into a silently disabled invariant.
 The exception is one file and widening it is how this rule stops meaning
 anything. A second reader of the machine's clock belongs behind IClock, not
 beside SystemClock.
+
+TWO SPELLINGS OF THE SAME READ ARE HERE AND THE FIRST FOUR DID NOT REACH THEM,
+and both are what somebody measuring an elapsed interval writes first rather
+than something exotic. A Stopwatch is the machine's monotonic clock read where
+it stands, and it is the obvious tool for a timeout and for a backoff, which are
+two of the five things listed above; nothing about it says DateTime, so a rule
+written as the four named properties was silent on it. TimeProvider.System is
+the runtime's own answer to the question IClock already answers here, and taking
+it would put a second source of the current time in front of the injected one
+while every existing pattern stayed quiet.
+
+The type name carries the whole of the Stopwatch arm rather than its members,
+because StartNew, GetTimestamp and GetElapsedTime are three ways to the same
+read and a pattern naming them is a pattern that goes quiet when a fourth
+arrives. TimeProvider is matched only where it names the system instance: a
+provider handed to a caller is an injected seam of the kind this rule exists to
+push work towards, and refusing the type outright would refuse that too.
+
+Its bound is the one every rule here has. A time read reached by reflection, or
+assembled from a string at run time, is invisible to a pattern that reads one
+line at a time, and an await on something that reads the clock somewhere else
+leaves nothing on the line that asks for it.
