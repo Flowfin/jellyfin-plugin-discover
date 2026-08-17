@@ -311,6 +311,12 @@ public sealed class CatalogueDocumentStore
         }
         catch (UnauthorizedAccessException)
         {
+            // The same case as the clause above, reached instead when the file
+            // is read-only or this process may not remove it. Letting it out
+            // here would replace the write's own exception, which is the one
+            // that says what went wrong, and the file left behind is truncated
+            // by the next write to this document because that write opens the
+            // same path with FileMode.Create.
         }
     }
 
