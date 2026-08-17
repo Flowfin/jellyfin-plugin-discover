@@ -132,6 +132,23 @@ echo "The server at ${base} reports version ${version}."
 echo "--- finishing the startup wizard ---"
 say POST /Startup/Configuration \
   '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}' > /dev/null
+
+# The read before the write is not a check, it is what creates the user the
+# write then renames. GetFirstUser calls the user manager's initialisation and
+# UpdateStartupUser answers NotFound when no user exists:
+#
+#     curl -sL https://raw.githubusercontent.com/jellyfin/jellyfin/v10.11.11/Jellyfin.Api/Controllers/StartupController.cs | sed -n '131,137p'
+#         public async Task<ActionResult> UpdateStartupUser([FromBody] StartupUserDto startupUserDto)
+#         {
+#             var user = _userManager.GetFirstUser();
+#             if (user is null)
+#             {
+#                 return NotFound();
+#             }
+#
+# Skipping it answered 404, which is what a run of this script did before the
+# line below existed.
+say GET /Startup/User > /dev/null
 say POST /Startup/User \
   "$(jq -n --arg n "$user" --arg p "$password" '{Name:$n,Password:$p}')" > /dev/null
 say POST /Startup/RemoteAccess \
