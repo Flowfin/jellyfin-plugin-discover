@@ -63,5 +63,61 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test --configuration Release --no-build --verbosity normal
+      # The suite runs where there is nowhere to call (#46). Its own guard
+      # refuses an address no test set up, and that is a property of the
+      # adapters a test hands the guard to rather than of the suite: a test
+      # building an adapter over the transport that really talks reaches a host
+      # with nothing in the tree noticing. This is the other half, and it is
+      # the half that makes the claim a property of the run.
+      #
+      # A network namespace rather than a container. A container run is a
+      # different thing with its own cost on a developer machine, and
+      # Jellyfin.Plugin.Template.Tests/HEADLESS.md records that `dotnet test`
+      # starts none; the namespace holds this process tree only, and the
+      # runner's own connection to the forge is outside it and untouched.
+      #
+      # THE PROBE RUNS FIRST AND HAS TO FAIL. A namespace that quietly stopped
+      # isolating would leave a green suite that had a route, which is the same
+      # green as a green suite that did not, and telling those apart is the
+      # whole value of this step. So the step asks a public host a question and
+      # fails when it gets an answer, rather than trusting that the isolation
+      # took.
+      #
+      # Restore and build stay outside it, because both need the package feed.
+      # Only `--no-build` is run in here, so nothing legitimate wants a route.
+      - name: Test where there is no route to a public host
+        env:
+          DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+          PROBED_HOST: https://api.themoviedb.org/3/
+        run: |
+          set -euo pipefail
+          sudo --preserve-env=DOTNET_ROOT,DOTNET_CLI_TELEMETRY_OPTOUT,PROBED_HOST \
+            env "PATH=$PATH" \
+            unshare --net -- sh -eu -c '
+              ip link set lo up
+
+              # Two probes, because each is blind to the other half. The first
+              # asks what the namespace holds and refuses anything but
+              # loopback: a positive statement, so a missing tool fails the
+              # step under `set -e` rather than reading as isolation. The
+              # second asks a host a question, which is the thing the suite
+              # would do, and a route the first probe cannot see still answers
+              # it.
+              beyond_loopback="$(ip -oneline link show | grep -v " lo:" || true)"
+
+              if [ -n "$beyond_loopback" ]; then
+                echo "::error::The namespace this suite runs in holds an interface other than loopback, so the run says nothing about the suite making no connection: ${beyond_loopback}"
+                exit 1
+              fi
+
+              echo "Nothing but loopback in this namespace."
+
+              if curl --silent --show-error --max-time 20 --output /dev/null "$PROBED_HOST"; then
+                echo "::error::A request reached ${PROBED_HOST} from inside the namespace this suite runs in, so this run says nothing about the suite making no connection. Failing rather than reporting a green suite that had a route out."
+                exit 1
+              fi
+
+              echo "No route out of this namespace: the request above could not reach ${PROBED_HOST}."
+
+              dotnet test --configuration Release --no-build --verbosity normal
+            '
