@@ -429,10 +429,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
         {
             var character = path[index];
 
-            var admitted = (character >= 'a' && character <= 'z')
-                || (character >= 'A' && character <= 'Z')
-                || (character >= '0' && character <= '9')
-                || character is '.' or '-' or '_';
+            var admitted = char.IsAsciiLetterOrDigit(character) || character is '.' or '-' or '_';
 
             if (!admitted)
             {
