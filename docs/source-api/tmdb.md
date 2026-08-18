@@ -10,8 +10,10 @@ which is where an obligation on this plugin's behaviour lives. Nothing here is
 an obligation; it is what the API offers, and the two go stale at different
 rates and for different reasons.
 
-Read on 2026-08-08. Every value below carries the page it came from. A value
-with no page next to it is not on this page.
+Read on 2026-08-08, except for `## The six addresses this plugin asks`, which
+was read on 2026-08-18 and carries its own date because the two readings are of
+different pages and go stale separately. Every value below carries the page it
+came from. A value with no page next to it is not on this page.
 
 ## The request budget
 
@@ -110,11 +112,150 @@ or only from a position in it, and neither question is answered by what is
 written above. Both need a measurement against a live response or a page nobody
 has found yet, and the absence is recorded rather than filled in.
 
+One of those two is answered by the section below rather than by a live
+response, and the sentence above is left as it stands because it says what the
+discover endpoint states. A reader who stops here has read a third of the
+question: the discover endpoint is not an endpoint this plugin asks.
+
+## The six addresses this plugin asks
+
+Everything above is the discover endpoint, and the adapter in this tree asks it
+for nothing. The six paths it builds are literals chosen by a switch:
+
+    git grep -nE '"(trending|tv|movie)' -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:477:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:478:            "popular" => series ? "tv/popular" : "movie/popular",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:479:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
+
+Read on 2026-08-18, one reference per address:
+
+- `trending/movie/week` at <https://developer.themoviedb.org/reference/trending-movies>
+- `trending/tv/week` at <https://developer.themoviedb.org/reference/trending-tv>
+- `movie/popular` at <https://developer.themoviedb.org/reference/movie-popular-list>
+- `tv/popular` at <https://developer.themoviedb.org/reference/tv-series-popular-list>
+- `movie/top_rated` at <https://developer.themoviedb.org/reference/movie-top-rated-list>
+- `tv/top_rated` at <https://developer.themoviedb.org/reference/tv-series-top-rated-list>
+
+The six do not agree with one another, which is why this is a table per address
+rather than a paragraph about the family:
+
+| Address               | Query parameters documented  | `adult` on a result | Certification on a result | `popularity`, `vote_average`, `vote_count` on a result |
+| --------------------- | ---------------------------- | ------------------- | ------------------------- | ------------------------------------------------------ |
+| `trending/movie/week` | `language`                   | yes                 | no                        | yes                                                    |
+| `trending/tv/week`    | `language`                   | yes                 | no                        | yes                                                    |
+| `movie/popular`       | `language`, `page`, `region` | yes                 | no                        | yes                                                    |
+| `tv/popular`          | `language`, `page`           | no                  | no                        | yes                                                    |
+| `movie/top_rated`     | `language`, `page`, `region` | yes                 | no                        | yes                                                    |
+| `tv/top_rated`        | `language`, `page`           | no                  | no                        | yes                                                    |
+
+`time_window` is the trending path's own last segment rather than a query
+parameter, and both trending references document it as the enumeration `day` or
+`week` with a default of `day`. This plugin spells `week` into the path.
+
+`language` carries a documented default of `en-US` on all six.
+
+### Paging is documented on four of the six
+
+Neither trending reference documents `page` or any other paging parameter. The
+adapter sends `page` to all six addresses. What the two trending addresses do
+with a parameter their reference does not list is not something a reading
+settles in either direction, and an undocumented parameter that is honoured is
+exactly the case a reference page cannot report. That half stays a question for
+the source rather than for its pages, and #61 already carries it with the
+assertion that pins the address the adapter built.
+
+The envelope around `results` on `movie/popular` documents `page`,
+`total_pages` and `total_results` beside it, so how many pages a question has is
+recoverable from the answer. How many results one page returns, and whether
+there is a highest page number, are stated on none of the six, so the page size
+#61 declares stays this plugin's own number rather than the source's.
+
+### A region can be asked for on two of the six
+
+`region` is documented on `movie/popular` and on `movie/top_rated`, and on
+neither trending address and neither television address.
+
+What that is worth to #81. Its first condition asks for a language and a region
+sent to the source. Language is expressible on every address this plugin asks,
+so that half is a change to what the adapter builds rather than a thing the
+source withholds. Region is expressible on a third of them, and the four that do
+not document it are not closed by sending it anyway. So the answer that issue
+takes has to be per address rather than one pair of values sent everywhere, and
+a shelf whose address takes no region is a shelf whose region is whatever the
+source decides.
+
+### No address this plugin asks returns a content rating
+
+None of the six documents a certification, a content rating or an age rating on
+a result.
+
+What that is worth to #55 and to #57. #55's fourth condition carries the rating
+where the source supplies one, so that #57 has something to filter on. On the
+addresses this plugin asks, the source supplies none, so a rating is a second
+request per title against an endpoint nobody here has read rather than a field
+taken off an answer already in hand. That is a cost against the budget in
+`## The request budget` and against #78, and it is a different decision from the
+per-country shape recorded under `## A content rating ceiling`, which is about
+asking for a ceiling rather than about reading one back.
+
+### An adult flag comes back on four of the six
+
+Both trending references and both movie list references document an `adult`
+boolean on a result. Neither television list reference documents one.
+
+What that is worth to #93. `docs/limits.md` already carries that no reference
+for these addresses documents a parameter leaving adult titles out, so the
+exclusion cannot be made at the request. This is what is left after that. An
+exclusion made on the answer is available for four of the six and has nothing to
+read on the other two, so a television shelf built on `tv/popular` or
+`tv/top_rated` has no adult signal of its own at all.
+
+`movie/popular` and `movie/top_rated` each say the endpoint is a discover call
+underneath and point at discover for its filters. Read at
+<https://developer.themoviedb.org/reference/movie-top-rated-list>:
+
+    This call is really just a discover call behind the scenes. If you would
+    like to tweak any of the default filters head over and read about discover.
+
+Whether that makes `include_adult` or a certification parameter available on
+those two addresses is not stated by either page. Nothing here infers it, and
+the parameter lists in the table are what those pages document.
+
+### Every address returns a popularity and a vote
+
+All six document `popularity`, `vote_average` and `vote_count` on a result.
+
+What that is worth to #91. That issue's first condition wants the order of a
+shelf decided by this plugin from fields on the record, and its record says a
+shelf whose premise is a ranking has nothing on the record to derive one from,
+so the source's own sequence is the only thing carrying it. That is a true
+statement about the record in this tree and not about the source. Three numbers
+come back on every one of the six and the adapter maps none of them:
+
+    git grep -inE 'popularity|vote_average|vote_count' -- Jellyfin.Plugin.Template/ ; echo "exit=$?"
+    exit=1
+
+Whether an order should be derived from one of them, and which, is that issue's
+decision and is not taken here. What this settles is that the input exists and
+that a ranked shelf does not have to depend on arrival sequence for want of one.
+
 ## What was not read
 
-The endpoint reference above is the discover endpoint. No other endpoint was
-read. The authentication scheme, the response schemas, the image configuration
-endpoint and the append-to-response mechanism were not read.
+This section said that no endpoint but discover had been read and that no
+response schema had. Six more have been read since, and they are the six this
+plugin asks. What is left unread is smaller than it was, and it is written out
+rather than described.
+
+The authentication scheme, the image configuration endpoint and the
+append-to-response mechanism were not read. Neither was any endpoint that
+answers about a single title, which is where a certification would have to come
+from and is named as unread rather than as absent. The discover endpoint's own
+response schema was not read either: what the section above records of discover
+is its parameters.
+
+The six references were read for the parameters they document and for the
+fields their result schemas document. Nothing else on those six pages was read,
+including their error responses and their examples.
 
 Nothing here was verified against a live response. Every statement on this page
 is a reading of documentation, and documentation is a claim by the source about
