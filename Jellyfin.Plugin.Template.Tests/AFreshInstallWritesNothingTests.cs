@@ -24,9 +24,26 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// directly, which <see cref="CatalogueDocumentStore"/> does.
 ///
 /// This is one half of the first condition on #104. The other half is that no
-/// outbound call is made, and that half is not asserted anywhere yet because
-/// nothing in the plugin can make one; a count of zero over a plugin with no
-/// route out is a number about the tree rather than about the property.
+/// outbound call is made, and it is not asserted here.
+///
+/// The reason written here when this file landed was that nothing in the plugin
+/// could make one. That stopped being true on the commit adding the first
+/// adapter, which merged after this file and was not read back against it. What
+/// holds the property now is narrower, and the narrow form is the one to keep:
+/// the adapter is the only type in this plugin that can reach a host, and
+/// nothing constructs it, so a start resolves no service holding a way out.
+///
+/// The near-miss moved with it. Adding a way out to the plugin is no longer the
+/// mistake to watch for, because it has happened. The mistake is a line in
+/// <see cref="PluginServiceRegistrator"/> registering the adapter, after which
+/// a start builds something able to call and nothing here says so.
+///
+/// Why the assertion is still not written rather than merely not written yet.
+/// `no-network-outside-source-adapter` refuses the names of the transport types
+/// in every tracked C# file but an adapter's, so a test counting what a start
+/// could reach cannot name what it counts. The seam a test does have,
+/// <see cref="ATransportThatRefusesWhatNoTestSetUp"/>, counts what a test
+/// handed an adapter, and a start hands it nothing.
 ///
 /// The issue is named as a number rather than as a link because a link puts a
 /// hostname in the plugin's C#, and `source-terms` reads every hostname there as
