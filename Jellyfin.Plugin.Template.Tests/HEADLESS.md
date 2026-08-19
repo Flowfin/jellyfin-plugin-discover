@@ -114,7 +114,7 @@ something a test can decide for the person running it.
 The consequence is that a container run is not part of the suite. `dotnet test`
 today starts no container at all:
 
-    git grep -lEi 'Testcontainers|Docker\.DotNet|docker run|Process\.Start' -- 'Jellyfin.Plugin.Template.Tests/*' ; echo "exit=$?"
+    git grep -lEi 'Testcontainers|Docker\.DotNet|docker run|Process\.Start' -- 'Jellyfin.Plugin.Template.Tests/*.cs' 'Jellyfin.Plugin.Template.Tests/*.csproj' ; echo "exit=$?"
     exit=1
 
 `git grep` exits 1 when it matches nothing, so that is the whole answer rather
@@ -122,6 +122,16 @@ than an empty output somebody has to trust. The container work lives in a
 workflow instead, and a default `dotnet test` run on a machine with no container
 runtime is green rather than skipped with warnings. Keeping that true as the
 suite grows is #44's third condition.
+
+The two file kinds are named rather than the whole directory, and that is the
+repair of a defect rather than a preference. This asked for every path under the
+test project, which includes this page, and one of the words it searches for is
+in the line above. So it matched this file and exited 0 from the day it was
+written, while the sentence under it invited a reader to read the exit code
+instead of the output. A negative disclosure resting on an exit code has to be
+run somewhere the page itself cannot answer. The sources and the project file are
+what the claim is about, and `Fixtures/README.md` was already asking for exactly
+those two.
 
 ## What is beside the suite when it runs
 
