@@ -6,8 +6,17 @@ a row in the same item table as the operator's media, so anything that queries
 items can find one. This page is the list of places that query items, how the
 list was produced, and what each of them does with a channel item today.
 
-It is a reading of the server, not of this plugin. Nothing here is implemented,
-because there is no surface yet: `git grep -nE 'IChannel|ChannelItemInfo' -- 'Jellyfin.Plugin.Template/*.cs'` exits 1.
+It is a reading of the server, not of this plugin. None of the answers below is
+implemented. The surface is registered with the server, and every level it
+answers is empty, so no discover title has reached any of the places listed
+here:
+
+    git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:63:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+
+    git grep -n 'SurfaceListing.Empty' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
+    Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:156:        return Task.FromResult(SurfaceListing.Empty);
+
 What this page is for is that the reading is expensive to reconstruct later and
 is the input the implementation needs, and a list that cannot be re-derived goes
 stale in silence.
