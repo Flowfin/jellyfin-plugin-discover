@@ -14,26 +14,61 @@ server with no companion plugin installed.
 
 ## Status
 
-Nothing in that description is built. There is no catalogue, nothing contacts a
-metadata source, and no new browsing appears anywhere in a client:
+Nothing in that description works yet, and one part of it now appears without
+working. A discover page shows up in a client, because the surface is registered
+with the server:
 
-    git grep -nE 'Catalog|Shelf|IChannel|ChannelItemInfo|HttpClient|IHttpClientFactory' -- 'Jellyfin.Plugin.Template/*.cs'
+    git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:63:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+
+Every level of that page is empty, the top of it included, and a test holds that
+rather than the sentence resting on a reading of the source:
+
+    git grep -n 'SurfaceListing.Empty' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
+    Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:156:        return Task.FromResult(SurfaceListing.Empty);
+
+    git grep -n 'EveryLevelIsEmptyUntilTheShelvesExist' -- Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs
+    Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs:139:    public async Task EveryLevelIsEmptyUntilTheShelvesExist(string? folder)
+
+So what installing this gets you today is a page with nothing on it and nothing
+saying why.
+
+Nothing leaves the server for a metadata source. The types that would ask one
+are in the tree, and no file in the plugin outside the source directory names
+the interface, so nothing on a running server holds one. The only callers that
+build the adapter are in the test project:
+
+    git grep -n 'IMetadataSource' -- 'Jellyfin.Plugin.Template/*.cs' ':!Jellyfin.Plugin.Template/Sources/'
     exit=1
 
-Read every sentence in the section above as a plan and not as behaviour you can
-install. The note at the top of this page is the same kind of sentence and needs
-the same reading. Nothing here has been tried with any client, and "any Jellyfin
-server" is narrower than it sounds: the package declares a floor, and a server
-below it does not load the plugin at all.
+    git grep -rln 'new TmdbSourceAdapter' -- '*.cs'
+    Jellyfin.Plugin.Template.Tests/SourceResponseFuzzTests.cs
+    Jellyfin.Plugin.Template.Tests/TmdbSourceAdapterTests.cs
+
+The catalogue is the same shape. A record, a directory and a document store
+exist, the only place one is constructed is the suite, and installing this
+plugin therefore puts no catalogue on a server's disk:
+
+    git grep -rln 'new CatalogueDirectory\|new CatalogueDocumentStore' -- '*.cs'
+    Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs
+    Jellyfin.Plugin.Template.Tests/CatalogueDirectoryTests.cs
+    Jellyfin.Plugin.Template.Tests/CatalogueDocumentStoreTests.cs
+    Jellyfin.Plugin.Template.Tests/CatalogueDocumentVersionTests.cs
+
+Read every sentence in the description above as a plan and not as behaviour you
+can install. The note at the top of this page is the same kind of sentence and
+needs the same reading. Nothing here has been tried with any client, and "any
+Jellyfin server" is narrower than it sounds: the package declares a floor, and a
+server below it does not load the plugin at all.
 
     git grep -n '^targetAbi' -- build.yaml
     build.yaml:10:targetAbi: "10.11.0.0"
 
-What has been built is underneath it rather than in front of it: the gate this
-repository runs, the test project and the rules the suite lives under, the
-plugin's own identity, and a configuration that carries a schema version and no
-settings. None of that is visible to a user, which is why the paragraph above
-says what it says.
+The rest of what has been built is underneath the description rather than in
+front of it: the gate this repository runs, the test project and the rules the
+suite lives under, the plugin's own identity, the source adapter and the
+catalogue types named above, and a configuration that carries a schema version
+and no settings. The empty page is the only part of any of it a user meets.
 
 The gate does not run on quite every change, and the exception is the one a
 reader of this page is most likely to run into. Two workflows skip a change that
