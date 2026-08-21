@@ -14,6 +14,30 @@ anybody's memory of it. Read from a clone of
     cd jellyfin-meta-plugins && git rev-parse HEAD
     eb99033a7ff644881b014bc0b4169916c854a68b
 
+Two of the paths quoted below exist in that clone and in this repository, under
+the same name and with different contents: `.github/workflows/publish.yaml` and
+`build.yaml`. A bare path is therefore not enough to say which file a reading is
+about, and the two readings fail differently in the wrong checkout. A `grep` for
+something only the catalogue's file has comes back empty here and exits 1, which
+reads as the guard being absent rather than as the wrong file. A `sed` line range
+prints whatever this repository's file holds at those numbers and exits 0, which
+announces nothing at all.
+
+So every reading of the catalogue's copy is written against the commit id above
+rather than against a bare path. That is not decoration. This repository does not
+have that object, so the same command run in the wrong checkout stops rather than
+answering, and it says which of the two mistakes was made:
+
+    git show eb99033a7ff644881b014bc0b4169916c854a68b:.github/workflows/publish.yaml ; echo "exit=$?"
+    fatal: path '.github/workflows/publish.yaml' exists on disk, but not in 'eb99033a7ff644881b014bc0b4169916c854a68b'
+    exit=128
+
+That output is from this repository rather than from the clone, and it is the one
+reading on this page taken here on purpose.
+
+The two readings that are deliberately about this repository's own files carry
+`origin/master` instead, and they are the only two on this page that do.
+
 ## The catalogue enumerates an organisation
 
 The tool that maintains the plugin list walks one page of the forge API and takes
@@ -97,21 +121,21 @@ The consequence is larger than a listing. The publishing route is a reusable
 workflow, and three of its steps, including the whole publishing job, are guarded
 on the owner:
 
-    grep -n "contains(github.repository, 'jellyfin/')" .github/workflows/publish.yaml
+    git show eb99033a7ff644881b014bc0b4169916c854a68b:.github/workflows/publish.yaml | grep -n "contains(github.repository, 'jellyfin/')"
     82:        if: ${{ contains(github.repository, 'jellyfin/') }}
     93:        if: ${{ contains(github.repository, 'jellyfin/') }}
     106:    if: ${{ contains(github.repository, 'jellyfin/') }}
 
 What those guard is an upload to a host and a manifest edit over ssh:
 
-    sed -n '107,109p' .github/workflows/publish.yaml
+    git show eb99033a7ff644881b014bc0b4169916c854a68b:.github/workflows/publish.yaml | sed -n '107,109p'
         env:
           JELLYFIN_REPO: "/srv/repository/main/plugin/manifest.json"
           JELLYFIN_REPO_URL: "https://repo.jellyfin.org/files/plugin/"
 
 with credentials the calling repository has to supply:
 
-    sed -n '21,27p' .github/workflows/publish.yaml
+    git show eb99033a7ff644881b014bc0b4169916c854a68b:.github/workflows/publish.yaml | sed -n '21,27p'
         secrets:
           deploy-host:
             required: true
