@@ -18,7 +18,7 @@ then offers it to every client as one more entry in the list of libraries.
 
 ## Where the evidence comes from
 
-Every command below is run in a clone of `jellyfin/jellyfin`, not in this
+Every `git` command below is run in a clone of `jellyfin/jellyfin`, not in this
 repository, at two tags:
 
     git rev-parse v10.11.11 v12.0-rc4
@@ -27,6 +27,12 @@ repository, at two tags:
 
 A reader whose clone prints two different commit ids is reading different bytes
 from the ones quoted here, and the outputs below are claims about those two.
+
+One reading here is not of that kind, and it is marked where it sits rather than
+only here. The third option is rejected on what another project publishes about
+itself, which is a page on the network and not a tag in a clone, so it is quoted
+at a pinned commit with the date it was read beside it. Everything else on this
+page can be re-derived offline and that one cannot.
 
 ## Why a channel
 
@@ -95,6 +101,54 @@ itself: it works on the web client and on anything embedding it, and not on
 native or television clients. That is the one requirement this plugin exists to
 satisfy, so this is not a trade-off against the channel. It is a different
 product.
+
+The prior art is named here rather than alluded to, because a rejection resting
+on what somebody else says about their own software is worth nothing to a reader
+who cannot go and read it. It is
+[`CodeDevMLH/jellyfin-plugin-media-bar-enhanced`](https://github.com/CodeDevMLH/jellyfin-plugin-media-bar-enhanced),
+which draws a featured-content bar on the Jellyfin home screen by putting its
+own JavaScript and CSS into the web interface. Read on 2026-08-21, at the commit
+that last touched that file, `3c589261572836d4aead62b3664e74a1858798cb`, dated
+2026-07-25:
+
+    curl -sS -L https://raw.githubusercontent.com/CodeDevMLH/jellyfin-plugin-media-bar-enhanced/3c589261572836d4aead62b3664e74a1858798cb/README.md | grep -n -A 14 '^## Client Compatibility'
+    178:## Client Compatibility
+    179-
+    180-Because this plugin relies on injecting JavaScript and CSS into the web interface, it works best on clients that use the web wrapper.
+    181-
+    182-| Client Platform | Status | Notes |
+    183-| :--- | :---: | :--- |
+    184-| **Web Browsers** (Firefox, Chrome etc.) | ✅ | Direct JS injection |
+    185-| **Jellyfin Media Player** (Windows/Linux/macOS) | ✅ | Uses jellyfin web |
+    186-| **Android App** | ✅ | Uses a web wrapper |
+    187-| **iOS App** | ✅ | Uses a web wrapper |
+    188-| **Android TV / Fire TV** | ❌ | **Not supported.** Uses a native Java/Kotlin UI. |
+    189-| **Tizen OS** | ❌ | **Not supported.** Uses a native UI. |
+    190-| **Roku** | ❌ | **Not supported.** Uses a native UI. |
+    191-| **Swiftfin** (iOS/tvOS) | ❌ | **Not supported.** Uses a native Swift UI. |
+    192-| **Kodi** (via Jellyfin Addon) | ❌ | **Not supported.** Uses Kodi's native skinning engine. |
+
+The four platforms it claims are the web client and three things that wrap it.
+The five it refuses are refused for one reason given five times, that the client
+draws its own interface, and every television client this plugin has to reach is
+among them. So the sentence above is that project's own table rather than a
+reading of it.
+
+What the quotation does not carry, so it is not taken wider than it is. That
+project is a featured-content bar rather than a discover surface, and its page
+states no API of its own, so it is prior art for the injected-assets half of the
+shape and not for the whole of it. That is the half the reach hangs on: the
+limit the table records is a property of putting assets into the web interface,
+and an API beside them moves no row of it. The table is also that project's
+claim about clients rather than anything measured here, and nothing on this page
+has been measured against it.
+
+It can also move under this page in a way no `git` command here can catch. It is
+a third party's file, edited on their schedule, and a repository holding a
+quotation of it has no way to notice. That is why the commit is pinned rather
+than the branch: the pinned bytes are the ones read, and a reader who compares
+the pin against the branch is comparing what was read against what is published
+now.
 
 ## What the decision costs
 
