@@ -24,7 +24,8 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// directly, which <see cref="CatalogueDocumentStore"/> does.
 ///
 /// This is one half of the first condition on #104. The other half is that no
-/// outbound call is made, and it is not asserted here.
+/// outbound call is made, and it is asserted in
+/// <see cref="AFreshInstallHoldsNoWayOutTests"/> rather than here.
 ///
 /// The reason written here when this file landed was that nothing in the plugin
 /// could make one. That stopped being true on the commit adding the first
@@ -36,14 +37,20 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// The near-miss moved with it. Adding a way out to the plugin is no longer the
 /// mistake to watch for, because it has happened. The mistake is a line in
 /// <see cref="PluginServiceRegistrator"/> registering the adapter, after which
-/// a start builds something able to call and nothing here says so.
+/// a start builds something able to call and this file's assertion stays green.
+/// That line is what the test beside this one refuses, so the mistake is now
+/// caught rather than only described.
 ///
-/// Why the assertion is still not written rather than merely not written yet.
+/// This remark said the assertion could not be written, because
 /// `no-network-outside-source-adapter` refuses the names of the transport types
-/// in every tracked C# file but an adapter's, so a test counting what a start
-/// could reach cannot name what it counts. The seam a test does have,
-/// <see cref="ATransportThatRefusesWhatNoTestSetUp"/>, counts what a test
-/// handed an adapter, and a start hands it nothing.
+/// in every tracked C# file but an adapter's, and a test counting what a start
+/// could reach cannot name what it counts. The half of that which is true is
+/// still true and is why the assertion counts what it counts: it names
+/// <see cref="Jellyfin.Plugin.Template.Sources.IMetadataSource"/>, which that
+/// rule does not refuse, rather than a transport type. The seam this remark
+/// offered instead, <see cref="ATransportThatRefusesWhatNoTestSetUp"/>, counts
+/// what a test handed an adapter, and a start hands it nothing, which is why it
+/// is not the one used.
 ///
 /// The issue is named as a number rather than as a link because a link puts a
 /// hostname in the plugin's C#, and `source-terms` reads every hostname there as
