@@ -158,9 +158,29 @@ A rename leaves the old subtree standing for up to a day on a server nobody has
 retimed that task on, and then the server takes it away.
 
 This is read from the server's source and has not been watched happening on a
-running server. There is no surface to rename yet:
-[#53](https://github.com/Flowfin/jellyfin-plugin-discover/issues/53) is where
-one arrives.
+running server. There is a surface to rename, and the name every address on this
+page is derived from is a literal in the tree, offered to the server on every
+start:
+
+    git grep -n 'Name = "Discover"' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
+    Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:65:        Name = "Discover",
+
+    git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:63:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+
+Nothing has been published from this repository, so no install carries a row
+under that name and the cost above is still ahead of every server rather than
+behind one:
+
+    gh api repos/Flowfin/jellyfin-plugin-discover/releases --jq 'length'
+    0
+
+This paragraph said there is no surface to rename yet and sent the reader to
+[#53](https://github.com/Flowfin/jellyfin-plugin-discover/issues/53) for one.
+That was true when the page landed and stopped being true when #53 merged, so
+the page went on reading as a cost nobody could yet pay while the name it is
+about was in the tree. What the page concludes did not change; the ground it
+rested on did.
 
 ## What the removal does to a favourite
 
