@@ -136,6 +136,138 @@ first table's other end is the target gate, which is another repository over the
 network, so whether those rows still describe it stays the command at the top of
 this page and a person to run it.
 
+## Which of these are wanted behind a merge
+
+The two tables above answer whether a check is wanted at all. Whether a check
+that landed stands behind a merge is a different question and this page did not
+answer it, so a name outside the required set read the same whether it was left
+out on purpose or never considered.
+
+Nothing here is a reading of the required set. That set is a repository setting,
+printed by the command at the top of this page rather than repeated below, and
+raising it is typed at the settings page rather than landed from a branch. What
+this section carries is the decision that typing needs, which is what
+[#40](https://github.com/Flowfin/jellyfin-plugin-discover/issues/40) ends in a
+hand-off for.
+
+The rows below are the names a pull request publishes, counted off a merged one
+so the reading reproduces:
+
+    gh pr checks 281 --repo Flowfin/jellyfin-plugin-discover --json name --jq '[.[].name] | unique | length'
+    24
+
+### Four of them cannot be required as they stand
+
+A required entry matches a check-run name literally, so what the name is made of
+decides whether the entry keeps meaning what it meant.
+
+A name carrying a matrix value moves with the list that value comes from:
+
+    git grep -n '^    name: .*matrix\.' -- .github/workflows/
+    .github/workflows/abi-matches-the-line.yml:96:    name: Package for ${{ matrix.line }}
+    .github/workflows/discover-surface-appears.yml:110:    name: Reaches a signed-in user on ${{ matrix.line }}
+    .github/workflows/plugin-loads.yml:100:    name: Loads on ${{ matrix.line }}
+    .github/workflows/scan-codeql.yaml:37:    name: Analyze ${{ matrix.language }}
+
+An entry naming one of those four goes on passing the day a second line or a
+second language is declared, and covers less than it did with nothing saying so.
+
+A name no job in this tree spells is posted by the action rather than by a job.
+`CodeQL` and `zizmor` are both published on a pull request and neither is
+written down here:
+
+    git grep -n 'name: CodeQL$\|name: zizmor$' -- .github/workflows/ ; echo "exit=$?"
+    exit=1
+
+`zizmor.yml` has a job beside its aggregate whose name is written down, so that
+workflow has a name that can be required. `scan-codeql.yaml` does not: its only
+job name carries the language matrix value, so nothing it publishes can be
+required while the file is shaped that way.
+
+One name is published by two workflows:
+
+    git grep -n '^    name: Read the targeted server lines' -- .github/workflows/
+    .github/workflows/discover-surface-appears.yml:57:    name: Read the targeted server lines
+    .github/workflows/plugin-loads.yml:47:    name: Read the targeted server lines
+
+A required entry of that name is satisfied by whichever of the two reports, and
+which one it means is not decidable from the name. The two are not
+interchangeable, and the second of them runs on a pull request only when one of
+two paths changed:
+
+    git grep -n -A6 '^  pull_request:' -- .github/workflows/discover-surface-appears.yml
+    .github/workflows/discover-surface-appears.yml:40:  pull_request:
+    .github/workflows/discover-surface-appears.yml-41-    branches:
+    .github/workflows/discover-surface-appears.yml-42-      - master
+    .github/workflows/discover-surface-appears.yml-43-    paths:
+    .github/workflows/discover-surface-appears.yml-44-      - ".github/workflows/discover-surface-appears.yml"
+    .github/workflows/discover-surface-appears.yml-45-      - "tools/discover-surface-appears.sh"
+    .github/workflows/discover-surface-appears.yml-46-  workflow_dispatch:
+
+So on a change touching neither path one of the two reports under that name, and
+on a change touching them both do. That is also the failure recorded on
+[#154](https://github.com/Flowfin/jellyfin-plugin-discover/issues/154) seen from
+the allow-list side rather than the ignore-list side: a required check that
+cannot report on a class of change refuses that change rather than passing it.
+
+### One thing this section does not answer
+
+Seven jobs here declare that they follow another:
+
+    git grep -n '^    needs:' -- .github/workflows/
+    .github/workflows/abi-matches-the-line.yml:97:    needs: lines
+    .github/workflows/abi-matches-the-line.yml:184:    needs: [lines, package]
+    .github/workflows/discover-surface-appears.yml:111:    needs: lines
+    .github/workflows/plugin-loads.yml:101:    needs: lines
+    .github/workflows/publish.yaml:240:    needs: gate
+    .github/workflows/publish.yaml:384:    needs: build
+    .github/workflows/publish.yaml:410:    needs: [build, attest]
+
+What a check run of that kind reports when the job it follows has failed, and
+whether a required entry naming it is then satisfied, has not been measured
+here. Two rows below turn on that answer and say so rather than guessing it.
+
+### The decision, one line each
+
+| Published name                                             | Wanted behind a merge | Why, in one line                                                                                                                                  |
+| ---------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Analyze actions`                                          | no                    | The name carries the language matrix value, so the entry stops covering what it named the day that list moves.                                    |
+| `Analyze csharp`                                           | no                    | The same, and `scan-codeql.yaml` publishes no job name without a matrix value in it.                                                              |
+| `Audit workflows (zizmor)`                                 | yes                   | A job name written down in the tree, one deterministic answer, over the files every other check on this list runs from.                           |
+| `call / build`                                             | yes                   | The job id is `call` and does not move with what it calls, and nothing else here is worth judging on a package that did not build.                |
+| `call / test`                                              | yes                   | The same name shape, over the suite the rest of this gate is written around.                                                                      |
+| `CodeQL`                                                   | no                    | No job here spells it, so it is the aggregate the action posts rather than a name a job publishes.                                                |
+| `DCO sign-off`                                             | yes                   | It reads a property of the commits rather than making a judgement about them.                                                                     |
+| `dependency-review`                                        | yes                   | It judges what a change adds, so its answer moves with the change rather than with the day it runs.                                               |
+| `Deterministic pull-request hygiene`                       | yes                   | Both failing legs have one answer and no judgement, and it reports success without judging for a bot or an outside author, which it prints.       |
+| `Documented commands still print what is pasted`           | yes                   | It reads the tree deterministically, with the bound that on a pull request it defers the blocks reading `origin/master` and says so.              |
+| `Every package of this build declares its own ABI`         | not decided           | The only job of `abi-matches-the-line` whose name carries no declared line, and it follows the other two, which is the unanswered question above. |
+| `Every source carries its terms page`                      | yes                   | It reads the tree deterministically, and the reason the check is here at all is in the `source-terms.yml` row above.                              |
+| `Formatting outside the C#`                                | yes                   | One deterministic answer, and a formatting pass made afterwards rewrites files nobody reviewed.                                                   |
+| `Loads on 10.11`                                           | no                    | The name carries the declared line, so the entry stays green and covers one line the day a second is declared.                                    |
+| `No workflow names a branch this repository does not have` | yes                   | It reads the tree deterministically, and the failure it refuses is in the `branch-name-exists.yml` row above.                                     |
+| `No workflow names another repository`                     | yes                   | The same, and the failure it refuses is in the `own-repository-name.yml` row above.                                                               |
+| `Package for 10.11`                                        | no                    | The declared line again, and the last job of that workflow carries the same failure without it in the name.                                       |
+| `Read the lines a package is built for`                    | not decided           | The last job of that workflow follows it, so whether requiring the later name covers this failure is the unanswered question above.               |
+| `Read the targeted server lines`                           | no                    | Two workflows publish this exact name and the entry cannot say which of them it means.                                                            |
+| `Reject Trojan Source Unicode`                             | yes                   | It reads tracked text deterministically, over a change that reads as something other than what it does.                                           |
+| `The parity tables name every workflow`                    | yes                   | It reads the tree deterministically, over the page this section is written on.                                                                    |
+| `This plugin's invariants hold`                            | yes                   | Every rule it runs is proven to fire on its own fixture and on no other.                                                                          |
+| `Version bump carries a changelog entry`                   | yes                   | It reads the change deterministically, and the reason it is kept apart is in the `changelog-entry.yml` row above.                                 |
+| `zizmor`                                                   | no                    | The aggregate beside the job named above, which is the name that can be required.                                                                 |
+
+### What this section is not
+
+It is a decision about which names are wanted, not a reading of which are
+configured. The command at the top of this page is what says which of the rows
+above are already typed at the settings page, and the rows marked `yes` are
+meant to be a superset of that rather than a copy of it.
+
+Nothing reads this section. `gate-parity.yml` holds the two tables above against
+the workflow directory, and the first column it reads is a file name rather than
+a check-run name, so a job renamed in this tree leaves a row here naming a check
+nobody publishes and every run stays green.
+
 ## What this table is not
 
 It is a decision about which checks this repository wants, not a measurement of
