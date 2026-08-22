@@ -197,6 +197,29 @@ whole of the route that project actually uses is not something the files can say
 and no page there states the requirements in prose: its README describes the
 build scripts and nothing else.
 
-Nothing in this tree reads this page, so it goes stale silently against a
-repository that moves on its own schedule. What catches that is somebody running
-the commands on it.
+A route in this tree reads two of the blocks on this page, and this paragraph
+said none were read. `documented-commands` re-runs every command a tracked page
+pastes and compares the answer against the output pasted under it, on every push
+and every pull request. The two it judges are the two that read this repository:
+
+    tools/documented-commands/run.sh | grep '^ok    docs/plugin-catalogue.md:'
+    ok    docs/plugin-catalogue.md:106: still prints what is pasted under it.
+    ok    docs/plugin-catalogue.md:167: still prints what is pasted under it.
+
+The half this page is about is not among them, and the reader says so by name
+rather than passing over it:
+
+    tools/documented-commands/run.sh | grep '^skip  docs/plugin-catalogue.md:'
+    skip  docs/plugin-catalogue.md:13: the block transcribes more than one command.
+    skip  docs/plugin-catalogue.md:31: names an object this repository does not carry.
+    skip  docs/plugin-catalogue.md:124: names an object this repository does not carry.
+    skip  docs/plugin-catalogue.md:131: names an object this repository does not carry.
+    skip  docs/plugin-catalogue.md:138: names an object this repository does not carry.
+
+So the disclosure holds where it matters and is narrower than it was written.
+Every quotation of the catalogue's own tooling goes stale silently against a
+repository that moves on its own schedule, because those commands name a commit
+this checkout does not have and nothing here can fetch it. What catches those is
+still somebody running them against a checkout of that repository. What is now
+held is this repository's end of the comparison, which is the end that moves when
+a change here edits the packaging metadata or the publish route.
