@@ -107,7 +107,16 @@ on_the_mainline() {
 }
 
 reason_to_skip() {
-  local cmd=$1 verb=""
+  local cmd=$1 verb="" bare=""
+
+  # A placeholder a reader substitutes, and a shell redirection, are both
+  # refused. Both are looked for outside quoted spans, because a `<` or a `>`
+  # inside a grep pattern is neither: the first version of this check tested the
+  # whole line and refused seven blocks for a generic type argument, a property
+  # name in angle brackets and a `=>` in a pattern, including the two blocks on
+  # README.md that show the surface is registered and which server line the tree
+  # declares.
+  bare=$(printf '%s' "$cmd" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g")
 
   # The reasons are asked in the order that gives a reader the true one. A
   # command reaching a Jellyfin tag is refused for that rather than for the verb
@@ -117,10 +126,16 @@ reason_to_skip() {
       echo "reads a Jellyfin checkout at a tag, which is not this repository"
       return
       ;;
+  esac
+
+  case $bare in
     *"<"* | *">"*)
       echo "carries a placeholder or a redirection"
       return
       ;;
+  esac
+
+  case $cmd in
     *"fetch"* | *"ls-remote"*)
       echo "reaches the network"
       return
@@ -318,7 +333,7 @@ read_blocks() {
   done < <(extract "$file")
 }
 
-# Three legs, each reported before the run ends, so a red run names every reason
+# Four legs, each reported before the run ends, so a red run names every reason
 # rather than the first one. Leg 1 is what makes this check worth counting: a
 # lint nobody has watched refusing is a green tick with no evidence behind it.
 prove() {
@@ -348,21 +363,42 @@ prove() {
     bad=1
   fi
 
+  # Leg 3 is the refusal to run, and it is here because the arm it exercises
+  # fires on no tracked page today: every block in the corpus that carries a
+  # redirection is refused for an earlier reason, so without this the arm would
+  # be a guard nobody has watched.
+  if out=$(bash "$script" "$rel_fixtures/refuses-to-run.md" 2>&1); then
+    case $out in
+      *"carries a placeholder or a redirection"*)
+        echo "ok    leg 3: a block carrying a redirection is refused rather than run."
+        ;;
+      *)
+        echo "FAIL  leg 3: the block carrying a redirection was not refused for that reason:"
+        printf '%s\n' "$out" | sed 's/^/        /'
+        bad=1
+        ;;
+    esac
+  else
+    echo "FAIL  leg 3: the block carrying a redirection was run, or refused as a difference:"
+    printf '%s\n' "$out" | sed 's/^/        /'
+    bad=1
+  fi
+
   if out=$(bash "$script" 2>&1); then
-    echo "ok    leg 3: the tracked pages are silent."
+    echo "ok    leg 4: the tracked pages are silent."
     printf '%s\n' "$out" | tail -1 | sed 's/^/      /'
   else
-    echo "FAIL  leg 3: a tracked page was refused:"
+    echo "FAIL  leg 4: a tracked page was refused:"
     printf '%s\n' "$out" | grep -A12 '^FAIL' | sed 's/^/        /'
     bad=1
   fi
 
   if [ "$bad" -ne 0 ]; then
-    echo "::error::The documented-commands check did not hold its own three legs."
+    echo "::error::The documented-commands check did not hold its own four legs."
     exit 1
   fi
 
-  echo "The check fires on the fixture that breaks the rule, is silent on the one that holds it, and is silent on the tracked pages."
+  echo "The check fires on the fixture that breaks the rule, is silent on the one that holds it, refuses to run a block carrying a redirection, and is silent on the tracked pages."
 }
 
 if [ "${1:-}" = "--prove" ]; then
@@ -392,7 +428,10 @@ while IFS= read -r file; do
   read_blocks "$file"
 done <<< "$files"
 
-if [ "$judged" -eq 0 ]; then
+# Only for the whole-tree run. A page named on the command line may legitimately
+# carry nothing this check will judge, and the fixture proving the refusal to run
+# is exactly that case.
+if [ "$judged" -eq 0 ] && [ "$#" -eq 0 ]; then
   echo "::error::No block was judged over $subject, so this check found nothing because it looked at nothing."
   exit 1
 fi
