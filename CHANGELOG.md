@@ -40,11 +40,36 @@ it carries what an identity is made of, what a rename of the surface costs, and
 what moves one without anybody choosing to. A release doing any of them says so
 under its own heading.
 
-There is no beta suffix, because a four-number version has nowhere to put one. A
-pre-release is a GitHub release marked as a prerelease, which
-`.github/workflows/publish.yaml` passes on as `is-unstable`. Which channel that
-reaches, and what happens when publishing fails, is
+There is no beta suffix, because a four-number version has nowhere to put one,
+and nothing published from here is marked as a pre-release either.
+`.github/workflows/publish.yaml` runs on a tag ending in `-stable` and on no
+other, and it creates every release with that flag off:
+
+    git grep -nE '^      - "\[0-9\]|prerelease:' -- .github/workflows/publish.yaml
+    .github/workflows/publish.yaml:17:      - "[0-9]+.[0-9]+.[0-9]+-stable"
+    .github/workflows/publish.yaml:18:      - "[0-9]+.[0-9]+.[0-9]+.[0-9]+-stable"
+    .github/workflows/publish.yaml:492:          prerelease: false
+
+So a beta build is not told apart from a stable one by its version, and it is not
+told apart by the release either. Which channel a pre-release would reach, what
+would distinguish it, and what happens when publishing fails, is
 [#121](https://github.com/Flowfin/jellyfin-plugin-discover/issues/121).
+
+This paragraph said a pre-release is a GitHub release marked as a prerelease
+which `.github/workflows/publish.yaml` passes on as `is-unstable`. That input is
+declared by the workflow in `jellyfin/jellyfin-meta-plugins` which this file
+called until
+[#163](https://github.com/Flowfin/jellyfin-plugin-discover/issues/163) replaced
+the publish path with one of this repository's own:
+
+    gh api "repos/jellyfin/jellyfin-meta-plugins/contents/.github/workflows/publish.yaml?ref=eb99033a7ff644881b014bc0b4169916c854a68b" --jq .content | base64 -d | grep -n 'is-unstable'
+    7:      is-unstable:
+
+    git grep -n 'is-unstable' -- .github/ ; echo "exit=$?"
+    exit=1
+
+The name outlived the call, so the sentence described a route that had been
+removed while naming the file that replaced it.
 
 Every change that bumps the version adds its line under Unreleased first. The
 `changelog-entry` check refuses a pull request that moves the version and leaves
