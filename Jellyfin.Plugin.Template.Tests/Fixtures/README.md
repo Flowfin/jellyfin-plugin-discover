@@ -189,10 +189,34 @@ depending on anything outside this tree.
 
 ## What refuses any of this
 
-Nothing. No check reads this page, no rule in `tools/invariants/rules/` judges
-what a fixture may carry or how it is stored, and a fixture committed as a raw
-response with the source's content in it would pass every run in this repository.
-This is read by a person or it is not read at all.
+Nothing, and that answer is unchanged. No rule in `tools/invariants/rules/`
+judges what a fixture may carry or how it is stored, and a fixture committed as a
+raw response with the source's content in it would pass every run in this
+repository. Whether a fixture may be here at all, what it carries and how it is
+stored is read by a person or it is not read at all.
+
+The reason this paragraph gave for that answer is what has stopped being true. It
+said no check reads this page. One does. `documented-commands` re-runs every
+command a tracked page pastes and compares the answer against the output pasted
+under it, on every push and every pull request, and it prints what it refused to
+judge beside what it judged:
+
+    tools/documented-commands/run.sh | grep 'Jellyfin.Plugin.Template.Tests/Fixtures/README.md'
+    ok    Jellyfin.Plugin.Template.Tests/Fixtures/README.md:11: still prints what is pasted under it.
+    ok    Jellyfin.Plugin.Template.Tests/Fixtures/README.md:44: still prints what is pasted under it.
+    ok    Jellyfin.Plugin.Template.Tests/Fixtures/README.md:56: still prints what is pasted under it.
+    ok    Jellyfin.Plugin.Template.Tests/Fixtures/README.md:68: still prints what is pasted under it.
+    skip  Jellyfin.Plugin.Template.Tests/Fixtures/README.md:148: no output is pasted, so the block is a command handed to the reader.
+    ok    Jellyfin.Plugin.Template.Tests/Fixtures/README.md:162: still prints what is pasted under it.
+    skip  Jellyfin.Plugin.Template.Tests/Fixtures/README.md:171: the block transcribes more than one command.
+    skip  Jellyfin.Plugin.Template.Tests/Fixtures/README.md:177: the block transcribes more than one command.
+
+That is a check on the page's searches and not on this directory's contents, so
+it moves the answer above by nothing. What it does hold is the instrument two of
+this page's own claims were found wrong with: both were commands that had stopped
+printing what was pasted under them, and both were caught by somebody running
+them rather than by any route. That route exists now for the five blocks it
+judges, and for the three it names as refused it does not.
 
 The capture route does not change that sentence and must not be read as
 softening it. What it refuses, it refuses to whoever runs it, and a fixture
