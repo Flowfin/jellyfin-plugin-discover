@@ -38,21 +38,45 @@ refuse.
 The headless rule is not what stops it. Its three prohibitions are a display,
 elevation and a machine trust store, and a network call is none of them. Where it
 touches this at all is the replacement it names for the refused trust-store test,
-one injected handler in front of every outbound call, and that handler does not
-exist yet:
+one injected handler in front of every outbound call, and that page says how much
+of it is built rather than this one saying it again:
 
-    git grep -n 'The handler does not exist yet' -- Jellyfin.Plugin.Template.Tests/HEADLESS.md
+    git grep -c 'Part of it is built' -- Jellyfin.Plugin.Template.Tests/HEADLESS.md
+    Jellyfin.Plugin.Template.Tests/HEADLESS.md:1
+
+This paragraph said the handler does not exist yet and handed the reader a search
+for that sentence, on a page that stopped carrying it when the first half of the
+handler landed. The row there names which half is built and which is not, so a
+pointer is what this page owes and a second account of it is what it does not.
 
 The route is [`capture.sh`](capture.sh) beside this page. Nothing in the test
 project names it and nothing in the test project starts a process, so `dotnet
 test` cannot reach it:
 
-    git grep -nE 'Process\.|ProcessStartInfo|capture\.sh' -- 'Jellyfin.Plugin.Template.Tests/*.cs' 'Jellyfin.Plugin.Template.Tests/*.csproj' ; echo "exit=$?"
+    git grep -nE 'ProcessStartInfo|Process\.Start\(|new Process\(|capture\.sh' -- 'Jellyfin.Plugin.Template.Tests/*.cs' 'Jellyfin.Plugin.Template.Tests/*.csproj' ; echo "exit=$?"
     exit=1
 
-That is the state of the suite today rather than a rule holding it there. No
-check in this repository refuses a test that shells out, so a later test could
-run this script and every run would stay green.
+The pattern asks for a call rather than for the bare name, and that is the repair
+of a defect rather than a preference. A guard in the suite refuses a process
+launch and spells the launch in the remark saying what it refuses, so the search
+matched the refusal and exited 0 while the line under it read exit=1.
+
+Half of what this paragraph used to deny has a check behind it now, and the other
+half does not. `SuiteAssemblyReferencesTests` reads the assemblies the built test
+assembly references and refuses any name its allow-list does not carry:
+
+    git grep -n 'public static void TheSuiteReferencesNothingOutsideTheAllowedSet' -- Jellyfin.Plugin.Template.Tests/SuiteAssemblyReferencesTests.cs
+    Jellyfin.Plugin.Template.Tests/SuiteAssemblyReferencesTests.cs:44:    public static void TheSuiteReferencesNothingOutsideTheAllowedSet()
+
+A test launching this script through `Process` puts System.Diagnostics.Process
+into that assembly, and the list does not name it:
+
+    grep -vE '^[[:space:]]*#|^[[:space:]]*$' Jellyfin.Plugin.Template.Tests/allowed-test-assembly-references.txt | grep -iE 'diagnostics|process' ; echo "exit=$?"
+    exit=1
+
+What is not held is the rest of what this paragraph used to say. A launch the
+compiler writes no reference for, a runtime resolved by name, and a test that
+merely names this script all leave every route in this tree green.
 
 ## Capturing one
 
