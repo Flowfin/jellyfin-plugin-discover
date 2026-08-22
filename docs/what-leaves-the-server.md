@@ -243,13 +243,21 @@ guessed at.
 A route in this tree reads part of this page, and this paragraph said none did.
 `documented-commands` re-runs every command a tracked page pastes and compares
 the answer against the output pasted under it, on every push and every pull
-request. Every block here is judged and every one agrees:
+request, so every quotation above is one of its subjects.
 
-    tools/documented-commands/run.sh | grep -c '^ok    docs/what-leaves-the-server.md:'
-    17
+When that comparison is made is narrower than the fact that it runs, and taking
+the second for the first is the mistake to avoid here. Every quotation above
+quotes `origin/master`, and the reader judges such a block only where the checkout
+stands on the mainline, printing it as refused with the reason otherwise:
 
-    tools/documented-commands/run.sh | grep -c '^skip  docs/what-leaves-the-server.md:'
-    0
+    git grep -n 'reads origin/master and this checkout is not standing on it' -- tools/documented-commands/run.sh
+    tools/documented-commands/run.sh:156:        echo "reads origin/master and this checkout is not standing on it"
+
+So they are compared on the mainline and on the push that merges to it, and on a
+pull request the same run says it judged none of them rather than saying they
+passed. That is the reader's own design rather than a gap in it: a page changed
+together with the file it quotes describes the tree it is about to land in, and
+comparing it against `origin/master` would refuse it for being right.
 
 That covers the quotations and nothing else on the page. A sentence with no
 command under it is not a subject there, so every conclusion drawn above from a
