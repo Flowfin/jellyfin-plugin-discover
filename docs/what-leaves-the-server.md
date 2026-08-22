@@ -240,9 +240,28 @@ one claim on this page that needs a running client, whether an image fetch
 reaches the source's host directly, is marked above as unestablished rather than
 guessed at.
 
-No route in this tree reads this page. It goes stale silently, and what catches
-that is somebody running the commands on it. That has happened once already:
-six of the quotations above were re-derived after the adapter moved under
+A route in this tree reads part of this page, and this paragraph said none did.
+`documented-commands` re-runs every command a tracked page pastes and compares
+the answer against the output pasted under it, on every push and every pull
+request. Every block here is judged and every one agrees:
+
+    tools/documented-commands/run.sh | grep -c '^ok    docs/what-leaves-the-server.md:'
+    17
+
+    tools/documented-commands/run.sh | grep -c '^skip  docs/what-leaves-the-server.md:'
+    0
+
+That covers the quotations and nothing else on the page. A sentence with no
+command under it is not a subject there, so every conclusion drawn above from a
+quotation is unread, and so is the whole of "What an operator cannot avoid",
+which is the section an operator deciding about this plugin reads first. A block
+that agrees says the command still prints what is pasted under it, never that the
+sentence over it is the right thing to conclude from those bytes. The reader's
+own header is where that bound and the rest of what it cannot see are written.
+
+What catches the unread half is still somebody running the commands, and that has
+happened once already: six of the quotations above were re-derived after the
+adapter moved under
 [#68](https://github.com/Flowfin/jellyfin-plugin-discover/issues/68) and
 [#251](https://github.com/Flowfin/jellyfin-plugin-discover/issues/251), and the
 sentences they support did not move with them.
