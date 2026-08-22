@@ -240,9 +240,36 @@ one claim on this page that needs a running client, whether an image fetch
 reaches the source's host directly, is marked above as unestablished rather than
 guessed at.
 
-No route in this tree reads this page. It goes stale silently, and what catches
-that is somebody running the commands on it. That has happened once already:
-six of the quotations above were re-derived after the adapter moved under
+A route in this tree reads part of this page, and this paragraph said none did.
+`documented-commands` re-runs every command a tracked page pastes and compares
+the answer against the output pasted under it, on every push and every pull
+request, so every quotation above is one of its subjects.
+
+When that comparison is made is narrower than the fact that it runs, and taking
+the second for the first is the mistake to avoid here. Every quotation above
+quotes `origin/master`, and the reader judges such a block only where the checkout
+stands on the mainline, printing it as refused with the reason otherwise:
+
+    git grep -n 'reads origin/master and this checkout is not standing on it' -- tools/documented-commands/run.sh
+    tools/documented-commands/run.sh:156:        echo "reads origin/master and this checkout is not standing on it"
+
+So they are compared on the mainline and on the push that merges to it, and on a
+pull request the same run says it judged none of them rather than saying they
+passed. That is the reader's own design rather than a gap in it: a page changed
+together with the file it quotes describes the tree it is about to land in, and
+comparing it against `origin/master` would refuse it for being right.
+
+That covers the quotations and nothing else on the page. A sentence with no
+command under it is not a subject there, so every conclusion drawn above from a
+quotation is unread, and so is the whole of "What an operator cannot avoid",
+which is the section an operator deciding about this plugin reads first. A block
+that agrees says the command still prints what is pasted under it, never that the
+sentence over it is the right thing to conclude from those bytes. The reader's
+own header is where that bound and the rest of what it cannot see are written.
+
+What catches the unread half is still somebody running the commands, and that has
+happened once already: six of the quotations above were re-derived after the
+adapter moved under
 [#68](https://github.com/Flowfin/jellyfin-plugin-discover/issues/68) and
 [#251](https://github.com/Flowfin/jellyfin-plugin-discover/issues/251), and the
 sentences they support did not move with them.
