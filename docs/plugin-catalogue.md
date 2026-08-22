@@ -197,29 +197,32 @@ whole of the route that project actually uses is not something the files can say
 and no page there states the requirements in prose: its README describes the
 build scripts and nothing else.
 
-A route in this tree reads two of the blocks on this page, and this paragraph
-said none were read. `documented-commands` re-runs every command a tracked page
-pastes and compares the answer against the output pasted under it, on every push
-and every pull request. The two it judges are the two that read this repository:
+A route in this tree reads part of this page, and this paragraph said none of it
+was read. `documented-commands` re-runs every command a tracked page pastes and
+compares the answer against the output pasted under it, on every push and every
+pull request, so every block above is one of its subjects.
 
-    tools/documented-commands/run.sh | grep '^ok    docs/plugin-catalogue.md:'
-    ok    docs/plugin-catalogue.md:106: still prints what is pasted under it.
-    ok    docs/plugin-catalogue.md:167: still prints what is pasted under it.
+The half this page exists to track is not among the ones it can compare, and the
+reader prints its refusals rather than passing over them. Every block quoting the
+catalogue's own tooling cites a commit this checkout does not carry, and nothing
+here fetches it, so each is refused by name:
 
-The half this page is about is not among them, and the reader says so by name
-rather than passing over it:
+    git grep -n 'names an object this repository does not carry' -- tools/documented-commands/run.sh
+    tools/documented-commands/run.sh:173:    echo "names an object this repository does not carry"
 
-    tools/documented-commands/run.sh | grep '^skip  docs/plugin-catalogue.md:'
-    skip  docs/plugin-catalogue.md:13: the block transcribes more than one command.
-    skip  docs/plugin-catalogue.md:31: names an object this repository does not carry.
-    skip  docs/plugin-catalogue.md:124: names an object this repository does not carry.
-    skip  docs/plugin-catalogue.md:131: names an object this repository does not carry.
-    skip  docs/plugin-catalogue.md:138: names an object this repository does not carry.
+So those go stale silently against a repository that moves on its own schedule,
+exactly as this paragraph said, and what catches them is still somebody running
+them against a checkout of that repository.
 
-So the disclosure holds where it matters and is narrower than it was written.
-Every quotation of the catalogue's own tooling goes stale silently against a
-repository that moves on its own schedule, because those commands name a commit
-this checkout does not have and nothing here can fetch it. What catches those is
-still somebody running them against a checkout of that repository. What is now
-held is this repository's end of the comparison, which is the end that moves when
-a change here edits the packaging metadata or the publish route.
+The blocks that do read this repository are the end of the comparison that moves
+when a change here edits the packaging metadata or the publish route. They quote
+`origin/master`, so they are compared on the mainline and on the push that merges
+to it, and on a pull request the reader reports that it judged none of them rather
+than saying they passed:
+
+    git grep -n 'reads origin/master and this checkout is not standing on it' -- tools/documented-commands/run.sh
+    tools/documented-commands/run.sh:156:        echo "reads origin/master and this checkout is not standing on it"
+
+Nothing reads the prose on either half. What a block holds is that the command
+still prints what is pasted under it, never that the sentence over it is the right
+thing to conclude from those bytes.
