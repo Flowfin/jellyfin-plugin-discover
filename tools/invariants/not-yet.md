@@ -32,11 +32,44 @@ a third party leaves through it.
 
 ## No server type in a test outside the adapter's own tests
 
-From #49, and the subject is #52 and #73. The plugin talks to the server through
+From #49, and the subject arrived. The plugin talks to the server through
 interfaces of its own, and the rule refuses a test that reaches past them. Those
-interfaces do not exist, and today every test in the suite necessarily names a
-server type, because the only thing there is to test is a plugin class the
-server defines. #49 adds the rule with the file set it derives from.
+interfaces are in the tree, landed by #52 and #73:
+
+    git grep -n 'public interface' -- 'Jellyfin.Plugin.Template/*.cs'
+    Jellyfin.Plugin.Template/Randomness/IRandomSource.cs:21:public interface IRandomSource
+    Jellyfin.Plugin.Template/Sources/IMetadataSource.cs:36:public interface IMetadataSource
+    Jellyfin.Plugin.Template/Surface/IDiscoverSurface.cs:26:public interface IDiscoverSurface
+    Jellyfin.Plugin.Template/Time/IClock.cs:22:public interface IClock
+
+and the suite no longer names a server type everywhere. Seven files of
+forty-three do, and each is a fake standing in for a server interface, the
+adapter's own tests, or a test of what the plugin declares to the server:
+
+    git grep -lE '^using (MediaBrowser|Jellyfin\.Data|Jellyfin\.Database)' -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
+    7
+
+    git ls-files -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
+    43
+
+This entry said the interfaces do not exist and that every test necessarily
+names a server type. Both stopped being true when #52 and #73 landed, and the
+entry went on giving a reason that had been overtaken while the conclusion it
+supports, that the rule is not written, stayed correct.
+
+WHAT KEEPS IT HERE IS NOT A MISSING SUBJECT ANY MORE, and that is why the entry
+is rewritten rather than removed. The runner's second leg applies a rule's
+pattern to the whole fixture tree without the rule's own `Subject`, so a rule
+that discriminates by where a line is rather than by what it says cannot be
+expressed: this rule's fixture has to be a server import in a test file, which
+is the exact shape `no-channel-type-outside-surface` already refuses, and that
+neighbour fires on it. Written as the residue instead, the namespaces no other
+rule owns, it would be a rule a reader counts for more than it covers.
+
+Those are three different endings and choosing between them is #49's, with the
+runner change being #33's if that is the one taken. The measurements behind this
+paragraph, including which namespaces a test may import today with nothing
+firing, are on #49 rather than repeated here.
 
 ## What the configuration page renders
 
