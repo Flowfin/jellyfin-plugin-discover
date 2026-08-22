@@ -30,13 +30,13 @@ surface's own name, on both lines:
 What the two are concatenated with is a constant the server increments when it
 wants every item downloaded again:
 
-    git show v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs | sed -n '923,927p'
-        private static string GetIdToHash(string externalId, string channelName)
-        {
-            // Increment this as needed to force new downloads
-            // Incorporate Name because it's being used to convert channel entity to provider
-            return externalId + (channelName ?? string.Empty) + "16";
-        }
+    git show v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs | sed -n '923,928p'
+            private static string GetIdToHash(string externalId, string channelName)
+            {
+                // Increment this as needed to force new downloads
+                // Incorporate Name because it's being used to convert channel entity to provider
+                return externalId + (channelName ?? string.Empty) + "16";
+            }
 
 The third thing is the type, added by the hash itself:
 
@@ -101,15 +101,15 @@ Everything. The surface's name is in the hash of every item under it, and it is
 also in the identifier of the surface's own row:
 
     git show v10.11.11:src/Jellyfin.LiveTv/Channels/ChannelManager.cs | sed -n '586,591p'
-        private Guid GetInternalChannelId(string name)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(name);
+            private Guid GetInternalChannelId(string name)
+            {
+                ArgumentException.ThrowIfNullOrEmpty(name);
 
-            return _libraryManager.GetNewItemId("Channel " + name, typeof(Channel));
-        }
+                return _libraryManager.GetNewItemId("Channel " + name, typeof(Channel));
+            }
 
     git grep -c 'private Guid GetInternalChannelId' v12.0-rc4 -- src/Jellyfin.LiveTv/Channels/ChannelManager.cs
-    v12.0-rc4:1
+    v12.0-rc4:src/Jellyfin.LiveTv/Channels/ChannelManager.cs:1
 
 So after a rename every title is a new row, and whatever a user had marked on
 the old one, a favourite or a played state, is not on the new one. The server
@@ -326,3 +326,18 @@ beside it, and the suite that holds this plugin's half of it starts no server:
 what `TitleAddressTests` proves is the address, not what the server then does
 with it. The end-to-end half is
 [#38](https://github.com/Flowfin/jellyfin-plugin-discover/issues/38).
+
+Nothing in this repository re-runs the commands on this page, and the check that
+re-runs the ones on its neighbours cannot reach them. `documented-commands`
+compares every command a tracked page pastes against the output pasted under it,
+and it refuses a block it cannot run here rather than passing it:
+
+    git grep -n 'reads a Jellyfin checkout at a tag, which is not this repository' -- tools/documented-commands/run.sh
+    tools/documented-commands/run.sh:126:      echo "reads a Jellyfin checkout at a tag, which is not this repository"
+
+So the blocks above are read by nobody but a person with such a checkout, and
+three of them said something the tag does not hold until this paragraph was
+written: two pasted the source dedented by four spaces, one of those two with a
+closing brace its range did not print, and one pasted a `git grep -c` answer
+without the path the command asks it to count in. The readings they support did
+not move. What moved is that a reader re-deriving them now gets what is written.
