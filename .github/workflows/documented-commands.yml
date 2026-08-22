@@ -1,0 +1,69 @@
+# Every command a tracked page pastes still prints what is pasted under it
+# (#273).
+#
+# The pages here put the command that produced a fact next to the fact, which is
+# worth nothing once the command stops printing what the page says. That failure
+# is quiet: a reader who agrees with the sentence has no cause to run the block
+# under it, and two issues record the absence of this check, each written after
+# a page had drifted and been caught by hand.
+#
+# The workflow does one thing, which is run the script. Everything else lives in
+# tools/documented-commands: the reader, the two fixtures, and a header saying
+# what it refuses to run and what it cannot see. `--prove` runs its three legs,
+# so the run that judges the tracked pages is the same run that shows the check
+# fires on a block that is wrong and stays silent on one that is right.
+#
+# Nothing is downloaded and nothing is installed. The reader uses git and the
+# shell, which is what the checkout already needs.
+#
+# The token is read-only and no secret is available to this job, which is worth
+# saying because the script runs command text out of tracked Markdown. That is
+# the same trust boundary as the test suite, and the reader holds it to a small
+# set of git verbs that only read.
+name: documented-commands
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+# Read-only: the reader reads pages and runs git against this checkout.
+permissions:
+  contents: read
+
+concurrency:
+  group: documented-commands-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  documented-commands:
+    name: Documented commands still print what is pasted
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No step pushes via git, so do not persist the GITHUB_TOKEN in .git/config.
+          persist-credentials: false
+
+      - name: Make origin/master resolvable
+        # A page quoting origin/master is judged only where this checkout stands
+        # on the mainline, which the reader decides for itself. Without the ref
+        # it cannot decide at all and skips those blocks, so this step exists to
+        # let the mainline run judge them. It is not fatal: a run that could not
+        # fetch judges less and says so, rather than failing for a reason that
+        # has nothing to do with the pages.
+        run: |
+          set -uo pipefail
+          if git fetch --no-tags --depth=1 origin '+master:refs/remotes/origin/master'; then
+            echo "origin/master is at $(git rev-parse origin/master)."
+          else
+            echo "::warning::origin/master could not be fetched, so blocks quoting it are skipped on this run and the reader prints each one."
+          fi
+
+      - name: Re-run the commands the pages paste
+        run: ./tools/documented-commands/run.sh --prove

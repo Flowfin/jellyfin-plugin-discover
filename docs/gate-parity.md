@@ -105,6 +105,7 @@ row says what makes it so. `defer` means an open question decides it.
 | `changelog-entry.yml`        | keep, separate  | A version bump with no line saying what changed is a build nobody can tie a report to. The target reaches the same end inside its own pr-hygiene workflow; kept apart here so that one mistake reds one check, and `pr-hygiene.yml` says so at the leg that is not in it.                                                             |
 | `command-dispatch.yaml`      | keep            | Inherited from the template; it turns a comment into a workflow dispatch and is the front half of `command-rebase.yaml`.                                                                                                                                                                                                              |
 | `command-rebase.yaml`        | keep            | Inherited from the template; it rebases a pull request on request and costs nothing when nobody asks.                                                                                                                                                                                                                                 |
+| `documented-commands.yml`    | keep            | A page here pastes the command behind every fact it states, and nothing re-ran those commands, so a page could go on printing an answer its own block had stopped giving; the target states its facts in prose and has no blocks to re-run.                                                                                           |
 | `fuzz-the-source-reader.yml` | keep, separate  | The target fuzzes its authentication parsers because that is where untrusted bytes enter it; the same technique against a different door here, the source response reader whose output is written into an operator's library, on a cadence no merge waits for ([#37](https://github.com/Flowfin/jellyfin-plugin-discover/issues/37)). |
 | `gate-parity.yml`            | keep            | This page is the only place the difference between the two gates is argued, and nothing read it, so it drifted against the directory it describes; the target has one gate and nothing to hold a table against.                                                                                                                       |
 | `own-repository-name.yml`    | keep            | Two workflows here declared they were running on the template's repository and their jobs silently never ran; nothing on the target has that shape to refuse.                                                                                                                                                                         |
@@ -114,10 +115,10 @@ row says what makes it so. `defer` means an open question decides it.
 
 The two tables account for every workflow file in this repository. Sixteen are
 named in the first table's last column as the counterpart of a target workflow,
-and the eleven above are the rest:
+and the twelve above are the rest:
 
     ls .github/workflows | wc -l
-    27
+    28
 
 It read fourteen and twenty-three, and then fifteen and nine.
 `abi-matches-the-line.yml` landed after the tables were written and was named on
