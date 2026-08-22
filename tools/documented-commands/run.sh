@@ -216,10 +216,24 @@ extract() {
     }
     /^[[:space:]]*```/ { flush(); fenced = 1; start = NR + 1; n = 0; next }
     indented {
-      if (line ~ /^    [^ ]/ || line ~ /^     /) { body[++n] = substr(line, 5); next }
-      flush(); indented = 0
+      if (line ~ /^    [^ ]/ || line ~ /^     /) {
+        # A blank line inside an indented block belongs to the output. It is
+        # held rather than written out at once, because what follows it decides
+        # what it was: another line of output in the same block, or the gap
+        # before the next block.
+        if (held > 0 && line ~ /^    git /) { flush(); held = 0; indented = 1; start = NR; n = 0; body[++n] = substr(line, 5); next }
+        for (; held > 0; held--) { body[++n] = "" }
+        body[++n] = substr(line, 5); next
+      }
+      # A blank line with no output above it is the gap after a command handed
+      # to the reader rather than the first line of an answer, so the block ends
+      # there and whatever follows belongs to something else. docs/limits.md
+      # carries that shape. A blank line with output above it is part of that
+      # output.
+      if (line ~ /^[[:space:]]*$/) { if (n <= 1) { flush(); indented = 0; held = 0; next } held++; next }
+      flush(); indented = 0; held = 0
     }
-    /^    git / { indented = 1; start = NR; n = 0; body[++n] = substr(line, 5); next }
+    /^    git / { indented = 1; held = 0; start = NR; n = 0; body[++n] = substr(line, 5); next }
     { next }
     END { flush() }
   ' "$1"
@@ -333,9 +347,11 @@ read_blocks() {
   done < <(extract "$file")
 }
 
-# Four legs, each reported before the run ends, so a red run names every reason
+# Every leg is reported before the run ends, so a red run names every reason
 # rather than the first one. Leg 1 is what makes this check worth counting: a
 # lint nobody has watched refusing is a green tick with no evidence behind it.
+# The count of legs is not written here, because it has already moved once and a
+# number in a comment is one more thing to keep true.
 prove() {
   local script="$here/run.sh" bad=0 out=""
 
@@ -384,6 +400,47 @@ prove() {
     bad=1
   fi
 
+  # Legs 5 and 6 are one pair. Leg 5 is the page that pastes what its command
+  # prints, blank line and all, and it was refused before the extractor carried
+  # a blank line through; it also pins how many blocks that page is, because a
+  # reader that carried the blank line too far would swallow the second of two
+  # neighbouring commands as the first one's output and report one block where
+  # there are three. Leg 6 is the same output pasted only as far as its first
+  # blank line, which is what the page looked like when the reader had already
+  # dropped the rest, and it has to stay refused.
+  if out=$(bash "$script" "$rel_fixtures/holds-the-rule-across-a-blank-line.md" 2>&1); then
+    case $out in
+      *"3 block(s) re-run and agreeing, 0 not judged"*)
+        echo "ok    leg 5: an output pasted across a blank line is judged, agrees, and is three blocks."
+        ;;
+      *)
+        echo "FAIL  leg 5: the fixture whose output carries a blank line was read as something other than three agreeing blocks:"
+        printf '%s\n' "$out" | sed 's/^/        /'
+        bad=1
+        ;;
+    esac
+  else
+    echo "FAIL  leg 5: the fixture whose output carries a blank line was refused:"
+    printf '%s\n' "$out" | sed 's/^/        /'
+    bad=1
+  fi
+
+  if out=$(QUIET=1 bash "$script" "$rel_fixtures/breaks-the-rule-across-a-blank-line.md" 2>&1); then
+    echo "FAIL  leg 6: the fixture that stops at its own blank line was not refused."
+    bad=1
+  else
+    case $out in
+      *"breaks-the-rule-across-a-blank-line.md"*"no longer prints what is pasted under it"*)
+        echo "ok    leg 6: an output pasted only as far as its blank line is refused, and the refusal names it."
+        ;;
+      *)
+        echo "FAIL  leg 6: the fixture that stops at its own blank line was refused for something other than its block:"
+        printf '%s\n' "$out" | sed 's/^/        /'
+        bad=1
+        ;;
+    esac
+  fi
+
   if out=$(bash "$script" 2>&1); then
     echo "ok    leg 4: the tracked pages are silent."
     printf '%s\n' "$out" | tail -1 | sed 's/^/      /'
@@ -394,11 +451,11 @@ prove() {
   fi
 
   if [ "$bad" -ne 0 ]; then
-    echo "::error::The documented-commands check did not hold its own four legs."
+    echo "::error::The documented-commands check did not hold its own legs."
     exit 1
   fi
 
-  echo "The check fires on the fixture that breaks the rule, is silent on the one that holds it, refuses to run a block carrying a redirection, and is silent on the tracked pages."
+  echo "The check fires on the fixture that breaks the rule, is silent on the one that holds it, refuses to run a block carrying a redirection, carries a blank line through an output and refuses one pasted only as far as it, and is silent on the tracked pages."
 }
 
 if [ "${1:-}" = "--prove" ]; then
