@@ -92,16 +92,24 @@ It could, and the reason is one sentence: the only thing a per-user source needs
 that a server-wide one does not is which user is asking, and that arrives as a
 field on the question without changing a signature or a caller.
 
-The interface asks a source two things:
+The interface asks a source three things:
 
-    git grep -n 'MetadataSource Source { get; }\|Task<SourceAnswer> FetchAsync' origin/master -- Jellyfin.Plugin.Template/Sources/IMetadataSource.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/IMetadataSource.cs:46:    MetadataSource Source { get; }
-    origin/master:Jellyfin.Plugin.Template/Sources/IMetadataSource.cs:66:    Task<SourceAnswer> FetchAsync(SourceQuery query, CancellationToken cancellationToken);
+    git grep -n 'MetadataSource Source { get; }\|TimeSpan RetentionCeiling { get; }\|Task<SourceAnswer> FetchAsync' origin/master -- Jellyfin.Plugin.Template/Sources/IMetadataSource.cs
+    origin/master:Jellyfin.Plugin.Template/Sources/IMetadataSource.cs:47:    MetadataSource Source { get; }
+    origin/master:Jellyfin.Plugin.Template/Sources/IMetadataSource.cs:65:    TimeSpan RetentionCeiling { get; }
+    origin/master:Jellyfin.Plugin.Template/Sources/IMetadataSource.cs:85:    Task<SourceAnswer> FetchAsync(SourceQuery query, CancellationToken cancellationToken);
 
-Neither of those moves. The question does, and it moves by gaining a field
-rather than by being rebuilt:
+It asked two when this page was written. The third is the longest a record from
+that source may be kept, which arrived with
+[#68](https://github.com/Flowfin/jellyfin-plugin-discover/issues/68), and it does
+not change the argument here: a ceiling is a property of the source rather than
+of who is asking, so a per-user source declares one exactly as a server-wide one
+does.
 
-    git grep -n -A 5 'public readonly record struct SourceQuery' origin/master -- Jellyfin.Plugin.Template/Sources/SourceQuery.cs
+None of the three moves for a per-user source. The question does, and it moves by
+gaining a field rather than by being rebuilt:
+
+    git grep -n -A 4 'public readonly record struct SourceQuery' origin/master -- Jellyfin.Plugin.Template/Sources/SourceQuery.cs
     origin/master:Jellyfin.Plugin.Template/Sources/SourceQuery.cs:44:public readonly record struct SourceQuery(
     origin/master:Jellyfin.Plugin.Template/Sources/SourceQuery.cs-45-    string Name,
     origin/master:Jellyfin.Plugin.Template/Sources/SourceQuery.cs-46-    DiscoverTitleKind Kind,
