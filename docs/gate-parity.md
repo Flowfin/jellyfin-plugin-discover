@@ -2,10 +2,18 @@
 
 The target is the gate on `iderex/jellyfin-plugin-sso`, read at commit
 `eae9feb2edcf94be926b0204162da98f51337c9c`, which was the head of that
-repository's default branch when this table was written:
+repository's default branch when this table was written. It is not the head any
+more, so what fixes the pin is the commit itself rather than whatever `main`
+points at:
+
+    gh api repos/iderex/jellyfin-plugin-sso/commits/eae9feb2edcf94be926b0204162da98f51337c9c --jq .sha
+    eae9feb2edcf94be926b0204162da98f51337c9c
+
+Where `main` stands today is a moving answer, so it is handed to the reader
+rather than pasted. A value written under this one is wrong again the next time
+the target takes a commit, and this page carried one:
 
     gh api repos/iderex/jellyfin-plugin-sso/commits/main --jq .sha
-    eae9feb2edcf94be926b0204162da98f51337c9c
 
 Naming the commit is what lets a reader tell whether this table has drifted. The
 target moves, and a table that did not say which state it was written against
