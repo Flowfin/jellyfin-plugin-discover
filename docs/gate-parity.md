@@ -150,11 +150,36 @@ this section carries is the decision that typing needs, which is what
 [#40](https://github.com/Flowfin/jellyfin-plugin-discover/issues/40) ends in a
 hand-off for.
 
-The rows below are the names a pull request publishes, counted off a merged one
-so the reading reproduces:
+The rows below are every name this gate can publish on a pull request, which is
+not the same thing as the names one pull request published. Three workflows
+filter their `pull_request` trigger by path:
+
+    git grep -n '^    paths:\|^    paths-ignore:' -- .github/workflows/
+    .github/workflows/discover-surface-appears.yml:43:    paths:
+    .github/workflows/plugin-loads.yml:29:    paths-ignore:
+    .github/workflows/plugin-loads.yml:34:    paths-ignore:
+    .github/workflows/scan-codeql.yaml:18:    paths-ignore:
+    .github/workflows/scan-codeql.yaml:22:    paths-ignore:
+
+so which names report moves with what a change touched, and a count off one
+merged pull request is a floor rather than the set. Two merged pull requests
+each publish twenty-four names and it is not the same twenty-four:
 
     gh pr checks 281 --repo Flowfin/jellyfin-plugin-discover --json name --jq '[.[].name] | unique | length'
     24
+
+The same command on pull request 246 also answers 24, and the two lists differ by
+one name in each direction:
+
+    gh pr checks 246 --repo Flowfin/jellyfin-plugin-discover --json name --jq '[.[].name] | unique | length'
+    24
+
+`Reaches a signed-in user on 10.11` is on the second list and not on the first,
+because 281 touched neither of the two paths its workflow runs for.
+`Documented commands still print what is pasted` is on the first and not the
+second, because that check landed after 246 was merged. The rows below are the
+union, so a name that a particular change never asks for still carries a
+decision rather than reading as one nobody took.
 
 ### Four of them cannot be required as they stand
 
@@ -248,6 +273,7 @@ here. Two rows below turn on that answer and say so rather than guessing it.
 | `No workflow names a branch this repository does not have` | yes                   | It reads the tree deterministically, and the failure it refuses is in the `branch-name-exists.yml` row above.                                     |
 | `No workflow names another repository`                     | yes                   | The same, and the failure it refuses is in the `own-repository-name.yml` row above.                                                               |
 | `Package for 10.11`                                        | no                    | The declared line again, and the last job of that workflow carries the same failure without it in the name.                                       |
+| `Reaches a signed-in user on 10.11`                        | no                    | The declared line in the name again, and it reports only on a change touching one of the two paths its workflow runs for.                         |
 | `Read the lines a package is built for`                    | not decided           | The last job of that workflow follows it, so whether requiring the later name covers this failure is the unanswered question above.               |
 | `Read the targeted server lines`                           | no                    | Two workflows publish this exact name and the entry cannot say which of them it means.                                                            |
 | `Reject Trojan Source Unicode`                             | yes                   | It reads tracked text deterministically, over a change that reads as something other than what it does.                                           |
