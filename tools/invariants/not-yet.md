@@ -43,14 +43,14 @@ interfaces are in the tree, landed by #52 and #73:
     Jellyfin.Plugin.Template/Time/IClock.cs:22:public interface IClock
 
 and the suite no longer names a server type everywhere. Seven files of
-forty-three do, and each is a fake standing in for a server interface, the
+forty-four do, and each is a fake standing in for a server interface, the
 adapter's own tests, or a test of what the plugin declares to the server:
 
     git grep -lE '^using (MediaBrowser|Jellyfin\.Data|Jellyfin\.Database)' -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
     7
 
     git ls-files -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
-    43
+    44
 
 This entry said the interfaces do not exist and that every test necessarily
 names a server type. Both stopped being true when #52 and #73 landed, and the

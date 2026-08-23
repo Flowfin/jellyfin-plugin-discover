@@ -123,9 +123,9 @@ Everything above is the discover endpoint, and the adapter in this tree asks it
 for nothing. The six paths it builds are literals chosen by a switch:
 
     git grep -nE '"(trending|tv|movie)' -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:477:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:478:            "popular" => series ? "tv/popular" : "movie/popular",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:479:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:536:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:537:            "popular" => series ? "tv/popular" : "movie/popular",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:538:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
 
 Read on 2026-08-18, one reference per address:
 
@@ -226,18 +226,26 @@ the parameter lists in the table are what those pages document.
 All six document `popularity`, `vote_average` and `vote_count` on a result.
 
 What that is worth to #91. That issue's first condition wants the order of a
-shelf decided by this plugin from fields on the record, and its record says a
+shelf decided by this plugin from fields on the record, and its record said a
 shelf whose premise is a ranking has nothing on the record to derive one from,
-so the source's own sequence is the only thing carrying it. That is a true
+so the source's own sequence was the only thing carrying it. That was a true
 statement about the record in this tree and not about the source. Three numbers
-come back on every one of the six and the adapter maps none of them:
+come back on every one of the six, and this section said the adapter mapped none
+of them under a command exiting 1. Two of the three are mapped now:
 
     git grep -inE 'popularity|vote_average|vote_count' -- Jellyfin.Plugin.Template/ ; echo "exit=$?"
-    exit=1
+    Jellyfin.Plugin.Template/Catalogue/DiscoverTitleOrder.cs:55:    /// record. TMDB documents one, <c>popularity</c>, on every address this
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:352:            VoteAverage = Score(entry, "vote_average"),
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:353:            VoteCount = Count(entry, "vote_count")
+    exit=0
 
-Whether an order should be derived from one of them, and which, is that issue's
-decision and is not taken here. What this settles is that the input exists and
-that a ranked shelf does not have to depend on arrival sequence for want of one.
+The first of the three matches is a remark rather than a mapping, and it says
+why the third number is not carried: `popularity` is the source's own composite,
+it moves daily, and a shelf sorted on it rearranges for reasons neither a user
+nor this plugin can state, which is what #91 exists against. That decision was
+taken on #91 and the argument is at `DiscoverTitleOrder`. What this section
+settles is unchanged: the input exists, and a ranked shelf does not have to
+depend on arrival sequence for want of one.
 
 ## What was not read
 
