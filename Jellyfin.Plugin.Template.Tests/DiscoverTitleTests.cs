@@ -312,6 +312,53 @@ public class DiscoverTitleTests
         Assert.Throws<ArgumentException>(() => ArrivalFromTmdb() with { ArtworkLocation = new Uri("/poster/329865.jpg", UriKind.Relative) });
     }
 
+    /// <summary>
+    /// A score that is on no source's scale is refused rather than stored.
+    /// </summary>
+    /// <remarks>
+    /// The scores are what a shelf is ordered by, which is #91, so a value that
+    /// cannot be compared is not a cosmetic fault. A NaN compares false with
+    /// everything including itself, so a list holding one comes out in a
+    /// different order depending on which comparisons the sort happened to
+    /// make; an infinity pins a title to the top of every shelf it is on; and a
+    /// negative count of scores is a parse fault wearing the clothes of a title
+    /// nobody rated.
+    ///
+    /// The adapter does not rely on this. What arrives from a source is turned
+    /// into an absence there instead, because a refresh that threw on one
+    /// malformed entry would lose the page it was on. This stands behind
+    /// callers that are not reading a wire and had no third party to blame.
+    /// </remarks>
+    [Fact]
+    public void AScoreThatCannotBeComparedIsRefused()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => ArrivalFromTmdb() with { VoteAverage = -0.1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => ArrivalFromTmdb() with { VoteAverage = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => ArrivalFromTmdb() with { VoteAverage = double.PositiveInfinity });
+        Assert.Throws<ArgumentOutOfRangeException>(() => ArrivalFromTmdb() with { VoteCount = -1 });
+    }
+
+    /// <summary>
+    /// A title nobody has scored and a title the source said nothing about are two records.
+    /// </summary>
+    /// <remarks>
+    /// Both are legal and they are not the same. Zero is the source saying
+    /// nobody has rated this; null is the source not having said. #91's order
+    /// puts them in different places, and a record that collapsed them would
+    /// make that decision unreachable.
+    /// </remarks>
+    [Fact]
+    public void AScoreOfZeroAndNoScoreAtAllAreBothCarried()
+    {
+        var scoredZero = ArrivalFromTmdb() with { VoteAverage = 0, VoteCount = 0 };
+        var unscored = ArrivalFromTmdb();
+
+        Assert.Equal(0, scoredZero.VoteAverage);
+        Assert.Equal(0, scoredZero.VoteCount);
+        Assert.Null(unscored.VoteAverage);
+        Assert.Null(unscored.VoteCount);
+    }
+
     private static DiscoverTitle ArrivalFromTmdb() => new()
     {
         Identity = IdentityOf((MetadataSource.Tmdb, "329865"), (MetadataSource.Imdb, "tt2543164")),

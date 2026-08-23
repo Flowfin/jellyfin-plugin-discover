@@ -14,4 +14,10 @@ internal static class BreaksTheRule
 
     public static int Total(JsonElement root) =>
         root.GetProperty("total_results").GetInt32();
+
+    public static double Score(JsonElement entry) =>
+        entry.GetProperty("vote_average").GetDouble();
+
+    public static int Scores(JsonElement entry) =>
+        entry.GetProperty("vote_count").GetInt32();
 }

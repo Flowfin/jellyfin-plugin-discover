@@ -23,11 +23,11 @@ namespace Jellyfin.Plugin.Template.Tests.Fixtures;
 /// difference is the whole fixture, and base64 is the form no line-ending rule
 /// can reach.
 ///
-/// The set covers the six shapes the fifth condition on #48 asks for and three
+/// The set covers the six shapes the fifth condition on #48 asks for and four
 /// more that the adapter's own mapping needs: a series page, whose fields the
 /// source spells differently from a film's; a page whose reported total
-/// contradicts what it carries; and a body from something that answered instead
-/// of the source.
+/// contradicts what it carries; a body from something that answered instead of
+/// the source; and a page whose scores are not scores.
 /// </remarks>
 internal static class TmdbFixtures
 {
@@ -134,6 +134,23 @@ internal static class TmdbFixtures
     /// the first line of somebody else's markup.
     /// </remarks>
     public const string BodyFromSomethingThatIsNotTheSource = "PGh0bWw+PGhlYWQ+PHRpdGxlPjUwMjwvdGl0bGU+PC9oZWFkPjxib2R5PkFuc3dlcmVkIGJ5IHNvbWV0aGluZyB0aGF0IGlzIG5vdCB0aGUgc291cmNlLjwvYm9keT48L2h0bWw+";
+
+    /// <summary>
+    /// A page whose scores are four different things.
+    /// </summary>
+    /// <remarks>
+    /// The order of a shelf is derived from the two numbers on these entries,
+    /// which is #91, so what the adapter does with one that is not a number
+    /// decides where a title lands rather than only what is drawn on it. Four
+    /// entries: one the source scored properly, one whose numbers arrived as
+    /// text, one scored below every scale a source has, and one counted more
+    /// times than a count holds.
+    ///
+    /// The last is the one worth having. A count that overflows read as its low
+    /// bits is not a wrong number in a corner of a record, it is a title at the
+    /// top of a shelf it has no claim to.
+    /// </remarks>
+    public const string PageWhoseScoresAreNotScores = "eyJwYWdlIjoxLCJyZXN1bHRzIjpbeyJpZCI6MTAwMDEwLCJ0aXRsZSI6IkEgRmlsbSBUaGUgU291cmNlIFNjb3JlZCIsInZvdGVfYXZlcmFnZSI6OC4yNSwidm90ZV9jb3VudCI6MTIzNH0seyJpZCI6MTAwMDExLCJ0aXRsZSI6IkEgRmlsbSBXaG9zZSBTY29yZXMgQXJyaXZlZCBBcyBUZXh0Iiwidm90ZV9hdmVyYWdlIjoiOC4yNSIsInZvdGVfY291bnQiOiIxMjM0In0seyJpZCI6MTAwMDEyLCJ0aXRsZSI6IkEgRmlsbSBXaG9zZSBTY29yZSBJcyBCZWxvdyBFdmVyeSBTY2FsZSIsInZvdGVfYXZlcmFnZSI6LTEuNSwidm90ZV9jb3VudCI6LTR9LHsiaWQiOjEwMDAxMywidGl0bGUiOiJBIEZpbG0gQ291bnRlZCBNb3JlIFRpbWVzIFRoYW4gQSBDb3VudCBIb2xkcyIsInZvdGVfYXZlcmFnZSI6Ny4wLCJ2b3RlX2NvdW50Ijo5OTk5OTk5OTk5OX1dLCJ0b3RhbF9wYWdlcyI6MSwidG90YWxfcmVzdWx0cyI6NH0K";
 
     /// <summary>
     /// Reads a fixture back into the bytes a source would have sent.

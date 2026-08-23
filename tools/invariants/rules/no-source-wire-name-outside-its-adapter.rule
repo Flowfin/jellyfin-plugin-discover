@@ -1,5 +1,5 @@
 Id: no-source-wire-name-outside-its-adapter
-Pattern: "(first_air_date|original_name|original_title|poster_path|release_date|status_message|total_results|overview|results)"
+Pattern: "(first_air_date|original_name|original_title|poster_path|release_date|status_message|total_results|overview|results|vote_average|vote_count)"
 Subject: *.cs
 Except: :!*SourceAdapter.cs :!*SourceAdapterTests.cs :!*TitleRoundTripTests.cs
 Issue: 73
@@ -10,12 +10,17 @@ caller that reads `poster_path` has gone around it, and adding a second source
 then means changing whoever did.
 
 The pattern is the names the one adapter reads out of a response, quoted, which
-is how a field name is spelled when it is used. Nine of them rather than every
+is how a field name is spelled when it is used. Eleven of them rather than every
 name in the response: `id`, `name`, `title` and `page` are words this codebase
 uses for its own things, and a rule matching those would fire on ordinary work
 for a reason its prose does not name. What is left is the vocabulary that could
 only have come from this source, so a match is a caller reading the wire rather
 than a coincidence.
+
+The last two are the score and the count of scores, added when the adapter began
+reading them under #91. A shelf's order is derived from what those two carried
+onto the record, so the name a caller would reach for to sort a row by hand is
+exactly the name that has to stop at the adapter.
 
 That bound is real and this rule does not hide it. A caller reading `id` off a
 response is doing the thing this rule is about and is invisible here. What
