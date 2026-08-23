@@ -43,6 +43,8 @@ public sealed record DiscoverTitle
     private readonly string _name = null!;
     private readonly DateTimeOffset _fetchedAt;
     private readonly Uri? _artworkLocation;
+    private readonly double? _voteAverage;
+    private readonly int? _voteCount;
 
     /// <summary>
     /// Gets the version of this record's shape.
@@ -257,6 +259,87 @@ public sealed record DiscoverTitle
             }
 
             _artworkLocation = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the average of the scores the source's own audience gave this
+    /// title, or null where the source gave none.
+    /// </summary>
+    /// <remarks>
+    /// Comes from the source and is the source's number rather than one this
+    /// plugin computed, so it is on the record for the same reason the name and
+    /// the year are: a shelf sorts on a field that travelled with the title
+    /// rather than on where the title happened to appear in a response. That is
+    /// #91, and which shelf sorts on which field is #85 and #86.
+    ///
+    /// The scale is the source's. Nothing here normalises it, because two
+    /// sources on two scales are two numbers a comparison between them would
+    /// have to reconcile, and no such comparison exists: an order is decided
+    /// within a shelf, and a shelf is fetched from one source.
+    ///
+    /// May be absent, and often is for a title that has been announced and not
+    /// released. Absence is a null rather than a zero, because a title nobody
+    /// has scored and a title everybody scored zero are different things and a
+    /// sort that read the first as the second would bury the announcements a
+    /// discover page exists to show.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the value is negative, or is not a number at all. A score
+    /// below zero is on no source's scale, and a NaN compares false with
+    /// everything including itself, so a list holding one sorts differently
+    /// depending on which comparisons the sort happened to make.
+    /// </exception>
+    public double? VoteAverage
+    {
+        get => _voteAverage;
+        init
+        {
+            if (value is { } score && (double.IsNaN(score) || double.IsInfinity(score) || score < 0))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    value,
+                    "A discover title carries the score its source gave it. A negative score is on no source's scale, and a NaN or an infinity makes the order of a shelf depend on which comparisons a sort happened to make.");
+            }
+
+            _voteAverage = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets how many scores the source's average is over, or null where the
+    /// source gave none.
+    /// </summary>
+    /// <remarks>
+    /// Comes from the source. It is on the record beside
+    /// <see cref="VoteAverage"/> rather than instead of it, because an average
+    /// with nothing saying how many scores it is over ranks a title three
+    /// people scored ten above one a hundred thousand people scored nine. #91
+    /// is where the order that reads both is decided.
+    ///
+    /// May be absent. Absent and zero are different here as well: a source that
+    /// sent no count has said nothing, and a source that sent zero has said
+    /// nobody has scored this title.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the value is negative. A count of scores below zero is a
+    /// parse fault rather than a title nobody scored.
+    /// </exception>
+    public int? VoteCount
+    {
+        get => _voteCount;
+        init
+        {
+            if (value is { } count && count < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    value,
+                    "A discover title carries how many scores its source's average is over. A count below zero is a parse fault rather than a title nobody has scored.");
+            }
+
+            _voteCount = value;
         }
     }
 }

@@ -348,8 +348,67 @@ public sealed class TmdbSourceAdapter : IMetadataSource
             OriginalName = string.Equals(original, name, StringComparison.Ordinal) ? null : original,
             ReleaseYear = Year(Text(entry, isSeries ? "first_air_date" : "release_date")),
             Summary = Text(entry, "overview"),
-            ArtworkLocation = Artwork(Text(entry, "poster_path"))
+            ArtworkLocation = Artwork(Text(entry, "poster_path")),
+            VoteAverage = Score(entry, "vote_average"),
+            VoteCount = Count(entry, "vote_count")
         };
+    }
+
+    /// <summary>
+    /// Reads a score the source may have left out or sent as something that is
+    /// not a score.
+    /// </summary>
+    /// <param name="entry">The entry to read from.</param>
+    /// <param name="field">The field name.</param>
+    /// <returns>The score, or null where there was no usable one.</returns>
+    /// <remarks>
+    /// The record refuses a negative, a NaN and an infinity, and refusing is
+    /// the right answer for a caller that composed one. It is the wrong answer
+    /// here: what arrives is a third party's bytes, and a refresh that throws
+    /// on one malformed number in one entry loses the whole page for it. So the
+    /// unusable value becomes an absence, which is what #79 asks a source's bad
+    /// answer to cost, and the record's guard stands behind this for callers
+    /// that are not reading a wire.
+    /// </remarks>
+    private static double? Score(JsonElement entry, string field)
+    {
+        if (!entry.TryGetProperty(field, out var value)
+            || value.ValueKind != JsonValueKind.Number
+            || !value.TryGetDouble(out var score)
+            || double.IsNaN(score)
+            || double.IsInfinity(score)
+            || score < 0)
+        {
+            return null;
+        }
+
+        return score;
+    }
+
+    /// <summary>
+    /// Reads a count of scores the source may have left out or sent as
+    /// something that is not a count.
+    /// </summary>
+    /// <param name="entry">The entry to read from.</param>
+    /// <param name="field">The field name.</param>
+    /// <returns>The count, or null where there was no usable one.</returns>
+    /// <remarks>
+    /// Absence rather than a throw, for the reason on <see cref="Score"/>. A
+    /// count larger than an <see cref="int"/> holds is an absence as well: no
+    /// number that large is a count of scores, and reading the low bits of one
+    /// would put a title at the top of a shelf.
+    /// </remarks>
+    private static int? Count(JsonElement entry, string field)
+    {
+        if (!entry.TryGetProperty(field, out var value)
+            || value.ValueKind != JsonValueKind.Number
+            || !value.TryGetInt32(out var count)
+            || count < 0)
+        {
+            return null;
+        }
+
+        return count;
     }
 
     /// <summary>

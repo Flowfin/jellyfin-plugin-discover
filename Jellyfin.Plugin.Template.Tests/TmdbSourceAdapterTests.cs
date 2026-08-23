@@ -93,6 +93,50 @@ public class TmdbSourceAdapterTests
         Assert.Equal(
             new[] { new ProviderIdentifier(MetadataSource.Tmdb, "100001") },
             film.Identity.Identifiers);
+        Assert.Equal(6.4, film.VoteAverage);
+        Assert.Null(film.VoteCount);
+    }
+
+    /// <summary>
+    /// A score the source did not send as a score is an absence rather than a failure.
+    /// </summary>
+    /// <remarks>
+    /// The two numbers a shelf is ordered by, which is #91, so the wrong answer
+    /// here is not a field drawn oddly: it is a title in a place on the row it
+    /// has no claim to. Four entries and one page, because the case that
+    /// matters is a bad entry costing its own values and costing nothing else.
+    ///
+    /// The record refuses each of these outright, and that is the right answer
+    /// for a caller that composed one and the wrong answer here. A refresh that
+    /// threw on one malformed entry would lose the page it was on, which is
+    /// what #79 asks a source's bad answer not to cost.
+    ///
+    /// The overflowing count is the one to read. Read as its low bits it is a
+    /// large positive number, so the title it is on would sort above everything
+    /// the source's audience actually watched.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AScoreThatIsNotAScoreIsAnAbsenceRatherThanAFailure()
+    {
+        var answer = await Asked(TmdbFixtures.PageWhoseScoresAreNotScores)
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.Equal(4, answer.Titles.Count);
+
+        Assert.Equal(8.25, answer.Titles[0].VoteAverage);
+        Assert.Equal(1234, answer.Titles[0].VoteCount);
+
+        Assert.Null(answer.Titles[1].VoteAverage);
+        Assert.Null(answer.Titles[1].VoteCount);
+
+        Assert.Null(answer.Titles[2].VoteAverage);
+        Assert.Null(answer.Titles[2].VoteCount);
+
+        Assert.Equal(7.0, answer.Titles[3].VoteAverage);
+        Assert.Null(answer.Titles[3].VoteCount);
     }
 
     /// <summary>
