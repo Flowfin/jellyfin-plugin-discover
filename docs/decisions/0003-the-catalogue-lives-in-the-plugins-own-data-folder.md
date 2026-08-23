@@ -94,19 +94,56 @@ is the cost of removing a directory nobody is told to remove.
 ## The hazard this decision carries
 
 The branch quoted above can put the data under a second name with the version
-appended. Whether it is ever taken depends on whether the version is set before
-the constructor runs, which is not evaluated here and is not a property this
-tree can read. If it can be taken, the catalogue's directory moves on an
-upgrade, and the plugin comes up with an empty catalogue and a full one left
-behind under the old name. That is the duplication
-[#107](https://github.com/Flowfin/jellyfin-plugin-discover/issues/107) exists to
-prevent, and it is named here rather than left to be met on a user's server.
+appended. This note said whether it is ever taken is not evaluated here and is
+not a property this tree can read. The second half is right and the first half
+was a gap rather than a limit: it is readable at the two tags every other block
+on this page is read at, and the answer is that the branch cannot be taken.
+
+`Version` is a property with a private setter and no `virtual`, so nothing
+outside the base class assigns it and no derived plugin overrides it:
+
+    git grep -n 'public Version Version { get; private set; }' v10.11.11 v12.0-rc4 -- MediaBrowser.Common/Plugins/BasePlugin.cs
+    v10.11.11:MediaBrowser.Common/Plugins/BasePlugin.cs:37:        public Version Version { get; private set; }
+    v12.0-rc4:MediaBrowser.Common/Plugins/BasePlugin.cs:37:        public Version Version { get; private set; }
+
+The one assignment is inside `SetAttributes`:
+
+    git grep -n 'Version = assemblyVersion;' v10.11.11 v12.0-rc4 -- '*.cs'
+    v10.11.11:MediaBrowser.Common/Plugins/BasePlugin.cs:85:            Version = assemblyVersion;
+    v12.0-rc4:MediaBrowser.Common/Plugins/BasePlugin.cs:85:            Version = assemblyVersion;
+
+and the only call to it in the server tree is line 57 above, seven lines below
+the branch that reads the property, in the same constructor:
+
+    git grep -n 'SetAttributes(assemblyFilePath, dataFolderPath, assemblyName.Version)' v10.11.11 v12.0-rc4 -- '*.cs'
+    v10.11.11:MediaBrowser.Common/Plugins/BasePluginOfT.cs:57:            SetAttributes(assemblyFilePath, dataFolderPath, assemblyName.Version);
+    v12.0-rc4:MediaBrowser.Common/Plugins/BasePluginOfT.cs:57:            SetAttributes(assemblyFilePath, dataFolderPath, assemblyName.Version);
+
+So on a fresh instance `Version` is null when line 51 tests it, the condition is
+false, and the unsuffixed folder is what `SetAttributes` is then given. The
+catalogue's directory does not move on an upgrade by that route, on either line.
+
+THE DIRECTORY CAN STILL MOVE, BY THE OTHER HALF OF THE SAME EXPRESSION. The name
+is `Path.GetFileNameWithoutExtension(assemblyFilePath)`, so a release that ships
+an assembly under a different file name derives a different folder and leaves the
+old one full. The rename this repository still owes is
+[#14](https://github.com/Flowfin/jellyfin-plugin-discover/issues/14), and it
+costs nothing today because nothing has been published, so no server holds a
+folder under the old name. It stops being free at the first release, which is the
+ordering that matters rather than the hazard itself. Whether that duplication is
+handled is
+[#107](https://github.com/Flowfin/jellyfin-plugin-discover/issues/107)'s.
 
 The path is not re-derived in this plugin. The base class owns that rule,
 including the branch, and a second copy of it here would be a copy that drifts.
-What is owed instead is that the resolved directory is written to the log once
-at startup, so a move is visible rather than silent. That log line is not in
-this change and is owed by whatever first constructs the store.
+What is owed is that the resolved directory is written to the log once at
+startup, so a move is visible rather than silent. That is unchanged by the
+reading above: it covers the rename route, which is the one that is live, rather
+than the version route, which is not. The log line is not in this change and is
+owed by whatever first constructs the store.
+
+Both readings are of the server's source at two tags rather than of a running
+server, and neither says what a later line does.
 
 ## What is not decided here
 
