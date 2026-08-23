@@ -44,6 +44,16 @@ public class TmdbSourceAdapterTests
     private static readonly DateTimeOffset _fetched = new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
 
     /// <summary>
+    /// The three entries of <c>PageWhoseAdultFlagIsFourThings</c> that survive.
+    /// </summary>
+    private static readonly string[] _theThreeTheSourceDidNotFlag =
+    {
+        "A Film The Source Did Not Flag",
+        "A Film Whose Flag Arrived As Text",
+        "A Film The Source Said Nothing About"
+    };
+
+    /// <summary>
     /// The adapter says which body it speaks for.
     /// </summary>
     /// <remarks>
@@ -95,6 +105,42 @@ public class TmdbSourceAdapterTests
             film.Identity.Identifiers);
         Assert.Equal(6.4, film.VoteAverage);
         Assert.Null(film.VoteCount);
+    }
+
+    /// <summary>
+    /// A title the source flagged as adult never becomes a record.
+    /// </summary>
+    /// <remarks>
+    /// #93's first condition asks for the exclusion by default, and it asks for
+    /// it at the request. No reference page for the six addresses this adapter
+    /// builds documents a parameter that would carry it, which
+    /// <c>docs/limits.md</c> records, so the exclusion is made on the answer
+    /// and this is what it costs and what it does not cost.
+    ///
+    /// Three of the four entries survive, and which three is the whole of the
+    /// assertion. A reader that asked whether the field was present rather than
+    /// what it held would drop the first as well; one that took any
+    /// truthy-looking value would drop the third, which is the word rather than
+    /// the value; and one that treated an absence as a yes would drop the
+    /// fourth, which is what every entry on two of the six addresses looks
+    /// like.
+    ///
+    /// The rest of the page surviving is the second half. An exclusion that
+    /// ended the page would turn one flagged title into a shelf that stops at
+    /// it.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ATitleTheSourceFlaggedAsAdultNeverBecomesARecord()
+    {
+        var answer = await Asked(TmdbFixtures.PageWhoseAdultFlagIsFourThings)
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.Equal(
+            _theThreeTheSourceDidNotFlag,
+            answer.Titles.Select(title => title.Name).ToArray());
     }
 
     /// <summary>

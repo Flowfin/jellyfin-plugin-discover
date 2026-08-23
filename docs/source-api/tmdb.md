@@ -123,9 +123,9 @@ Everything above is the discover endpoint, and the adapter in this tree asks it
 for nothing. The six paths it builds are literals chosen by a switch:
 
     git grep -nE '"(trending|tv|movie)' -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:536:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:537:            "popular" => series ? "tv/popular" : "movie/popular",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:538:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:576:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:577:            "popular" => series ? "tv/popular" : "movie/popular",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:578:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
 
 Read on 2026-08-18, one reference per address:
 
@@ -235,8 +235,8 @@ of them under a command exiting 1. Two of the three are mapped now:
 
     git grep -inE 'popularity|vote_average|vote_count' -- Jellyfin.Plugin.Template/ ; echo "exit=$?"
     Jellyfin.Plugin.Template/Catalogue/DiscoverTitleOrder.cs:55:    /// record. TMDB documents one, <c>popularity</c>, on every address this
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:352:            VoteAverage = Score(entry, "vote_average"),
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:353:            VoteCount = Count(entry, "vote_count")
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:392:            VoteAverage = Score(entry, "vote_average"),
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:393:            VoteCount = Count(entry, "vote_count")
     exit=0
 
 The first of the three matches is a remark rather than a mapping, and it says

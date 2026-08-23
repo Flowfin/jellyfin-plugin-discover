@@ -276,6 +276,11 @@ public sealed class TmdbSourceAdapter : IMetadataSource
                 continue;
             }
 
+            if (TheSourceFlagsThisAsAdult(entry))
+            {
+                continue;
+            }
+
             if (query.Limit is { } limit && titles.Count >= limit)
             {
                 break;
@@ -301,6 +306,41 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
         return SourceAnswer.Answered(titles, total);
     }
+
+    /// <summary>
+    /// Says whether the source has flagged this entry as adult.
+    /// </summary>
+    /// <param name="entry">One title as the source spells it.</param>
+    /// <returns><see langword="true"/> where the source said so, and false otherwise.</returns>
+    /// <remarks>
+    /// #93's first condition asks that adult content be excluded by default. It
+    /// asks for that at the request, and no reference page for the six
+    /// addresses this adapter builds documents a parameter that would carry it,
+    /// which `docs/limits.md` records. So the exclusion is made on the answer,
+    /// and this is where it is made: before the entry becomes a record, so
+    /// nothing a caller could store or draw was ever built from it.
+    ///
+    /// It is a separate step from the mapping rather than a null out of it. An
+    /// entry this plugin could not read and an entry it refused are two
+    /// different events, and folding the second into the first would leave a
+    /// deliberate exclusion looking like a parse that went wrong.
+    ///
+    /// Only <see langword="true"/> excludes. A missing flag, a null, a string
+    /// and a number are all the source not having said, and this treats them as
+    /// what they are rather than as a yes. That reading is not cautious, and it
+    /// is the honest one for what is being read: two of the six addresses this
+    /// adapter builds document no such flag at all, so treating an absence as a
+    /// yes would empty both of them entirely rather than exclude anything. What
+    /// those two shelves do instead is #93's own open half and belongs with the
+    /// shelves that ship, which is #86.
+    ///
+    /// There is no way to turn this off. #93 asks for one and it has nowhere to
+    /// live: the configuration page carries no controls, which is #103.
+    /// </remarks>
+    private static bool TheSourceFlagsThisAsAdult(JsonElement entry) =>
+        entry.ValueKind == JsonValueKind.Object
+        && entry.TryGetProperty("adult", out var flag)
+        && flag.ValueKind == JsonValueKind.True;
 
     /// <summary>
     /// Maps one entry of a page onto this plugin's record.
