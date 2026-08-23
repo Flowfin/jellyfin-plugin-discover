@@ -148,7 +148,7 @@ image host, turned from the path the source gave:
 and it hands that location to the server as the item's picture:
 
     git grep -n 'ImageUrl = title.ArtworkLocation' origin/master -- Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs:277:            ImageUrl = title.ArtworkLocation?.AbsoluteUri
+    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs:297:            ImageUrl = title.ArtworkLocation?.AbsoluteUri
 
 Whether the image is then fetched by the server or by each client, and therefore
 whether a user's own device contacts `image.tmdb.org` directly, is not
@@ -172,9 +172,9 @@ for:
 
     git grep -n 'UserId\|userId' origin/master -- 'Jellyfin.Plugin.Template/*.cs'
     origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:133:    public bool IsAvailableTo(Guid userId) => true;
-    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs:167:    public bool IsEnabledFor(string userId) =>
-    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs:168:        Guid.TryParse(userId, out var parsed) && _surface.IsAvailableTo(parsed);
-    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs:177:            query.UserId,
+    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs:175:    public bool IsEnabledFor(string userId) =>
+    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs:176:        Guid.TryParse(userId, out var parsed) && _surface.IsAvailableTo(parsed);
+    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs:197:            query.UserId,
     origin/master:Jellyfin.Plugin.Template/Surface/IDiscoverSurface.cs:52:    /// <param name="userId">Who is asking.</param>
     origin/master:Jellyfin.Plugin.Template/Surface/IDiscoverSurface.cs:60:    bool IsAvailableTo(Guid userId);
     origin/master:Jellyfin.Plugin.Template/Surface/SurfaceLevelRequest.cs:19:/// <param name="UserId">
