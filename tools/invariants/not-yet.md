@@ -66,10 +66,19 @@ is the exact shape `no-channel-type-outside-surface` already refuses, and that
 neighbour fires on it. Written as the residue instead, the namespaces no other
 rule owns, it would be a rule a reader counts for more than it covers.
 
-Those are three different endings and choosing between them is #49's, with the
-runner change being #33's if that is the one taken. The measurements behind this
-paragraph, including which namespaces a test may import today with nothing
-firing, are on #49 rather than repeated here.
+Those are three different endings and choosing between them is #49's. THE ONE
+THAT CHANGES THE RUNNER IS HELD BY NO OPEN ISSUE, and this entry named one until
+now. #33 seeded this lint and closed as completed, so a reader following that
+pointer arrives at finished work rather than at somewhere the change can be
+argued:
+
+    gh issue view 33 --repo Flowfin/jellyfin-plugin-discover --json state,stateReason
+    {"state":"CLOSED","stateReason":"COMPLETED"}
+
+Taking that ending therefore means opening an issue for the runner before the
+rule can be written, and the cost of the ending is that issue rather than the
+pattern. The measurements behind this paragraph, including which namespaces a
+test may import today with nothing firing, are on #49 rather than repeated here.
 
 ## What the configuration page renders
 
@@ -77,5 +86,14 @@ From #33, partly held and partly not.
 `no-unescaped-render-in-config-page` refuses the calls that treat a string as
 markup, which is the half that can be written as a pattern. The other half, that
 a value read out of configuration reaches the page at all, needs a configuration
-with something in it: #103 is where the page gets its settings and #113 is where
-they are listed. Until then there is nothing for the second half to be about.
+with something in it, and that is #103 alone now. THIS ENTRY NAMED #113 BESIDE
+IT AND THAT HALF HAS ARRIVED. The reference exists and is derived from the
+configuration type rather than kept by hand, so a setting cannot exist on that
+type with nothing describing it:
+
+    git grep -n 'EverySettingOnTheTypeHasAnEntry' -- Jellyfin.Plugin.Template.Tests/ConfigurationReferenceTests.cs
+    Jellyfin.Plugin.Template.Tests/ConfigurationReferenceTests.cs:27:    public static void EverySettingOnTheTypeHasAnEntry()
+
+What is left is the page carrying no control for a stored value to reach, so
+there is still nothing for the second half to be about. The conclusion is
+unchanged and one of the two reasons under it is gone.
