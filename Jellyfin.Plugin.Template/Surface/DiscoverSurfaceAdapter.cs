@@ -163,11 +163,31 @@ public sealed class DiscoverSurfaceAdapter : IChannel
     /// while the server is building a user's list of libraries, and the failure
     /// a throw here produces is a user with no libraries at all rather than a
     /// user without this one.
+    ///
+    /// What a false here reaches is the list and nothing else. The server asks
+    /// this in the loop that decides which channels a user gets back, and the
+    /// endpoint that returns a channel's contents takes the identifier from its
+    /// own route and never asks. So a client that has seen this surface once can
+    /// still fetch a level for a user this answers false for, and refusing a
+    /// user is therefore work for <see cref="GetChannelItems"/> as well, which
+    /// is handed the same user. Issue #57 is where that is argued.
     /// </remarks>
     public bool IsEnabledFor(string userId) =>
         Guid.TryParse(userId, out var parsed) && _surface.IsAvailableTo(parsed);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// A PER-USER ANSWER FROM HERE IS NOT DELIVERED PER USER TODAY, and this is
+    /// the note to read before writing one. The server caches what this returns
+    /// in a file whose name carries a per-user part only when the channel
+    /// implements <c>MediaBrowser.Controller.Channels.IHasCacheKey</c>. This type
+    /// does not, so the part is empty, one file serves every user for the length
+    /// of that cache, and whoever asks first decides what the rest of them see
+    /// without this method being called again. A filter written here alone would
+    /// run once per window rather than once per user. Issue #57 carries the
+    /// reading and the choice of what such a key would be; #61 carries what the
+    /// same cache does to freshness.
+    /// </remarks>
     public async Task<ChannelItemResult> GetChannelItems(InternalChannelItemQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
