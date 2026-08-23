@@ -23,11 +23,12 @@ namespace Jellyfin.Plugin.Template.Tests.Fixtures;
 /// difference is the whole fixture, and base64 is the form no line-ending rule
 /// can reach.
 ///
-/// The set covers the six shapes the fifth condition on #48 asks for and four
+/// The set covers the six shapes the fifth condition on #48 asks for and five
 /// more that the adapter's own mapping needs: a series page, whose fields the
 /// source spells differently from a film's; a page whose reported total
 /// contradicts what it carries; a body from something that answered instead of
-/// the source; and a page whose scores are not scores.
+/// the source; a page whose scores are not scores; and a page whose adult flag
+/// is four different things.
 /// </remarks>
 internal static class TmdbFixtures
 {
@@ -151,6 +152,24 @@ internal static class TmdbFixtures
     /// top of a shelf it has no claim to.
     /// </remarks>
     public const string PageWhoseScoresAreNotScores = "eyJwYWdlIjoxLCJyZXN1bHRzIjpbeyJpZCI6MTAwMDEwLCJ0aXRsZSI6IkEgRmlsbSBUaGUgU291cmNlIFNjb3JlZCIsInZvdGVfYXZlcmFnZSI6OC4yNSwidm90ZV9jb3VudCI6MTIzNH0seyJpZCI6MTAwMDExLCJ0aXRsZSI6IkEgRmlsbSBXaG9zZSBTY29yZXMgQXJyaXZlZCBBcyBUZXh0Iiwidm90ZV9hdmVyYWdlIjoiOC4yNSIsInZvdGVfY291bnQiOiIxMjM0In0seyJpZCI6MTAwMDEyLCJ0aXRsZSI6IkEgRmlsbSBXaG9zZSBTY29yZSBJcyBCZWxvdyBFdmVyeSBTY2FsZSIsInZvdGVfYXZlcmFnZSI6LTEuNSwidm90ZV9jb3VudCI6LTR9LHsiaWQiOjEwMDAxMywidGl0bGUiOiJBIEZpbG0gQ291bnRlZCBNb3JlIFRpbWVzIFRoYW4gQSBDb3VudCBIb2xkcyIsInZvdGVfYXZlcmFnZSI6Ny4wLCJ2b3RlX2NvdW50Ijo5OTk5OTk5OTk5OX1dLCJ0b3RhbF9wYWdlcyI6MSwidG90YWxfcmVzdWx0cyI6NH0K";
+
+    /// <summary>
+    /// A page whose adult flag is four different things.
+    /// </summary>
+    /// <remarks>
+    /// The flag the source documents on four of its six addresses, and the
+    /// entry the exclusion in #93 exists for. Four entries: one flagged false,
+    /// one flagged true, one whose flag arrived as the word rather than the
+    /// value, and one carrying no flag at all.
+    ///
+    /// The third is the near-miss. A reader that asked whether the field was
+    /// there rather than what it held would exclude a title the source never
+    /// flagged, and a reader that took any truthy-looking value would exclude
+    /// on a string. The fourth is what the two addresses documenting no flag
+    /// send on every entry, so what happens to it is the behaviour of two whole
+    /// shelves rather than an edge.
+    /// </remarks>
+    public const string PageWhoseAdultFlagIsFourThings = "eyJwYWdlIjoxLCJyZXN1bHRzIjpbeyJhZHVsdCI6ZmFsc2UsImlkIjoxMDAwMjAsInRpdGxlIjoiQSBGaWxtIFRoZSBTb3VyY2UgRGlkIE5vdCBGbGFnIiwicmVsZWFzZV9kYXRlIjoiMjAyMC0wNS0wNSJ9LHsiYWR1bHQiOnRydWUsImlkIjoxMDAwMjEsInRpdGxlIjoiQSBGaWxtIFRoZSBTb3VyY2UgRmxhZ2dlZCIsInJlbGVhc2VfZGF0ZSI6IjIwMjAtMDUtMDYifSx7ImFkdWx0IjoidHJ1ZSIsImlkIjoxMDAwMjIsInRpdGxlIjoiQSBGaWxtIFdob3NlIEZsYWcgQXJyaXZlZCBBcyBUZXh0IiwicmVsZWFzZV9kYXRlIjoiMjAyMC0wNS0wNyJ9LHsiaWQiOjEwMDAyMywidGl0bGUiOiJBIEZpbG0gVGhlIFNvdXJjZSBTYWlkIE5vdGhpbmcgQWJvdXQiLCJyZWxlYXNlX2RhdGUiOiIyMDIwLTA1LTA4In1dLCJ0b3RhbF9wYWdlcyI6MSwidG90YWxfcmVzdWx0cyI6NH0K";
 
     /// <summary>
     /// Reads a fixture back into the bytes a source would have sent.

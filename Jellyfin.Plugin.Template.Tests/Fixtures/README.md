@@ -14,9 +14,9 @@ There is a parser now, and the set has its first members:
 They are in [`TmdbFixtures.cs`](TmdbFixtures.cs) beside this page rather than in
 files of their own, which is what "base64 in source" below means taken
 literally: a constant a test reads, with the reason each one exists written at
-it. Ten of them, covering the six shapes the fifth condition on
+it. Eleven of them, covering the six shapes the fifth condition on
 [#48](https://github.com/Flowfin/jellyfin-plugin-discover/issues/48) asks for
-and four the adapter's own mapping needs. What each shape is for is at the
+and five the adapter's own mapping needs. What each shape is for is at the
 constant and is not restated here.
 
 **None of them was captured.** Every byte in that file was written by hand, so
