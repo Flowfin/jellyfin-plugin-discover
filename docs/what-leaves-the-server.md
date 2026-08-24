@@ -28,11 +28,12 @@ holds four registrations, none of which is a source:
     50:        serviceCollection.AddSingleton<IDiscoverSurface, DiscoverSurface>();
     63:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
-Browsing does not reach one either. Every level of the surface answers empty,
-the top level included:
+Browsing does not reach one either. Every level of the surface answers with no
+entries, the top level included, and the two answers it gives differ in the
+total rather than in what they hold:
 
-    git grep -n 'return Task.FromResult(SurfaceListing.Empty);' origin/master -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
-    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:156:        return Task.FromResult(SurfaceListing.Empty);
+    git grep -n 'IsRoot ? SurfaceListing.EmptyLevel' origin/master -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
+    origin/master:Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:166:            asked.Parent.IsRoot ? SurfaceListing.EmptyLevel : SurfaceListing.NoSuchLevel);
 
 So an operator installing this build gets no outbound traffic at all, from an
 install, from a browse, or from a schedule. The rest of this page describes what

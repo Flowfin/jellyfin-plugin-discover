@@ -21,14 +21,20 @@ with the server:
     git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
     Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:63:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
-Every level of that page is empty, the top of it included, and a test holds that
-rather than the sentence resting on a reading of the source:
+Every level of that page is empty, the top of it included. What the top level and
+any other address answer is no longer the same thing: the top is a level the
+surface recognises and which holds nothing, and every other address is one it does
+not recognise, which a client can tell apart by the total. Tests hold both rather
+than the sentence resting on a reading of the source:
 
-    git grep -n 'SurfaceListing.Empty' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
-    Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:156:        return Task.FromResult(SurfaceListing.Empty);
+    git grep -n 'IsRoot ? SurfaceListing.EmptyLevel' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
+    Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:166:            asked.Parent.IsRoot ? SurfaceListing.EmptyLevel : SurfaceListing.NoSuchLevel);
 
-    git grep -n 'EveryLevelIsEmptyUntilTheShelvesExist' -- Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs
-    Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs:139:    public async Task EveryLevelIsEmptyUntilTheShelvesExist(string? folder)
+    git grep -n 'TheTopLevelIsRecognisedAndHoldsNothingUntilTheShelvesExist' -- Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs
+    Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs:135:    public async Task TheTopLevelIsRecognisedAndHoldsNothingUntilTheShelvesExist()
+
+    git grep -n 'AnAddressThisSurfaceDoesNotRecogniseIsAnsweredWithNoTotalRatherThanZero' -- Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs
+    Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs:162:    public async Task AnAddressThisSurfaceDoesNotRecogniseIsAnsweredWithNoTotalRatherThanZero(string folder)
 
 So what installing this gets you today is a page with nothing on it and nothing
 saying why.
