@@ -109,22 +109,50 @@ public class DiscoverSurfaceAdapterTests
     }
 
     /// <summary>
-    /// A level the surface does not recognise comes back empty rather than as a failure.
+    /// A level the surface does not recognise comes back empty rather than as a failure, and carries no total.
     /// </summary>
     /// <remarks>
     /// The case a client produces on its own: an address it kept from a version
     /// whose shelf has since been removed. #54 asks for empty rather than a
     /// throw, and this is the boundary where a throw would reach the server.
+    /// The total is the second half of #54's answer and it survives this
+    /// boundary: the server's own field is nullable, so "there is no such
+    /// level" reaches a client as an absent total rather than being flattened
+    /// to zero here.
     /// </remarks>
     /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
     [Fact]
-    public async Task ALevelTheSurfaceDoesNotRecogniseComesBackEmpty()
+    public async Task ALevelTheSurfaceDoesNotRecogniseComesBackEmptyAndWithoutATotal()
     {
         var surface = new SurfaceThatAnswersFromWhatATestGaveIt(new CallLog());
         var adapter = new DiscoverSurfaceAdapter(surface);
 
         var result = await adapter.GetChannelItems(
             new InternalChannelItemQuery { FolderId = "shelf:that-was-removed", UserId = _somebody },
+            CancellationToken.None).ConfigureAwait(true);
+
+        Assert.Empty(result.Items);
+        Assert.Null(result.TotalRecordCount);
+    }
+
+    /// <summary>
+    /// A shelf that is configured and holds nothing comes back with a total of zero, not with no total.
+    /// </summary>
+    /// <remarks>
+    /// The other half of #54's answer, at the same boundary and through the
+    /// same method as the test above. Written as a pair on purpose: either one
+    /// alone passes on a surface that flattens both cases into one answer, and
+    /// what the pair asserts is that they stay two.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AShelfThatIsConfiguredAndEmptyComesBackWithATotalOfZero()
+    {
+        var surface = new SurfaceThatAnswersFromWhatATestGaveIt(new CallLog());
+        surface.Put(SurfaceAddress.Of("shelf:configured-and-empty"), SurfaceListing.EmptyLevel);
+
+        var result = await new DiscoverSurfaceAdapter(surface).GetChannelItems(
+            new InternalChannelItemQuery { FolderId = "shelf:configured-and-empty", UserId = _somebody },
             CancellationToken.None).ConfigureAwait(true);
 
         Assert.Empty(result.Items);

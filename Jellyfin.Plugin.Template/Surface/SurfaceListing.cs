@@ -57,15 +57,36 @@ public sealed class SurfaceListing
     }
 
     /// <summary>
-    /// Gets the empty level, which is what a request for a level this surface does not recognise answers with.
+    /// Gets the answer for a level this surface recognises and which holds nothing.
     /// </summary>
     /// <remarks>
-    /// A named value rather than a new empty listing at each call site, because
-    /// "the level is empty" and "there is no such level" are answered the same
-    /// way on purpose, per #54, and a reader should be able to see that the two
-    /// call sites really do return one thing.
+    /// The total is zero, which is this surface saying it knows the level and
+    /// the level is empty. That is the half of the pair a client draws as a
+    /// shelf standing empty rather than as a shelf that has gone, and
+    /// <see cref="NoSuchLevel"/> is the other half.
     /// </remarks>
-    public static SurfaceListing Empty { get; } = new SurfaceListing(_nothing, 0);
+    public static SurfaceListing EmptyLevel { get; } = new SurfaceListing(_nothing, 0);
+
+    /// <summary>
+    /// Gets the answer for a level this surface does not recognise.
+    /// </summary>
+    /// <remarks>
+    /// No entries and a null total, which is this surface saying it does not
+    /// know the level rather than saying the level holds nothing. The two were
+    /// one value until #54 was answered, and one value cannot tell a shelf that
+    /// is configured and empty from an address whose shelf has been removed, so
+    /// a test for the second case passed on whatever the first case happened to
+    /// return and a client had nothing to draw the difference from.
+    /// <para>
+    /// What separates them is the total and nothing else, so the bound is worth
+    /// stating: a level this surface recognises always states its total, which
+    /// is what makes a null total readable as "no such level" here. A surface
+    /// that answered null for a page of a level it does know would spend the
+    /// distinction, which is why <see cref="EmptyLevel"/> and this value are
+    /// the two answers rather than a convention each call site re-invents.
+    /// </para>
+    /// </remarks>
+    public static SurfaceListing NoSuchLevel { get; } = new SurfaceListing(_nothing, null);
 
     /// <summary>
     /// Gets what the level holds, in the order a client is to draw it.

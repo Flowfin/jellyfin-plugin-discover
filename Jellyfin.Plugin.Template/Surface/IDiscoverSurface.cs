@@ -74,9 +74,14 @@ public interface IDiscoverSurface
     /// <returns>What that level holds.</returns>
     /// <remarks>
     /// A request for a level this surface does not recognise is answered with
-    /// <see cref="SurfaceListing.Empty"/> rather than by throwing, because an
-    /// address from an older version whose shelf no longer exists is an
-    /// ordinary thing for a client to send. That is #54.
+    /// <see cref="SurfaceListing.NoSuchLevel"/> rather than by throwing,
+    /// because an address from an older version whose shelf no longer exists is
+    /// an ordinary thing for a client to send. A level this surface does
+    /// recognise and which holds nothing is
+    /// <see cref="SurfaceListing.EmptyLevel"/> instead, and the two differ in
+    /// the total rather than in the entries. That is #54, answered: a client
+    /// that cannot tell the two apart draws a shelf that is gone as a shelf
+    /// standing empty, and waits for it to fill.
     /// </remarks>
     Task<SurfaceListing> ListAsync(SurfaceLevelRequest request, CancellationToken cancellationToken);
 }
