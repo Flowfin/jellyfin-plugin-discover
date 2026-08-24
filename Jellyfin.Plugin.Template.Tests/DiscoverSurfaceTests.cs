@@ -122,30 +122,53 @@ public class DiscoverSurfaceTests
     }
 
     /// <summary>
-    /// Every level is empty, the root included.
+    /// The top level is recognised and holds nothing, which is a total of zero rather than no total.
     /// </summary>
     /// <remarks>
     /// This is the state #54 changes, and it is asserted rather than left
-    /// implicit so that landing the shelves reddens something. The root and an
-    /// address nobody has are the same answer on purpose: an address from an
-    /// older version whose shelf no longer exists is an ordinary thing for a
-    /// client to send, so it is answered rather than refused.
+    /// implicit so that landing the shelves reddens something. Zero is the
+    /// assertion rather than "no entries" because the entries are what the two
+    /// answers of #54 have in common and the total is what separates them.
     /// </remarks>
-    /// <param name="folder">The address asked for, or null for the top level.</param>
     /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
-    [Theory]
-    [InlineData(null)]
-    [InlineData("a-shelf-nobody-has")]
-    public async Task EveryLevelIsEmptyUntilTheShelvesExist(string? folder)
+    [Fact]
+    public async Task TheTopLevelIsRecognisedAndHoldsNothingUntilTheShelvesExist()
     {
-        var address = folder is null ? SurfaceAddress.Root : SurfaceAddress.Of(folder);
-
         var listing = await new DiscoverSurface()
-            .ListAsync(new SurfaceLevelRequest(address, _somebody, null, null), CancellationToken.None)
+            .ListAsync(new SurfaceLevelRequest(SurfaceAddress.Root, _somebody, null, null), CancellationToken.None)
             .ConfigureAwait(true);
 
         Assert.Empty(listing.Entries);
         Assert.Equal(0, listing.TotalCount);
+    }
+
+    /// <summary>
+    /// An address this surface does not recognise says so, and says it without throwing.
+    /// </summary>
+    /// <remarks>
+    /// An address from an older version whose shelf no longer exists is an
+    /// ordinary thing for a client to send, so it is answered rather than
+    /// refused, which is #54's third condition. What #54's answer adds is that
+    /// the answer is distinguishable from a shelf standing empty: no entries in
+    /// both, and no total here against a total of zero above. Without the
+    /// second assertion this test passes on whatever the recognised case
+    /// happens to return, which is what it did while both cases were one value.
+    /// </remarks>
+    /// <param name="folder">The address asked for.</param>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Theory]
+    [InlineData("a-shelf-nobody-has")]
+    [InlineData("shelf:that-was-removed")]
+    public async Task AnAddressThisSurfaceDoesNotRecogniseIsAnsweredWithNoTotalRatherThanZero(string folder)
+    {
+        var listing = await new DiscoverSurface()
+            .ListAsync(
+                new SurfaceLevelRequest(SurfaceAddress.Of(folder), _somebody, null, null),
+                CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Empty(listing.Entries);
+        Assert.Null(listing.TotalCount);
     }
 
     /// <summary>

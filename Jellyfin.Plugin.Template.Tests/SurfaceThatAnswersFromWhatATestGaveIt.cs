@@ -130,10 +130,15 @@ internal sealed class SurfaceThatAnswersFromWhatATestGaveIt : IDiscoverSurface
 
         if (request.Parent.IsRoot)
         {
-            return Task.FromResult(_root ?? SurfaceListing.Empty);
+            // The root is a level any surface recognises, so a test that put
+            // nothing there is a root standing empty rather than an address
+            // nobody knows.
+            return Task.FromResult(_root ?? SurfaceListing.EmptyLevel);
         }
 
         return Task.FromResult(
-            _levels.TryGetValue(request.Parent.Value, out var listing) ? listing : SurfaceListing.Empty);
+            _levels.TryGetValue(request.Parent.Value, out var listing)
+                ? listing
+                : SurfaceListing.NoSuchLevel);
     }
 }

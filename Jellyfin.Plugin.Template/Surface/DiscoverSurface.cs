@@ -142,17 +142,27 @@ public sealed class DiscoverSurface : IDiscoverSurface
 
     /// <inheritdoc />
     /// <remarks>
-    /// The empty level for every address, including the root. What a level
-    /// holds is #54: one folder per shelf at the top and titles inside. Until
-    /// that lands there are no shelves to list, and answering empty is what
-    /// this surface already owes an address it does not recognise, so the two
-    /// cases are one answer rather than a placeholder that has to be found and
-    /// removed later.
+    /// The root is a level this surface recognises and it holds nothing yet, so
+    /// it is answered with <see cref="SurfaceListing.EmptyLevel"/>. Every other
+    /// address is one this surface does not recognise, because there are no
+    /// shelves to have addresses, so it is answered with
+    /// <see cref="SurfaceListing.NoSuchLevel"/>. What a level holds once they
+    /// exist is #54: one folder per shelf at the top and titles inside.
+    /// <para>
+    /// The two answers were one value until #54's question was answered, and
+    /// keeping them one here would leave the shelf cases and the
+    /// unknown-address case held up by the same fallback: removing the
+    /// recognition of a real shelf would redden the shelf cases and leave the
+    /// unknown-address case green, which is a test passing for a reason nobody
+    /// chose. Answering the root differently from everything else is what makes
+    /// that case fail when it should, before any shelf exists to prove it with.
+    /// </para>
     /// </remarks>
     public Task<SurfaceListing> ListAsync(SurfaceLevelRequest request, CancellationToken cancellationToken)
     {
-        _ = request.Validated();
+        var asked = request.Validated();
 
-        return Task.FromResult(SurfaceListing.Empty);
+        return Task.FromResult(
+            asked.Parent.IsRoot ? SurfaceListing.EmptyLevel : SurfaceListing.NoSuchLevel);
     }
 }
