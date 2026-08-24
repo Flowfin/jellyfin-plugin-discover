@@ -40,14 +40,17 @@ So what installing this gets you today is a page with nothing on it and nothing
 saying why.
 
 Nothing leaves the server for a metadata source. The types that would ask one
-are in the tree, and no file in the plugin outside the source directory names
-the interface, so nothing on a running server holds one. The only callers that
-build the adapter are in the test project:
+are in the tree, and the one file in the plugin outside the source directory that
+names the interface takes one as a parameter rather than keeping one, so nothing
+on a running server holds one. The only callers that build the adapter are in the
+test project:
 
     git grep -n 'IMetadataSource' -- 'Jellyfin.Plugin.Template/*.cs' ':!Jellyfin.Plugin.Template/Sources/'
-    exit=1
+    Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:13:/// six months, which <see cref="IMetadataSource.RetentionCeiling"/> carries as a
+    Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:62:    public static CatalogueRetention Of(TimeSpan duration, IReadOnlyCollection<IMetadataSource> activeSources)
 
     git grep -rln 'new TmdbSourceAdapter' -- '*.cs'
+    Jellyfin.Plugin.Template.Tests/CatalogueRetentionTests.cs
     Jellyfin.Plugin.Template.Tests/SourceResponseFuzzTests.cs
     Jellyfin.Plugin.Template.Tests/TmdbSourceAdapterTests.cs
 
