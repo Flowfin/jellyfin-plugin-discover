@@ -1,0 +1,56 @@
+Id: no-source-content-off-this-server
+Pattern: (\b[A-Za-z]*Export[A-Za-z]*[[:space:]]*\(|\b[A-Za-z]*Upload[A-Za-z]*[[:space:]]*\(|\b(Telemetry|Analytics|CrashReport|TrackEvent|ApplicationInsights|SentrySdk)[A-Za-z]*\b)
+Subject: *.cs
+Except: none
+Issue: 82
+
+A source's terms forbid passing its content on, and `docs/sources/tmdb.md` says
+what may leave this server: content reaches the users of the server that fetched
+it and reaches nothing else, identifiers may cross to another plugin on the same
+server, and nothing aggregates content across installations. Under that rule the
+page names four features as refused rather than leaving each one to be argued
+when somebody proposes it: an export of the catalogue in any format, artwork
+served from this server, a cache or index shared between installations, and
+telemetry that carries a field a response supplied.
+
+Until this rule landed, that list was read by a person or not at all, and the
+page said so in the sentence this rule replaces. A refusal nothing refuses is
+prose, and prose is what a proposal argues with.
+
+What the pattern catches is the two of those four that a name gives away.
+
+An export is the first. Whatever format somebody reaches for - a file, a
+document, an archive, a route that hands the catalogue back - the member doing
+it is called some kind of export, because that is what the person writing it
+believes they are adding. The same goes for the shared cache and the direction
+that feeds it: a member that uploads is a member sending what this server holds
+somewhere this server is not. Neither word appears anywhere in this codebase
+today, and neither has a legitimate use here: nothing this plugin does is an
+export, because the surface is how content reaches a user and the seam in #94
+passes identifiers rather than the record.
+
+Telemetry is the second, by the names the shape arrives under. Analytics, crash
+reporting and the two hosted collectors somebody reaches for first are the same
+feature: a payload leaving the server on a schedule nobody browsing asked for.
+The refusal is not against measuring anything - it is against a payload that
+carries a title, a description or any other field a response supplied, and a
+name-shaped pattern cannot read a payload, so it refuses the component instead.
+An operator-facing diagnostic is a different thing and is #110, which stays on
+the server and carries counts, times and identifiers.
+
+What it cannot do, beyond the bound every rule here carries.
+
+Two of the four refused features are outside it. Artwork served from this server
+is not a name: it is bytes taking a route, and the shape that would produce it
+is a fetch of an image the catalogue only holds a location for. What holds that
+today is `no-network-outside-source-adapter`, which keeps every outbound call
+inside one type, and #62, which is why the record carries a location rather than
+an image. A shared cache is half held: the word that feeds one is in the pattern,
+the reading side is a call to a host, and which hosts a source has is declared on
+its terms page rather than in a rule here.
+
+It reads names and never payloads. A member called something else that does
+exactly what an export does passes this rule, and so does a legitimate export
+that never arrives because none is wanted. The list on the terms page is still
+what says which features are refused; this rule makes two of them cost a red run
+rather than a conversation.
