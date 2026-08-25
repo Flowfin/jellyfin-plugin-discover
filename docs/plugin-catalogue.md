@@ -114,8 +114,12 @@ and this repository declares that field, with the rest of what a package needs:
 ### The repository is inside the `jellyfin` organisation
 
 Not met, and not a thing that can be met by changing a file here. This repository
-is under `Flowfin`, which is a decision already recorded, and whether it moves is
+is under `Flowfin`, which is a decision already recorded, and whether it moves was
 question 9 on [#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2).
+That was answered on 2026-08-24 and the answer is that it does not move for the
+first release, so this row is refused rather than open. What the answer puts in
+its place is under [What question 9 settled](#what-question-9-settled-and-what-it-left)
+below.
 
 The consequence is larger than a listing. The publishing route is a reusable
 workflow, and three of its steps, including the whole publishing job, are guarded
@@ -175,18 +179,40 @@ is settled, it is settled where the release process is decided, which is
 [#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119), rather
 than by whoever notices the mismatch first.
 
-## What is not decided here
+## What question 9 settled, and what it left
 
-Whether to be in the catalogue at all. Under the reading above that question is
-not about sending anything: it is about whether this repository moves under
-another owner, which changes who holds the publishing credentials, who reviews
-the code, and what the install path in
+This heading said the question was not decided here and left it at that. It is
+decided now, and where it is decided is still not here: question 9 on
+[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2) was answered
+on 2026-08-24.
+
+What was being asked. Under the reading above, whether to be in the catalogue at
+all is not about sending anything: it is about whether this repository moves
+under another owner, which changes who holds the publishing credentials, who
+reviews the code, and what the install path in
 [#111](https://github.com/Flowfin/jellyfin-plugin-discover/issues/111) points at.
-It is question 9 on
-[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2), and
-[#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119) and
-[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120) sit on the
-same answer.
+
+What was answered. It does not move for the first release. The manifest is
+self-hosted under this repository's control and enters the Flowfin catalogue at
+`flowfin.dev/manifest.json`, which is
+[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120), and
+submission to the official Jellyfin catalogue is a later and additive step, which
+is [#122](https://github.com/Flowfin/jellyfin-plugin-discover/issues/122).
+
+What the answer does not touch is every other refusal on this page. Each one is a
+property of this repository against the catalogue's own requirements, and a
+decision about where the manifest is hosted moves none of them. The
+version-string collision under the heading before this one is the one to read
+carefully: it is not settled by the answer either, both schemes stay defensible
+and stay different, and the release process that picks one is
+[#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119) rather
+than this page.
+
+What the answer does not make true is that this repository is listed anywhere. It
+names the address a manifest will be published at. Publishing one is
+[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120) and has
+not happened, and a reader who takes the address for an install path is reading a
+decision as an artefact.
 
 ## Bounds
 

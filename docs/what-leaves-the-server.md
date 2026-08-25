@@ -183,12 +183,21 @@ for:
 
 The register this list is kept in is
 [#70](https://github.com/Flowfin/jellyfin-plugin-discover/issues/70), and it is
-the input to this page rather than something restated here. Two things in the
-plan take it off zero when they land: recording what a user asked for, which is
-[#97](https://github.com/Flowfin/jellyfin-plugin-discover/issues/97), and
-personalised shelves, which is question 7 on
-[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2) and is not
-answered.
+the input to this page rather than something restated here. One thing in the plan
+takes it off zero when it lands: recording what a user asked for, which is
+[#97](https://github.com/Flowfin/jellyfin-plugin-discover/issues/97).
+
+Personalised shelves were the second and are no longer coming. This page said
+they were question 7 on
+[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2) and that the
+question was not answered; it was answered on 2026-08-24, and the answer is
+neither at 1.0. Nothing about viewing behaviour leaves the server, and the weaker
+variant that would have kept the personalisation on the server is not built
+either. Both halves belong here rather than only the first: the outbound half is
+what a source would have been told about a named account, and the half that never
+left would still have been a record about a person for the register above to
+carry. A release that wants either is re-opening that question rather than
+extending this page.
 
 Sources that would need a user's own authorisation, which are the largest thing
 that could ever leave this server about a named person, are deferred, and the
@@ -215,8 +224,12 @@ it:
 The page an administrator opens is not a page a user opens, and the neighbouring
 control on the server, which decides who sees a surface at all, is set by an
 administrator too. Whether a user ever gets a switch of their own is
-[#57](https://github.com/Flowfin/jellyfin-plugin-discover/issues/57) and
-question 7 on [#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2).
+[#57](https://github.com/Flowfin/jellyfin-plugin-discover/issues/57), and that is
+the whole of it now. Question 7 on
+[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2) stood beside
+it here until 2026-08-24, and its answer takes a setting away rather than
+deciding who holds it: with no personalisation built at 1.0 there is nothing for
+a user to turn off, so this heading loses a candidate instead of gaining one.
 
 ## What an operator cannot avoid
 
