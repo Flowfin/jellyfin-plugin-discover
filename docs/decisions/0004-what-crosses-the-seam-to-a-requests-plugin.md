@@ -202,9 +202,20 @@ produce one at all is
 [#98](https://github.com/Flowfin/jellyfin-plugin-discover/issues/98). Neither
 changes what crosses, and both change whether anything does.
 
-This note does not close #94. That issue's first condition wants the version
-rule in this document, and its last keeps it open until the sibling repository
-exists and points at it.
+This note does not close #94, and both of the reasons it used to give have gone.
+That issue's first condition wanted the version rule in this document and has it,
+in the section above. Its last kept the issue open until the sibling repository
+existed and pointed at this note; `jellyfin-plugin-requests` exists and
+`docs/seam.md` there names #94 as the contract, says it is the only one, and
+writes no second field list.
+
+What is left is that issue's fourth condition, that a reader who has never seen
+this repository can implement the other side from the note. The field set, the
+meanings and the version rule are here. The encoding and the route are
+[#95](https://github.com/Flowfin/jellyfin-plugin-discover/issues/95), which does
+not exist, so a receiver written from this alone has nothing to receive on. That
+is a bound on this note rather than a gap in it, and it is the same bound the
+section on what crosses states.
 
 ## What would reverse this
 
