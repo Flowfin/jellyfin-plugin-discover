@@ -1,7 +1,9 @@
 # 0004 What crosses the seam to a requests plugin
 
-Decided, apart from the version rule. Raised in
-[#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94).
+Decided, version rule included. Raised in
+[#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94); the version
+rule under
+[#101](https://github.com/Flowfin/jellyfin-plugin-discover/issues/101).
 
 ## The problem this settles
 
@@ -112,13 +114,85 @@ that table exists to be checkable against every such feature rather than to
 point elsewhere. That row now names this note, so a field added in one place has
 one place it is added and one place that cites it.
 
+## How this contract changes
+
+Written under [#101](https://github.com/Flowfin/jellyfin-plugin-discover/issues/101),
+which is where this rule is argued. It settles that issue's first condition and
+none of its other three.
+
+**One integer, and it counts breaking changes only.** The contract version is a
+whole number starting at 1. It is not a version of this plugin, of the catalogue
+record, or of anything else, and it does not carry a second part. A receiver has
+exactly one question - can I read this message - and one number answers it. Two
+parts would invite a receiver to reason about the second one, which is the
+negotiation this seam does not have.
+
+**Adding a field a receiver may ignore does not raise it.** A new field that an
+existing receiver can leave unread changes nothing for that receiver, and raising
+the number for it would make every older receiver refuse a message it could have
+read. Absence is absence, so a receiver meets a field it does not know by not
+looking for it, and one it does know by its presence.
+
+**These may never change meaning at one version, and changing them is what raises
+it.** Removing a field. Making a field that could be absent always present, or
+the reverse. Changing what an existing field means, what it is scoped to, or how
+it is computed. Changing the alphabet or the shape of an existing field's value.
+
+**Three fields are the ones a receiver keys on, and they carry the strongest form
+of that rule.** The provider identifiers, because resolving the title from them
+is the whole of what a receiver does. The kind, because a receiver acts
+differently on the two members. And the want identifier, because a receiver that
+stores it has made it part of the contract whether or not anybody said so: two
+handovers carrying one want identifier are one want, at any version. A release
+that recomputes it is breaking, and that is
+[#99](https://github.com/Flowfin/jellyfin-plugin-discover/issues/99)'s identifier
+named here as contract rather than as an implementation detail.
+
+**What forces something other than a version.** A message travelling the other
+way, or anything a receiver returns beyond the optional acknowledgement in point
+3 above, is not a version of this contract. It is a second contract and a
+different interface, and it reopens the argument in
+[0002](0002-this-plugin-owns-the-catalogue.md) about which side owns what rather
+than following from it.
+
+**What each side does with a number it does not recognise.**
+
+This plugin writes the version it was built for and reads nothing back except the
+acknowledgement. It therefore never sees a receiver's version and never adapts to
+one: there is no negotiation here, and a reader looking for one should stop.
+
+A receiver reads the number first. A number it does not know is higher than any
+it knows, because the number only ever grows, so the message was written to a
+contract that changed in a way it cannot see. It refuses the message rather than
+reading the fields it recognises, because the reason the number moved is that one
+of those fields no longer means what it did.
+
+A refusal is not an error on this side. The want is already recorded locally, by
+[#97](https://github.com/Flowfin/jellyfin-plugin-discover/issues/97), and a
+receiver that refuses is behind rather than broken. Retrying the same message
+produces the same refusal, so it is not retried for that reason.
+
+**Version 1 is not frozen yet, and this says where that stops being true.**
+Nothing has been published from this repository and no sibling exists, so the
+field set above is version 1 and a change to it before the first release edits
+version 1 rather than minting version 2. From the first release that ships this
+seam, every rule above applies as written. That is the same window `CHANGELOG.md`
+describes for the leading zero in this plugin's own version: cheap now, and
+expensive from the moment somebody has installed something.
+
 ## What is not settled here
 
-The version rule. The field above says a message carries a contract version. How
-that version changes without breaking either side, what a receiver does with a
-version it does not know, and whether anything is negotiated at all, is
-[#101](https://github.com/Flowfin/jellyfin-plugin-discover/issues/101), and
-writing it here would answer that issue from inside this one.
+The rest of #101. The rule above says what a version change may do. That this
+plugin tolerates a receiver built against an older version, and that a newer one
+is handled by a stated rule, are behaviours at the point implementations are
+resolved, which is
+[#95](https://github.com/Flowfin/jellyfin-plugin-discover/issues/95) and does not
+exist. Whether the interface is published for a sibling to compile against, or
+copied, is that issue's fourth condition and is a packaging decision that needs a
+release path, which is
+[#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119). A copied
+interface is two types in one process that do not satisfy each other, so that
+condition is not a formality.
 
 The gesture that produces a want is
 [#96](https://github.com/Flowfin/jellyfin-plugin-discover/issues/96) and its

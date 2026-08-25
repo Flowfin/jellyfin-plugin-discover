@@ -9,20 +9,24 @@ reconstruction of it.
 
 ## The notes
 
-| Note                                                               | Decision                                                        | State                                |
-| ------------------------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------ |
-| [0001](0001-a-discover-page-is-a-server-channel.md)                | A discover page is a server channel                             | Decided                              |
-| [0002](0002-this-plugin-owns-the-catalogue.md)                     | This plugin owns the catalogue, a requests plugin owns requests | Decided                              |
-| [0003](0003-the-catalogue-lives-in-the-plugins-own-data-folder.md) | Where the catalogue lives on disk                               | Decided                              |
-| [0004](0004-what-crosses-the-seam-to-a-requests-plugin.md)         | What crosses the seam to a requests plugin                      | Decided, apart from the version rule |
+| Note                                                               | Decision                                                        | State   |
+| ------------------------------------------------------------------ | --------------------------------------------------------------- | ------- |
+| [0001](0001-a-discover-page-is-a-server-channel.md)                | A discover page is a server channel                             | Decided |
+| [0002](0002-this-plugin-owns-the-catalogue.md)                     | This plugin owns the catalogue, a requests plugin owns requests | Decided |
+| [0003](0003-the-catalogue-lives-in-the-plugins-own-data-folder.md) | Where the catalogue lives on disk                               | Decided |
+| [0004](0004-what-crosses-the-seam-to-a-requests-plugin.md)         | What crosses the seam to a requests plugin                      | Decided |
 
-The last row is the one that is not finished, and the note says so at the top of
-itself rather than only here. It fixes the field set, the direction and what a
-receiver may not assume. It does not carry the rule for how the contract version
-changes, because that is
-[#101](https://github.com/Flowfin/jellyfin-plugin-discover/issues/101). Issue
-[#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94) also stays
-open until the sibling repository exists and points at the note.
+Every row is decided. The last one was not until the version rule arrived under
+[#101](https://github.com/Flowfin/jellyfin-plugin-discover/issues/101), which is
+the paragraph this one replaces; the note now fixes the field set, the direction,
+what a receiver may not assume, and what a version change may do.
+
+A decided note is not a closed issue. Both issues behind that row stay open for
+reasons the note names at its end: #101 for the behaviour at the point
+implementations are resolved and for whether the interface is published or
+copied, and
+[#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94) until the
+sibling repository exists and points at the note.
 
 ## What a note holds
 
