@@ -47,8 +47,8 @@ Both are declared on the source's own terms page and both are literals in the
 adapter:
 
     git grep -n 'https://' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:66:    private static readonly Uri _baseAddress = new("https://api.themoviedb.org/3/", UriKind.Absolute);
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:68:    private static readonly Uri _artworkBase = new("https://image.tmdb.org/t/p/w500/", UriKind.Absolute);
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:68:    private static readonly Uri _baseAddress = new("https://api.themoviedb.org/3/", UriKind.Absolute);
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:70:    private static readonly Uri _artworkBase = new("https://image.tmdb.org/t/p/w500/", UriKind.Absolute);
 
 The first is where the server asks its questions. The second is where artwork
 sits, and the server is not what fetches it, which is the section below.
@@ -75,21 +75,21 @@ The path is one of six literals chosen by a switch, and no value a caller
 supplied reaches it as text:
 
     git grep -n '"trending" =>\|"popular" =>\|"top-rated" =>' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:576:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:577:            "popular" => series ? "tv/popular" : "movie/popular",
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:578:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:578:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:579:            "popular" => series ? "tv/popular" : "movie/popular",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:580:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
 
 The query is a page number and nothing else:
 
     git grep -n 'Query = FormattableString.Invariant' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:589:            Query = FormattableString.Invariant($"page={page}")
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:591:            Query = FormattableString.Invariant($"page={page}")
 
 The headers are three:
 
     git grep -n 'TryAddWithoutValidation' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:660:        request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + accessToken);
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:661:        request.Headers.TryAddWithoutValidation("Accept", "application/json");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:662:        request.Headers.TryAddWithoutValidation("User-Agent", Identity());
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:662:        request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + accessToken);
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:663:        request.Headers.TryAddWithoutValidation("Accept", "application/json");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:664:        request.Headers.TryAddWithoutValidation("User-Agent", Identity());
 
 The first is a credential, and whose it is and where it is stored is
 [#77](https://github.com/Flowfin/jellyfin-plugin-discover/issues/77). The third
@@ -97,12 +97,12 @@ names this plugin and its version and nothing about the server or the operator,
 which the source's terms require and which is derived rather than typed:
 
     git grep -n -A 5 'private static string Identity()' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:683:    private static string Identity()
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-684-    {
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-685-        var assembly = typeof(TmdbSourceAdapter).Assembly.GetName();
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-686-
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-687-        return FormattableString.Invariant($"{assembly.Name}/{assembly.Version}");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-688-    }
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:685:    private static string Identity()
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-686-    {
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-687-        var assembly = typeof(TmdbSourceAdapter).Assembly.GetName();
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-688-
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-689-        return FormattableString.Invariant($"{assembly.Name}/{assembly.Version}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-690-    }
 
 ## What a request does not carry
 
@@ -144,7 +144,7 @@ The plugin never fetches an image. What it stores is a location at the source's
 image host, turned from the path the source gave:
 
     git grep -n 'return new Uri(_artworkBase' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:539:        return new Uri(_artworkBase, path.AsSpan(1).ToString());
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:541:        return new Uri(_artworkBase, path.AsSpan(1).ToString());
 
 and it hands that location to the server as the item's picture:
 
@@ -281,12 +281,23 @@ that agrees says the command still prints what is pasted under it, never that th
 sentence over it is the right thing to conclude from those bytes. The reader's
 own header is where that bound and the rest of what it cannot see are written.
 
-What catches the unread half is still somebody running the commands, and that has
-happened once already: six of the quotations above were re-derived after the
-adapter moved under
+What catches the unread half is still somebody running the commands. What catches
+the quoted half is the reader, and this page has now been repaired both ways.
+Six of the quotations above were re-derived by hand after the adapter moved under
 [#68](https://github.com/Flowfin/jellyfin-plugin-discover/issues/68) and
 [#251](https://github.com/Flowfin/jellyfin-plugin-discover/issues/251), and the
-sentences they support did not move with them.
+sentences they support did not move with them. Six were re-derived a second time
+after three later changes moved the same file again, and that time nobody looked:
+the run on the mainline refused them by name and the repair followed the refusal.
+That the count is six on both occasions is a coincidence of which quotations the
+adapter carries rather than a pattern.
+
+The difference between the two rounds is the thing to keep. Before
+[#273](https://github.com/Flowfin/jellyfin-plugin-discover/issues/273) the only
+catch available to this page was somebody deciding to look, which is a catch that
+does not arrive on a schedule. After it, a quotation that stops reproducing reds
+the mainline. The sentences over the quotations are still in the first category,
+and so is every claim on this page with no command under it.
 
 One of those six failed in a way the others could not, and it is the form to
 avoid here rather than a detail of that repair. Five were commands that find
