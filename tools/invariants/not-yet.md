@@ -66,6 +66,34 @@ is the exact shape `no-channel-type-outside-surface` already refuses, and that
 neighbour fires on it. Written as the residue instead, the namespaces no other
 rule owns, it would be a rule a reader counts for more than it covers.
 
+THE NEIGHBOUR IS NOT ONE NEIGHBOUR, AND THIS PARAGRAPH SAID IT WAS. Three
+fixtures name a server namespace, belonging to three rules:
+
+    git grep -nIE 'using MediaBrowser\.' -- tools/invariants/fixtures
+    tools/invariants/fixtures/no-channel-type-outside-surface/AlsoBreaksTheRule.cs:6:using MediaBrowser.Controller.Entities;
+    tools/invariants/fixtures/no-other-plugin-storage/BreaksTheRule.cs:10:using MediaBrowser.Common.Configuration;
+    tools/invariants/fixtures/no-server-provider-key/BreaksTheRule.cs:6:using MediaBrowser.Providers.Plugins.Tmdb;
+
+That matters to the choice rather than to the arithmetic. The set a residue
+pattern has to stay disjoint from is not an obstacle to route around once: it
+grows whenever a rule lands whose fixture names a server namespace, and each such
+landing widens the gap between what the rule's prose would claim and what its
+pattern reaches, with nothing red. It has already grown once unnoticed. And the
+namespace the third one holds, `MediaBrowser.Common.Configuration`, is named by
+two of the seven test files this rule is about, so the residue would be barred
+from the part of the server the tests actually reach for.
+
+WHAT THE NEIGHBOUR ALREADY DOES IS THE OTHER HALF A READER SHOULD KNOW BEFORE
+CHOOSING. `no-channel-type-outside-surface` has `Subject: *.cs`, so it reaches
+the test project, and one of its three exceptions is the adapter's own tests -
+the same carve-out #49's condition writes. Its pattern is silent on every other
+test file, which the runner watches on every invocation. So the channel and
+entity half of this property is refused today, by a rule written for #52 and for
+a different reason, and what is missing is the complement. That is a property
+held by the side effect of another rule's subject, which moves when that rule's
+exceptions move and which nothing here connects to this entry, so it is a reason
+to write the rule rather than a reason not to.
+
 Those are three different endings and choosing between them is #49's. THE ONE
 THAT CHANGES THE RUNNER IS HELD BY NO OPEN ISSUE, and this entry named one until
 now. #33 seeded this lint and closed as completed, so a reader following that
