@@ -148,8 +148,9 @@ is gone and search is a provider model:
     MediaBrowser.Controller/Library/IInternalSearchProvider.cs
 
 The newer line has a channel-facing search type of its own, which means whatever
-this plugin does about search has two shapes rather than one if both lines are
-ever carried. That is question 1 on #2's cost, showing up in a second place.
+this plugin does about search has two shapes rather than one. Both lines are
+carried: question 1 on #2 was answered on 2026-08-24 with 10.11 and 12.0, so
+this is that answer's cost rather than a cost the answer might avoid.
 
 **Movie recommendations moved out of the controller.** The endpoint is on both
 lines; the query construction is in `MoviesController` on `v10.11.11` and behind

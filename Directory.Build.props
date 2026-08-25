@@ -17,8 +17,13 @@
         whatever signature moved. Nothing on the server side refuses that, so
         the values have to be right at the moment the package is built.
 
-        Which lines this plugin carries is question 1 on issue #2 and is not
-        answered here. The current stable line is what is declared until it is.
+        Which lines this plugin carries was question 1 on issue #2 and was
+        answered there on 2026-08-24 with both 10.11 and 12.0, the 10.11
+        artefact first. That answer is a support commitment rather than a
+        declaration in this file: what this file declares is what the tree is
+        built, packaged and checked against, and it is one line until issue #31
+        adds the second. docs/support.md is where the difference between the two
+        sets is stated.
     -->
 
     <PropertyGroup>

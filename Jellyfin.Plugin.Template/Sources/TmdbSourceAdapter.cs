@@ -29,8 +29,10 @@ namespace Jellyfin.Plugin.Template.Sources;
 /// update.
 ///
 /// What it does not own, and must not learn to. The credential is #77 and
-/// arrives as an argument; whether this project ships one or an operator
-/// supplies theirs is question 4 on #2 and nothing here answers it. The limits
+/// arrives as an argument. Whose key it is was question 4 on #2 and was
+/// answered on 2026-08-24: the operator supplies theirs. That answer changes
+/// nothing here, because where a key is stored and how it is entered is still
+/// not this type's business, and #77 is where the rest of it lands. The limits
 /// are #78: this reports a refusal for rate and never decides when to ask
 /// again. The terms are `docs/sources/tmdb.md`, and the rows there that name
 /// #74 are the two below.
