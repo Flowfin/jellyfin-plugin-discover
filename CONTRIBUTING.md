@@ -131,9 +131,10 @@ file, the packaging metadata and the workflows derive from it rather than
 repeating it, and the build fails when the packaging metadata disagrees. Do not
 add a second statement of a version anywhere; change that file.
 
-Which lines this project intends to support, as opposed to which one the tree
-builds against today, is an open question and is question 1 on
-[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2).
+Which lines this project intends to support is a different question from which
+one the tree builds against today, and the two currently have different answers.
+[`docs/support.md`](docs/support.md) is the first one and states which lines
+carry a support commitment; this section is the second one only.
 
 ## Reporting something rather than fixing it
 

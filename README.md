@@ -100,15 +100,20 @@ set:
 The plan is the issue tracker. It is organised into milestones, each with an
 issue that says what the milestone ends with, and the first one is
 [M1](https://github.com/Flowfin/jellyfin-plugin-discover/milestone/1). Ten
-questions in it are open decisions rather than work, and they are collected in
-[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2).
+questions in it were decisions rather than work; they are collected in
+[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2) and were
+answered there on 2026-08-24.
 
 ## Which server this builds against
 
-No set of supported server lines has been chosen yet. That choice is question 1
-in [#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2), and it is
-a decision about which lines this project will fix a bug in, which is a
-different question from which line the tree builds against today.
+Which lines this project will fix a bug in is a different question from which
+line the tree builds against today, and the two have different answers right
+now. The first is
+[`docs/support.md`](docs/support.md), which states the supported lines, what
+happens when one of them ends upstream, what happens when a metadata source ends
+or stops answering a key, and how long a release is supported. Read that page
+before planning an upgrade around this plugin. The rest of this section is the
+second question only.
 
 The tree no longer disagrees with itself about the second question.
 `Directory.Build.props` is the one place a server line is stated and everything
@@ -132,8 +137,9 @@ difference:
     build.yaml:11:framework: "net9.0"
 
 So one line is declared, 10.11, and it is the only one anything here is built or
-checked against. Read that as the line the tree carries and not as a support
-commitment, which is still question 1's to make.
+checked against. Read that as the line the tree carries and not as the set of
+lines that are supported: two are supported, and the difference between the two
+sets is a row on [`docs/support.md`](docs/support.md).
 
 ## Building
 
