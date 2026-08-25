@@ -120,9 +120,9 @@ The tree no longer disagrees with itself about the second question.
 else derives from it:
 
     git grep -nE '<Jellyfin(PackageVersion|TargetFramework|DeclaredLines)>' -- Directory.Build.props
-    Directory.Build.props:35:        <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
-    Directory.Build.props:36:        <JellyfinTargetFramework>net9.0</JellyfinTargetFramework>
-    Directory.Build.props:41:        <JellyfinDeclaredLines>10.11</JellyfinDeclaredLines>
+    Directory.Build.props:40:        <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
+    Directory.Build.props:41:        <JellyfinTargetFramework>net9.0</JellyfinTargetFramework>
+    Directory.Build.props:46:        <JellyfinDeclaredLines>10.11</JellyfinDeclaredLines>
 
 The project file reads both rather than repeating either, and the packaging
 metadata is compared against the same source by the build, which fails on a
