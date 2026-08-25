@@ -24,7 +24,7 @@ different sets. One line is declared in the tree, and it is the only one
 anything is compiled, packaged or installed against:
 
     git grep -n '<JellyfinDeclaredLines>' -- Directory.Build.props
-    Directory.Build.props:41:        <JellyfinDeclaredLines>10.11</JellyfinDeclaredLines>
+    Directory.Build.props:46:        <JellyfinDeclaredLines>10.11</JellyfinDeclaredLines>
 
     git grep -nE '^targetAbi|^version' -- build.yaml
     build.yaml:7:version: "0.0.0.0"

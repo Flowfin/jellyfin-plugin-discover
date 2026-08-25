@@ -131,12 +131,26 @@ lives here and nowhere else, so there is one copy rather than two.
 
 ## The key
 
-The key this source is reached with is not decided.
-[#77](https://github.com/Flowfin/jellyfin-plugin-discover/issues/77) holds it and
-it is question 4 on [#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2):
-whether this project registers a key of its own and ships it, or every operator
-supplies theirs. The terms bear on that question and this page does not answer
-it.
+Every operator supplies their own key. That is the answer to question 4 on
+[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2), taken on
+2026-08-24, and it was taken as the defensible reading of these terms: the rate
+budget belongs to whoever registered, and this project does not answer for how
+every install spends a key it registered once and shipped everywhere.
+
+What the answer costs an operator is a registration before any shelf has
+anything on it, and what it costs this project is that a revoked or exhausted
+key is one install's problem rather than a fleet-wide outage.
+[`../support.md`](../support.md) states that position.
+
+What is left is not the decision.
+[#77](https://github.com/Flowfin/jellyfin-plugin-discover/issues/77) holds the
+rest of it: there is nowhere for an operator to put a key yet, so nothing
+validates one when it is entered and nothing tells an operator what to do while
+none is configured. The adapter takes the credential as an argument and declines
+to ask when it has none, which is the half that exists:
+
+    git grep -n 'private readonly bool _configured' -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:76:    private readonly bool _configured;
 
 ## What this page does not cover
 
