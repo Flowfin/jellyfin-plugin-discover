@@ -1,8 +1,11 @@
 using System;
 using System.Linq;
+using Jellyfin.Plugin.Template.Seam;
 using Jellyfin.Plugin.Template.Surface;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Jellyfin.Plugin.Template.Tests;
@@ -55,6 +58,13 @@ public class PluginServiceRegistratorTests
     {
         var services = new ServiceCollection();
 
+        // What the server has already put in the container before it calls a
+        // plugin's registrator. Named here rather than left out, because a
+        // registration that takes a logger is otherwise refused by the
+        // validation below for a reason that is about this arrangement rather
+        // than about the plugin.
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+
         new PluginServiceRegistrator().RegisterServices(services, new ServerApplicationHostThatRefusesEveryCall());
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -103,6 +113,73 @@ public class PluginServiceRegistratorTests
         Assert.Single(offered);
         Assert.Equal(typeof(DiscoverSurfaceAdapter), offered[0].ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, offered[0].Lifetime);
+    }
+
+    /// <summary>
+    /// The handover comes out of the container with the receivers the container
+    /// held, and a container holding none of them still produces one.
+    /// </summary>
+    /// <remarks>
+    /// The seam's collection mechanism asserted where it actually happens rather
+    /// than by handing a list to a constructor. Zero implementations is the state
+    /// of every server with no requests plugin on it, and the way it is normally
+    /// got wrong is a registration that asks for one receiver rather than for
+    /// however many there are: that resolves on a server with a sibling and
+    /// throws on every server without one, which is almost all of them.
+    ///
+    /// Three receivers are added the way a sibling would add one, under the
+    /// interface rather than under their own types, because a registration under
+    /// a concrete type is one the collection never sees.
+    /// </remarks>
+    [Fact]
+    public void TheHandoverCollectsWhateverTheContainerHolds()
+    {
+        var withNothing = new ServiceCollection();
+        withNothing.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        new PluginServiceRegistrator().RegisterServices(withNothing, new ServerApplicationHostThatRefusesEveryCall());
+
+        using var alone = withNothing.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+
+        Assert.Empty(alone.GetRequiredService<WantHandover>().Receivers);
+
+        var withThree = new ServiceCollection();
+        withThree.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        new PluginServiceRegistrator().RegisterServices(withThree, new ServerApplicationHostThatRefusesEveryCall());
+
+        var log = new CallLog();
+        withThree.AddSingleton<IWantReceiver>(new SinkThatRecordsWhatItWasHanded(log, "first", accepts: true));
+        withThree.AddSingleton<IWantReceiver>(new SinkThatRecordsWhatItWasHanded(log, "second", accepts: false));
+        withThree.AddSingleton<IWantReceiver>(new SinkThatThrowsWhenHanded(log, "third"));
+
+        using var withSiblings = withThree.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+
+        Assert.Equal(3, withSiblings.GetRequiredService<WantHandover>().Receivers.Count);
+    }
+
+    /// <summary>
+    /// This plugin offers the server no receiver of its own.
+    /// </summary>
+    /// <remarks>
+    /// The seam is a place for somebody else's plugin. A receiver registered
+    /// here would be this plugin handing wants to itself, and every test of the
+    /// handover would then be running with a sink nobody asked for.
+    /// </remarks>
+    [Fact]
+    public void NoReceiverIsRegisteredByThisPlugin()
+    {
+        var services = new ServiceCollection();
+
+        new PluginServiceRegistrator().RegisterServices(services, new ServerApplicationHostThatRefusesEveryCall());
+
+        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IWantReceiver));
     }
 
     /// <summary>

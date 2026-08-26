@@ -1,5 +1,6 @@
 using System;
 using Jellyfin.Plugin.Template.Randomness;
+using Jellyfin.Plugin.Template.Seam;
 using Jellyfin.Plugin.Template.Surface;
 using Jellyfin.Plugin.Template.Time;
 using MediaBrowser.Controller;
@@ -61,5 +62,17 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // speaks the server's channel vocabulary outside the adapter, and
         // `no-channel-type-outside-surface` excepts this file for it by name.
         serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+
+        // Singleton because it holds the receivers the container gave it, and
+        // those are fixed for as long as the server runs: the container is built
+        // once out of every plugin's registrations, so a transient here would
+        // rebuild the same list per gesture and suggest that the set can change
+        // between two of them.
+        //
+        // Nothing registers an IWantReceiver here, and that is the point rather
+        // than an omission. A sibling plugin registers one in its own
+        // registrator; this plugin asks the container for whatever is there and
+        // is complete when the answer is nothing, which is #95.
+        serviceCollection.AddSingleton<WantHandover>();
     }
 }

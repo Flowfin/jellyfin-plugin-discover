@@ -43,8 +43,15 @@ its own account is point 3 and the field set below.
 
 One message, in one direction, per want. The fields are fixed here. How they are
 encoded and how the message travels is the extension point, which is
-[#95](https://github.com/Flowfin/jellyfin-plugin-discover/issues/95), and a
-receiver written against this note still needs that to receive anything.
+[#95](https://github.com/Flowfin/jellyfin-plugin-discover/issues/95), and it is
+built: the message is the `Want` record, the route is `IWantReceiver` resolved
+from the server's container, and `WantHandover` is what offers one to the other.
+
+    git grep -n 'public interface IWantReceiver\|public sealed record Want$' -- 'Jellyfin.Plugin.Template/Seam/*.cs'
+
+The list below stays the authority for what the message carries. A field on that
+record and no row here, or the reverse, is a drift in this note rather than a
+second contract.
 
 | Field                | What it is                                                                                                                      | Why it crosses                                                                                                   |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -182,14 +189,15 @@ expensive from the moment somebody has installed something.
 
 ## What is not settled here
 
-The rest of #101. The rule above says what a version change may do. That this
+The rest of #101, and this paragraph said the place those behaviours live did not
+exist. It exists. The rule above says what a version change may do. That this
 plugin tolerates a receiver built against an older version, and that a newer one
 is handled by a stated rule, are behaviours at the point implementations are
-resolved, which is
-[#95](https://github.com/Flowfin/jellyfin-plugin-discover/issues/95) and does not
-exist. Whether the interface is published for a sibling to compile against, or
-copied, is that issue's fourth condition and is a packaging decision that needs a
-release path, which is
+resolved, which is now `WantHandover`, and neither is written there: what it does
+with a receiver's answer is take it or not take it, and it never reads a version
+back because there is none to read. Whether the interface is published for a
+sibling to compile against, or copied, is #101's fourth condition and is a
+packaging decision that needs a release path, which is
 [#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119). A copied
 interface is two types in one process that do not satisfy each other, so that
 condition is not a formality.
@@ -211,11 +219,12 @@ writes no second field list.
 
 What is left is that issue's fourth condition, that a reader who has never seen
 this repository can implement the other side from the note. The field set, the
-meanings and the version rule are here. The encoding and the route are
-[#95](https://github.com/Flowfin/jellyfin-plugin-discover/issues/95), which does
-not exist, so a receiver written from this alone has nothing to receive on. That
-is a bound on this note rather than a gap in it, and it is the same bound the
-section on what crosses states.
+meanings and the version rule are here, and the encoding and the route are now in
+the tree rather than owed: a receiver implements `IWantReceiver` and registers it
+under that interface in its own registrator. What a reader of this note alone
+still cannot do is compile against the type, because nothing publishes it yet,
+which is #101's fourth condition. That is a bound on this note rather than a gap
+in it, and it is a narrower one than the bound this paragraph used to state.
 
 ## What would reverse this
 
