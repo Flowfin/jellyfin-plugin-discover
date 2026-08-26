@@ -41,6 +41,11 @@ public static class SourceNotice
     /// Nothing else is edited. The commas, the three verbs and the absence of
     /// the article before the second TMDB are the clause's, and a sentence that
     /// reads better is a sentence that is no longer the one the terms ask for.
+    ///
+    /// Where a rendering puts it, the notice goes last. The clause asks that it
+    /// be displayed rather than that it lead, and a client drawing only the
+    /// first line of a channel's description would otherwise tell a user about
+    /// the source instead of about the tile they are looking at.
     /// </remarks>
     public const string Tmdb =
         "This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.";
