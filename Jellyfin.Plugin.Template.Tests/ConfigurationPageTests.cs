@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Jellyfin.Plugin.Template.Configuration;
+using Jellyfin.Plugin.Template.Surface;
 using Xunit;
 
 namespace Jellyfin.Plugin.Template.Tests;
@@ -217,6 +218,45 @@ public class ConfigurationPageTests
             .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Select(property => property.Name)
             .ToArray();
+    }
+
+    /// <summary>
+    /// The page carries the notice the source's terms require, in the words
+    /// <see cref="SourceNotice.Tmdb"/> holds.
+    /// </summary>
+    /// <remarks>
+    /// This is #76's fourth condition, and it is the only thing standing
+    /// between the two renderings of that notice. The page is a static asset
+    /// with no substitution step, so unlike the surface it carries a copy
+    /// rather than taking the text, and a later edit to either side is caught
+    /// here or not at all.
+    ///
+    /// The comparison collapses runs of whitespace on both sides first,
+    /// because the page is wrapped by a formatter that runs on every push and
+    /// a clause broken across two lines is the same clause. What that costs is
+    /// stated rather than hidden: this cannot tell a notice rendered as one
+    /// paragraph from one whose sentence a later edit split across two
+    /// elements, since the tags come out as whitespace either way. What it does
+    /// catch is the failure the condition names, a word of the clause changed
+    /// or the notice dropped.
+    /// </remarks>
+    [Fact]
+    public void ThePageCarriesTheSourcesNoticeVerbatim()
+    {
+        Assert.Contains(
+            OneSpaceBetweenWords(SourceNotice.Tmdb),
+            OneSpaceBetweenWords(ReadPage()),
+            StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Runs of whitespace become one space, so wrapping is not a difference.
+    /// </summary>
+    /// <param name="text">The text to normalise.</param>
+    /// <returns>The text with every run of whitespace replaced by one space.</returns>
+    private static string OneSpaceBetweenWords(string text)
+    {
+        return string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
 
     private static string ReadPage()

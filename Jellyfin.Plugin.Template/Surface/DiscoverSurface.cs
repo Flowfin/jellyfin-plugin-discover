@@ -67,8 +67,17 @@ public sealed class DiscoverSurface : IDiscoverSurface
         // What the surface says about itself. It says what a user gets and what
         // they do not, because a discover page that reads as a library is one
         // people try to play. Where the notice a source requires is rendered is
-        // #76, and this is one of the two places named there.
-        Summary = "Films and series this server does not have, so you can see what is out there. Nothing here is playable.",
+        // #76, and this is one of the two places named there; the notice is
+        // taken from SourceNotice rather than spelled again here, so the two
+        // renderings cannot drift into two wordings.
+        //
+        // The notice is last and the sentence about the surface first, because
+        // the clause asks that the notice be displayed rather than that it lead,
+        // and a client drawing only the first line of a description would
+        // otherwise tell a user about the source instead of about the tile they
+        // are looking at.
+        Summary = "Films and series this server does not have, so you can see what is out there. Nothing here is playable. "
+            + SourceNotice.Tmdb,
 
         // The token the server compares to decide whether to reconsider what it
         // kept. Constant because nothing this surface answers changes yet:
