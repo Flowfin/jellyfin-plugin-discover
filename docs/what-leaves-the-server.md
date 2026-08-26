@@ -210,7 +210,7 @@ An administrator opening the plugin's page sends nothing outside the server, and
 a test refuses the change rather than anybody remembering it:
 
     git grep -n 'ThePageRequestsNothingFromAHostOutsideTheServer' origin/master -- Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs
-    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:174:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
+    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:175:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
 
 ## What a user can turn off for themselves
 
