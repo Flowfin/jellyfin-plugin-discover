@@ -64,11 +64,11 @@ public sealed class DiscoverSurface : IDiscoverSurface
         // first release rather than adjustable afterwards.
         Name = "Discover",
 
-        // What the surface says about itself. It says what a user gets and what
-        // they do not, because a discover page that reads as a library is one
-        // people try to play. Where the notice a source requires is rendered is
-        // #76, and this is one of the two places named there.
-        Summary = "Films and series this server does not have, so you can see what is out there. Nothing here is playable.",
+        // What a user gets and what they do not, because a discover page that
+        // reads as a library is one people try to play, and then the notice the
+        // source's terms require, which is #76. It is taken from SourceNotice
+        // rather than spelled again, and it is last for the reason written there.
+        Summary = "Films and series this server does not have, so you can see what is out there. Nothing here is playable. " + SourceNotice.Tmdb,
 
         // The token the server compares to decide whether to reconsider what it
         // kept. Constant because nothing this surface answers changes yet:

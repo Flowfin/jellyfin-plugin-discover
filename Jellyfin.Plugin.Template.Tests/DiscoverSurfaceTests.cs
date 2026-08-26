@@ -65,6 +65,31 @@ public class DiscoverSurfaceTests
     }
 
     /// <summary>
+    /// The surface's own description carries the notice the source's terms
+    /// require.
+    /// </summary>
+    /// <remarks>
+    /// #76's second condition names this as one of the two places the notice is
+    /// rendered, and the description is the one of the two that takes the text
+    /// rather than repeating it. What that condition still owes is the other
+    /// half, a line recording which clients were observed drawing a channel's
+    /// description and which were not, and nothing here observes a client.
+    ///
+    /// The assertion is that the description ends with the clause, so a summary
+    /// that carried it and then went on saying something else would redden. The
+    /// clause is a statement about the whole application, and text after it
+    /// reads as inside it.
+    /// </remarks>
+    [Fact]
+    public void TheSurfaceDescriptionCarriesTheSourcesNotice()
+    {
+        Assert.EndsWith(
+            SourceNotice.Tmdb,
+            new DiscoverSurface().Description.Summary,
+            StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// The surface states no ceiling of its own on one answer.
     /// </summary>
     /// <remarks>

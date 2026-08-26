@@ -31,10 +31,10 @@ than the sentence resting on a reading of the source:
     Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:166:            asked.Parent.IsRoot ? SurfaceListing.EmptyLevel : SurfaceListing.NoSuchLevel);
 
     git grep -n 'TheTopLevelIsRecognisedAndHoldsNothingUntilTheShelvesExist' -- Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs
-    Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs:135:    public async Task TheTopLevelIsRecognisedAndHoldsNothingUntilTheShelvesExist()
+    Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs:160:    public async Task TheTopLevelIsRecognisedAndHoldsNothingUntilTheShelvesExist()
 
     git grep -n 'AnAddressThisSurfaceDoesNotRecogniseIsAnsweredWithNoTotalRatherThanZero' -- Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs
-    Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs:162:    public async Task AnAddressThisSurfaceDoesNotRecogniseIsAnsweredWithNoTotalRatherThanZero(string folder)
+    Jellyfin.Plugin.Template.Tests/DiscoverSurfaceTests.cs:187:    public async Task AnAddressThisSurfaceDoesNotRecogniseIsAnsweredWithNoTotalRatherThanZero(string folder)
 
 So what installing this gets you today is a page with nothing on it and nothing
 saying why.
