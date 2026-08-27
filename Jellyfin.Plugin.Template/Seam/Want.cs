@@ -221,8 +221,10 @@ public sealed record Want
     ///
     /// A string rather than a number or a drawn identifier, because #99 asks for
     /// it to be derived from the title identity and the user and to be stable
-    /// across refreshes and restarts. Deriving it is that issue's; this type
-    /// refuses a blank one and stores what it was handed.
+    /// across refreshes and restarts. <see cref="WantIdentifiers.For"/> is that
+    /// derivation and the decision note carries its shape; this type refuses a
+    /// blank one and stores what it was handed, so a caller deriving one another
+    /// way is not stopped here.
     /// </remarks>
     /// <exception cref="ArgumentException">
     /// Thrown when the value is null, empty or whitespace. Two blank identifiers
