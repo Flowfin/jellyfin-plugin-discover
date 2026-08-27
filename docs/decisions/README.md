@@ -25,8 +25,14 @@ A decided note is not a closed issue. Both issues behind that row stay open for
 reasons the note names at its end: #101 for the behaviour at the point
 implementations are resolved and for whether the interface is published or
 copied, and
-[#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94) until the
-sibling repository exists and points at the note.
+[#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94) until a
+reader who has never seen this repository can implement the other side from the
+note.
+
+This paragraph gave a different reason for #94 until now, that the sibling
+repository does not yet exist and point at the note. It exists and it points,
+which the note's own last section has said since that reason retired, and an
+index sending a reader to finished work is worse than one saying nothing.
 
 ## What a note holds
 

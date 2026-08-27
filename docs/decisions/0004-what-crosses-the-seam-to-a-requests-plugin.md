@@ -8,10 +8,12 @@ rule under
 ## The problem this settles
 
 A sibling plugin, jellyfin-plugin-requests, will handle what happens after a
-user says they want a title. It does not exist yet. Everything about the
-handover therefore has to be written from one side, before there is anybody to
-agree it with, and the thing that goes wrong when it is not written down is not
-a disagreement. It is each side growing its own idea of what the other needs,
+user says they want a title. This paragraph said it does not exist. It exists,
+it is public, and its own seam page names #94 as the contract and writes no
+second one. The sentence is corrected rather than deleted because what it was
+for is what actually happened: everything about the handover was written from
+one side, before there was anybody to agree it with, and the thing that goes
+wrong when it is not written down is not a disagreement. It is each side growing its own idea of what the other needs,
 discovered when both are installed on somebody's server.
 
 [0002](0002-this-plugin-owns-the-catalogue.md) settled who owns what and said in
@@ -213,12 +215,19 @@ receiver that refuses is behind rather than broken. Retrying the same message
 produces the same refusal, so it is not retried for that reason.
 
 **Version 1 is not frozen yet, and this says where that stops being true.**
-Nothing has been published from this repository and no sibling exists, so the
-field set above is version 1 and a change to it before the first release edits
-version 1 rather than minting version 2. From the first release that ships this
-seam, every rule above applies as written. That is the same window `CHANGELOG.md`
-describes for the leading zero in this plugin's own version: cheap now, and
-expensive from the moment somebody has installed something.
+Nothing has been published from this repository, so the field set above is
+version 1 and a change to it before the first release edits version 1 rather
+than minting version 2. From the first release that ships this seam, every rule
+above applies as written. That is the same window `CHANGELOG.md` describes for
+the leading zero in this plugin's own version: cheap now, and expensive from the
+moment somebody has installed something.
+
+That sentence also rested on no sibling existing, and one does, with releases of
+its own. What the retired half was carrying is carried by the half that is left,
+and by the bound in the section below: nothing here publishes `IWantReceiver`
+for anybody to compile against, so no receiver anywhere can have been built
+against this field set yet. The window closes on this repository's first
+release, as written above, and not on the sibling's.
 
 ## What is not settled here
 
