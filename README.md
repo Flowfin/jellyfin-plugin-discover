@@ -46,12 +46,26 @@ thing installed. Where a want goes is a handover to a sibling plugin, one way
 and at one moment, and the whole of what crosses is
 [0004](docs/decisions/0004-what-crosses-the-seam-to-a-requests-plugin.md), which
 is [#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94). That
-sibling does not exist yet, so on every server today a want has nowhere to go
-but a list this plugin keeps for the operator to read, and that list is
+sibling exists, at
+[Flowfin/jellyfin-plugin-requests](https://github.com/Flowfin/jellyfin-plugin-requests),
+it has published releases, and its own seam page names #94 as the contract and
+writes no second one.
+
+What this side offers it is an extension point rather than a route it goes
+looking for. This plugin declares the interface and takes whatever the server's
+container holds for it; it puts nothing there itself, and nothing at all is a
+complete state rather than a degraded one:
+
+    git grep -n 'IWantReceiver' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:72:        // Nothing registers an IWantReceiver here, and that is the point rather
+
+So on a server where nothing implements it a want has nowhere to go but a list
+this plugin keeps for the operator to read, and that list is
 [#97](https://github.com/Flowfin/jellyfin-plugin-discover/issues/97) and is not
-built either. Somebody
-installing this and expecting the other half meets a seam rather than a bug, and
-that is the paragraph on this page most worth reading twice.
+built either. Whether the released sibling implements this interface has not
+been read here, and this page claims nothing either way. Somebody installing
+this and expecting the other half meets a seam rather than a bug, and that is
+the paragraph on this page most worth reading twice.
 
 It classifies nobody and nothing, and that part is not a plan. The surface
 declares one audience for the whole of itself and answers yes to every user it
