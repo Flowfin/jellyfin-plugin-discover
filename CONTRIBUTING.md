@@ -124,6 +124,31 @@ graph that differs from the committed `packages.lock.json` and the same restore
 on the gate refuses it. If you add or move a package, restore with
 `--force-evaluate` and commit the lock file the restore writes.
 
+The second difference is the runner's rather than this tree's, and it is the one
+that reads as the suite being unrunnable. The gate's machine has the runtime the
+tree targets and yours may not. The test host asks for that exact major version
+and starts nothing without it, so no test is reported and the run ends on a
+message about the machine instead of about the code. One sentence of it is the
+host's own and is the one to recognise; the rest is the machine's locale and a
+list of the runtimes it did find:
+
+    You must install or update .NET to run this application.
+
+That is an install instruction rather than a verdict, and taking it is not the
+only way out. Tell the host a later runtime will do:
+
+    DOTNET_ROLL_FORWARD=Major dotnet test --configuration Release --no-build
+
+Which version it asks for is not written here. It follows the target framework,
+and `Directory.Build.props` is the one place that is stated, so the lines beside
+the one above name whatever that file says on the day it is read.
+
+This paragraph exists because the other conclusion has been drawn in writing on
+this board more than once, that the suite cannot run on a machine without that
+runtime, each time from recollection rather than from the line above and each
+time corrected afterwards. Installing a runtime is not a step anybody has to
+take to run this suite.
+
 ## Which server line
 
 `Directory.Build.props` is the one place a server line is stated. The project
