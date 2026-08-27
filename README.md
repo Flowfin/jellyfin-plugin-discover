@@ -5,12 +5,25 @@
 
 # jellyfin-plugin-discover
 
-A Jellyfin server plugin that adds a place to browse titles the server does not
-have. Shelves are built from third party metadata sources, they appear as
-ordinary browsable pages so that every existing client can show them with no
-client change, and when a user asks for one of those titles a companion
-requests plugin can pick the request up. The plugin is meant to be useful on a
-server with no companion plugin installed.
+On a television this is one more tile in the library list, called Discover.
+Opening it leads to shelves of films and series the server does not have: what
+is trending, what is popular and what is highly rated, asked separately for
+films and for series. They are drawn the way every other library on that screen
+is drawn, by every existing client and with no client change, because a shelf
+here is an ordinary browsable page rather than a new kind of one. A title inside
+opens to its artwork, its year and its description, and nothing on any of those
+shelves plays. What a user does with one instead is say they want it, and where
+a companion requests plugin is installed beside this one, that is handed over to
+it.
+
+The name on that tile and the sentence a client draws under it are fixed in the
+tree rather than described here:
+
+    git grep -h 'Name = "Discover"' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
+            Name = "Discover",
+
+    git grep -h 'Summary = "Films' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
+            Summary = "Films and series this server does not have, so you can see what is out there. Nothing here is playable. " + SourceNotice.Tmdb,
 
 The sentence about every existing client is the one this repository cannot check
 for itself. What a client draws from what the server sent needs the client, a
@@ -20,10 +33,48 @@ were tried, on which version, and what each of them drew is
 issue is what this page points at instead of naming a client. No client has been
 tried yet, so it carries no rows and this page claims nothing about any of them.
 
+## What this plugin does not do
+
+It does not acquire anything. The shelves are a catalogue of titles this server
+has not got rather than a queue of titles it is getting, and pressing play on
+one gets an answer no client can draw as a message. That is a limit rather than
+a feature and it is on [`docs/limits.md`](docs/limits.md) with the reading
+behind it.
+
+It does not ask anybody for a title either, on a server where it is the only
+thing installed. Where a want goes is a handover to a sibling plugin, one way
+and at one moment, and the whole of what crosses is
+[0004](docs/decisions/0004-what-crosses-the-seam-to-a-requests-plugin.md), which
+is [#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94). That
+sibling does not exist yet, so on every server today a want has nowhere to go
+but a list this plugin keeps for the operator to read, and that list is
+[#97](https://github.com/Flowfin/jellyfin-plugin-discover/issues/97) and is not
+built either. Somebody
+installing this and expecting the other half meets a seam rather than a bug, and
+that is the paragraph on this page most worth reading twice.
+
+It classifies nobody and nothing, and that part is not a plan. The surface
+declares one audience for the whole of itself and answers yes to every user it
+is asked about:
+
+    git grep -h 'Audience = SurfaceAudience' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
+            Audience = SurfaceAudience.General
+
+    git grep -h 'public bool IsAvailableTo' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
+        public bool IsAvailableTo(Guid userId) => true;
+
+Who may see the surface at all is
+[#57](https://github.com/Flowfin/jellyfin-plugin-discover/issues/57) and what
+may be fetched into it is
+[#93](https://github.com/Flowfin/jellyfin-plugin-discover/issues/93). What makes
+the permissive answer above cost nothing today is that there is nothing behind
+the surface, which the status section is about, and it stops costing nothing on
+the day the catalogue holds a title.
+
 ## Status
 
-Nothing in that description works yet, and one part of it now appears without
-working. A discover page shows up in a client, because the surface is registered
+Nothing the opening description promises works yet, and one part of it now
+appears without working. A discover page shows up in a client, because the surface is registered
 with the server:
 
     git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
@@ -72,10 +123,13 @@ plugin therefore puts no catalogue on a server's disk:
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentStoreTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentVersionTests.cs
 
-Read every sentence in the description above as a plan and not as behaviour you
-can install. The note at the top of this page is the same kind of sentence and
-needs the same reading, and the claim it makes about clients is answered where
-the description's is rather than a second time here. "any Jellyfin server" is
+Read every sentence above this section as a plan and not as behaviour you can
+install. That covers what a television shows and what this plugin does not do,
+both of which describe a configured plugin rather than an installed one, and the
+second of the two is the half that is true early: a thing not built does none of
+what it will not do. The note at the top of this page is the same kind of
+sentence and needs the same reading, and the claim it makes about clients is
+answered where the description's is rather than a second time here. "any Jellyfin server" is
 narrower than it sounds: the package declares a floor, and a server below it does
 not load the plugin at all.
 
@@ -181,6 +235,33 @@ plugin loading, by `.github/workflows/plugin-loads.yml`, which is
 [#19](https://github.com/Flowfin/jellyfin-plugin-discover/issues/19) and is
 closed. What that covers is the one line the tree declares, 10.11, because that
 is the only one declared, and it does not run on a change that is only Markdown.
+
+## The source this plugin uses
+
+Titles and artwork are meant to come from TMDB, and that source's API terms
+require an application using it to display a notice. This is the notice, quoted
+from the place the plugin holds it rather than typed again here:
+
+    git grep -h 'This application uses TMDB' -- Jellyfin.Plugin.Template/Surface/SourceNotice.cs
+            "This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.";
+
+One home rather than a copy per rendering is the rule, and it holds for the
+surface, which takes the constant. It does not hold for the configuration page,
+which is a static asset with no substitution step and therefore carries a second
+copy of the same bytes; what stands between the two is a test rather than a
+construction, and that is written at the constant. This page is a third copy for
+the same reason, and the command above is what keeps it the same bytes.
+
+What the terms oblige and what was read to establish it is
+[`docs/sources/tmdb.md`](docs/sources/tmdb.md), which is
+[#76](https://github.com/Flowfin/jellyfin-plugin-discover/issues/76). What that
+source's API offers, as opposed to what it requires, is a separate page for a
+separate reason, [`docs/source-api/tmdb.md`](docs/source-api/tmdb.md).
+
+Nothing in this tree has ever asked TMDB anything. The notice is displayed
+because the terms ask it of an application built against the API, and the status
+section above carries the command showing that nothing on a running server holds
+a source at all.
 
 ## Licence
 
