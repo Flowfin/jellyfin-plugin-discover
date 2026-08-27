@@ -52,6 +52,26 @@ puts the reason for a change one hop away from every tool that will read it.
 Every change starts from an issue. Say which one the pull request closes, in the
 body, on its own line, so the tracker closes it on merge.
 
+Where a sentence is not meant to close an issue, name the reference with no verb
+in front of it at all: `see #123`, or the bare `#123`, never "does not close
+#123". The tracker matches a closing keyword followed by a reference and does
+not read the words between them, so a sentence written to say a change leaves an
+issue open closes it. That is the documented matching rule and there is no
+exception in it for a negation:
+
+    https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue
+
+It is worth the paragraph because of the direction the mistake runs. A change
+that fails to close an issue leaves an issue open, and somebody meets it again.
+A change that closes an issue whose conditions are unmet takes it out of every
+count and out of its milestone, with nothing anywhere saying a condition was
+skipped, so what a later session reads as finished work is a body somebody wrote
+to say the opposite. This has happened on this board in a pull-request body and
+in a commit message, and it is caught by a person re-reading the issue or not at
+all. Nothing here refuses the shape: `pr-hygiene` asks whether a body carries a
+reference and judges no wording, which is prose rather than enforcement, like
+the rest of the conventions in this file.
+
 Both of those are checked rather than requested, by
 `.github/workflows/pr-hygiene.yml`, which fails on those two and on nothing
 else. Two conventions in the same file annotate instead of failing: a change of
