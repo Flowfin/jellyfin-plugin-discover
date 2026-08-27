@@ -60,12 +60,33 @@ entry went on giving a reason that had been overtaken while the conclusion it
 supports, that the rule is not written, stayed correct.
 
 WHAT KEEPS IT HERE IS NOT A MISSING SUBJECT ANY MORE, and that is why the entry
-is rewritten rather than removed. The runner's second leg applies a rule's
-pattern to the whole fixture tree without the rule's own `Subject`, so a rule
-that discriminates by where a line is rather than by what it says cannot be
-expressed: this rule's fixture has to be a server import in a test file, which
-is the exact shape `no-channel-type-outside-surface` already refuses, and that
-neighbour fires on it. Written as the residue instead, the namespaces no other
+is rewritten rather than removed. What kept it here until 2026-08-27 was the
+runner, and that half is gone: leg 2 applied a rule's pattern to the whole
+fixture tree without the rule's own `Subject`, so a rule that discriminates by
+where a line is rather than by what it says could not be expressed. #316 changed
+the leg, so a fire on a fixture the rule's `Subject` does not reach is printed
+rather than refused, and a rule of this shape passes every leg. Watched with the
+rule and a fixture staged and then removed again, neither in any branch:
+
+    Pattern: ^using (MediaBrowser|Jellyfin\.Data|Jellyfin\.Database)
+    Subject: *Tests/*.cs
+
+    ok    no-server-type-in-a-test: leg 1: fires on its own fixture.
+    ok    no-server-type-in-a-test: leg 2: no other rule's fixture is inside this rule's subject, so nothing was compared.
+    note  no-server-type-in-a-test: leg 2: the pattern fires outside this rule's subject, where leg 3 never reads it:
+            tools/invariants/fixtures/no-channel-type-outside-surface/AlsoBreaksTheRule.cs:6:using MediaBrowser.Controller.Entities;
+            tools/invariants/fixtures/no-other-plugin-storage/BreaksTheRule.cs:10:using MediaBrowser.Common.Configuration;
+            tools/invariants/fixtures/no-server-provider-key/BreaksTheRule.cs:6:using MediaBrowser.Providers.Plugins.Tmdb;
+    ok    no-server-type-in-a-test: leg 3: silent on the tracked tree.
+
+WHAT IS LEFT IS THE OTHER DIRECTION AND IT IS THIS ENTRY'S, NOT THE RUNNER'S.
+The fixture above imports `MediaBrowser.Controller.Plugins`, which is a
+namespace no neighbour's pattern names, and the exceptions above are a probe's
+rather than a rule's. A fixture importing one of the namespaces
+`no-channel-type-outside-surface` refuses would still be a file breaking two
+invariants, which is leg 2 doing its job on that neighbour rather than a runner
+problem, and the exception shape that survives the fakes multiplying is still
+the thing to choose. Written as the residue instead, the namespaces no other
 rule owns, it would be a rule a reader counts for more than it covers.
 
 THE NEIGHBOUR IS NOT ONE NEIGHBOUR, AND THIS PARAGRAPH SAID IT WAS. Three
@@ -96,23 +117,26 @@ held by the side effect of another rule's subject, which moves when that rule's
 exceptions move and which nothing here connects to this entry, so it is a reason
 to write the rule rather than a reason not to.
 
-Those are three different endings and choosing between them is #49's. THE ONE
-THAT CHANGES THE RUNNER IS HELD BY AN OPEN ISSUE AGAIN, AND WAS HELD BY NONE
-UNTIL 2026-08-27. This entry named #33 first, which seeded this lint and closed
-as completed, so a reader following that pointer arrived at finished work rather
-than at somewhere the change could be argued:
+Those were three different endings and choosing between them is #49's. THE ONE
+THAT CHANGED THE RUNNER IS TAKEN AND CLOSED, so the choice left here is between
+the other two: the rule with an exception shape that survives the fakes
+multiplying, or the residue. This entry named #33 for that ending first, which
+seeded this lint and closed as completed, so a reader following that pointer
+arrived at finished work rather than at somewhere the change could be argued:
 
     gh issue view 33 --repo Flowfin/jellyfin-plugin-discover --json state,stateReason
     {"state":"CLOSED","stateReason":"COMPLETED"}
 
-#316 is where that change is argued now. It carries where the runner reads a
-rule's subject and where it does not, why the reason leg 2 drops the subject does
-not carry to a rule whose subject is a path, and the collision in both
-directions; it also ends by saying what happens if the answer is that the rule
-cannot be expressed here, so the ending fails visibly rather than staying
-available forever. Taking it is a change to argue rather than an issue to open
-first. The measurements behind this paragraph, including which namespaces a test
-may import today with nothing firing, are on #49 rather than repeated here.
+#316 is where the change was argued and made. `tools/invariants/README.md` says
+at leg 2 what it now compares, what it no longer refuses and what the fixture's
+own path bounds, which is what a rule written here has to be written against.
+The measurements behind this paragraph, including which namespaces a test may
+import today with nothing firing, are on #49 rather than repeated here.
+
+WHAT THIS ENTRY STILL OWES A READER IS WHY IT IS STILL HERE. No rule is written,
+so the property is held by nothing, and the neighbour's side effect described
+above is what refuses the channel and entity half of it today. The runner no
+longer stands in the way; #49 does the choosing.
 
 ## What the configuration page renders
 

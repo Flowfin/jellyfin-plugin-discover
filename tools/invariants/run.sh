@@ -3,7 +3,7 @@
 # The invariant lint. Reads every rule in rules/, and refuses four things:
 #
 #   1. a rule that does not fire on its own fixture
-#   2. a rule that fires on another rule's fixture
+#   2. a rule that fires on another rule's fixture that its own Subject reaches
 #   3. a rule that fires on the tracked tree
 #   4. a rule with no fixture, or a fixture with no rule
 #
@@ -92,24 +92,70 @@ while IFS= read -r rule; do
     echo "ok    $id: leg 1: fires on its own fixture."
   fi
 
-  # Leg 2: the rule fires on no other rule's fixture. A pattern broad enough to
-  # reach a neighbour would start refusing real work for a reason its prose does
-  # not name.
+  # The exceptions as both of the legs below need them. Leg 3 excludes the
+  # fixtures on top of these; leg 2 is the leg that reads them.
+  leg2_excludes=""
+  if [ "$except" != "none" ]; then
+    leg2_excludes="$except"
+  fi
+
+  # Leg 2: the rule fires on no other rule's fixture that its own Subject
+  # reaches. A pattern broad enough to reach such a neighbour would start
+  # refusing real work for a reason its prose does not name, and that is refused
+  # here exactly as it was before.
+  #
+  # A fire on a fixture the Subject does not reach is a different thing and is
+  # printed rather than refused (#316). What a rule refuses in the tree is
+  # decided at leg 3, which is the only place the Subject is applied, so a
+  # pattern reaching a file outside it refuses nothing extra. Refusing the rule
+  # for that breadth refuses it for a property it does not have, and that is why
+  # a rule discriminating by where a line sits could not be written here at all:
+  # such a rule reads a shape that is ordinary in every other fixture.
+  #
+  # The Subject is applied at each fixture's own path rather than at the path a
+  # fixture stands for, because the path is the only thing about a fixture this
+  # runner can read. A fixture stored where no Subject reaches is therefore
+  # compared by nobody, which is a property of the layout rather than of this
+  # leg, and the count below is what keeps it readable.
+  set -f
+  # shellcheck disable=SC2086
+  subject_files=$(git ls-files -- $subject $leg2_excludes)
+  set +f
+  compared=$(printf '%s\n' "$subject_files" |
+    awk -v p="$rel_fixtures/" -v own="$rel_fixtures/$id/" \
+      'index($0, p) == 1 && index($0, own) != 1 { n++ } END { print n + 0 }')
+
   scan "$pattern" -- "$rel_fixtures" ":!$rel_fixtures/$id"
-  if [ -n "$SCAN_OUT" ]; then
-    echo "FAIL  $id: leg 2: the pattern also fires on another rule's fixture:"
-    printf '%s\n' "$SCAN_OUT" | sed 's/^/        /'
+  inside=""
+  outside=""
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    if printf '%s\n' "$subject_files" | grep -qxF -- "${hit%%:*}"; then
+      inside="$inside$hit
+"
+    else
+      outside="$outside$hit
+"
+    fi
+  done <<< "$SCAN_OUT"
+
+  if [ -n "$inside" ]; then
+    echo "FAIL  $id: leg 2: the pattern also fires on another rule's fixture inside this rule's subject:"
+    printf '%s' "$inside" | sed 's/^/        /'
     fail=1
+  elif [ "$compared" -eq 0 ]; then
+    echo "ok    $id: leg 2: no other rule's fixture is inside this rule's subject, so nothing was compared."
   else
-    echo "ok    $id: leg 2: silent on every other fixture."
+    echo "ok    $id: leg 2: silent on all $compared other fixture files inside this rule's subject."
+  fi
+  if [ -n "$outside" ]; then
+    echo "note  $id: leg 2: the pattern fires outside this rule's subject, where leg 3 never reads it:"
+    printf '%s' "$outside" | sed 's/^/        /'
   fi
 
   # Leg 3: the rule is silent on the tracked tree. The fixtures are excluded
   # here and nowhere else: they exist to break the rules.
-  excludes=":!$rel_fixtures"
-  if [ "$except" != "none" ]; then
-    excludes="$excludes $except"
-  fi
+  excludes=":!$rel_fixtures $leg2_excludes"
   # Word splitting is what carries several pathspecs out of one field. Globbing
   # is turned off across the split so a pathspec like *.cs reaches git as it was
   # written instead of being expanded against the working directory first.
