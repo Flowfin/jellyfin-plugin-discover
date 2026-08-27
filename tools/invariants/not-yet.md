@@ -97,18 +97,22 @@ exceptions move and which nothing here connects to this entry, so it is a reason
 to write the rule rather than a reason not to.
 
 Those are three different endings and choosing between them is #49's. THE ONE
-THAT CHANGES THE RUNNER IS HELD BY NO OPEN ISSUE, and this entry named one until
-now. #33 seeded this lint and closed as completed, so a reader following that
-pointer arrives at finished work rather than at somewhere the change can be
-argued:
+THAT CHANGES THE RUNNER IS HELD BY AN OPEN ISSUE AGAIN, AND WAS HELD BY NONE
+UNTIL 2026-08-27. This entry named #33 first, which seeded this lint and closed
+as completed, so a reader following that pointer arrived at finished work rather
+than at somewhere the change could be argued:
 
     gh issue view 33 --repo Flowfin/jellyfin-plugin-discover --json state,stateReason
     {"state":"CLOSED","stateReason":"COMPLETED"}
 
-Taking that ending therefore means opening an issue for the runner before the
-rule can be written, and the cost of the ending is that issue rather than the
-pattern. The measurements behind this paragraph, including which namespaces a
-test may import today with nothing firing, are on #49 rather than repeated here.
+#316 is where that change is argued now. It carries where the runner reads a
+rule's subject and where it does not, why the reason leg 2 drops the subject does
+not carry to a rule whose subject is a path, and the collision in both
+directions; it also ends by saying what happens if the answer is that the rule
+cannot be expressed here, so the ending fails visibly rather than staying
+available forever. Taking it is a change to argue rather than an issue to open
+first. The measurements behind this paragraph, including which namespaces a test
+may import today with nothing firing, are on #49 rather than repeated here.
 
 ## What the configuration page renders
 
