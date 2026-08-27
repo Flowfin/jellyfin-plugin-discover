@@ -11,7 +11,8 @@ an obligation; it is what the API offers, and the two go stale at different
 rates and for different reasons.
 
 Read on 2026-08-08, except for `## The six addresses this plugin asks`, which
-was read on 2026-08-18 and carries its own date because the two readings are of
+was read on 2026-08-18, and `### The two addresses a rating comes from`, which
+was read on 2026-08-27. Each carries its own date because the readings are of
 different pages and go stale separately. Every value below carries the page it
 came from. A value with no page next to it is not on this page.
 
@@ -192,11 +193,83 @@ a result.
 What that is worth to #55 and to #57. #55's fourth condition carries the rating
 where the source supplies one, so that #57 has something to filter on. On the
 addresses this plugin asks, the source supplies none, so a rating is a second
-request per title against an endpoint nobody here has read rather than a field
-taken off an answer already in hand. That is a cost against the budget in
-`## The request budget` and against #78, and it is a different decision from the
-per-country shape recorded under `## A content rating ceiling`, which is about
-asking for a ceiling rather than about reading one back.
+request per title rather than a field taken off an answer already in hand. That
+is a cost against the budget in `## The request budget` and against #78, and it
+is a different decision from the per-country shape recorded under
+`## A content rating ceiling`, which is about asking for a ceiling rather than
+about reading one back.
+
+This paragraph said the second request was against an endpoint nobody here had
+read. Two have been read since, one per kind, and the section below is what they
+document. What the sentence concluded is unchanged: the cost is per title.
+
+### The two addresses a rating comes from
+
+Read on 2026-08-27, one reference per kind:
+
+- `movie/{movie_id}/release_dates` at <https://developer.themoviedb.org/reference/movie-release-dates>
+- `tv/{series_id}/content_ratings` at <https://developer.themoviedb.org/reference/tv-series-content-ratings>
+
+Neither documents a query parameter at all. Each takes the title's own
+identifier in the path and nothing else, so neither can be asked about a shelf.
+
+The two do not answer in the same shape, and the difference is not cosmetic:
+
+| Address                          | Where the rating is                                              | What is beside it in the same entry                        |
+| -------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------- |
+| `movie/{movie_id}/release_dates` | `certification`, inside a `release_dates` array inside `results` | `iso_639_1`, `note`, `release_date`, `type`, `descriptors` |
+| `tv/{series_id}/content_ratings` | `rating`, directly on an entry of `results`                      | `descriptors`                                              |
+
+Both carry `iso_3166_1` on every entry of `results`, so neither returns one
+rating for a title: both return a rating per country. The movie address nests
+one level deeper, and the certification hangs off an entry of the inner array
+rather than off the country.
+
+What one costs. A shelf of twenty titles is twenty of these requests on top of
+the one request that fetched the shelf, and the six shelves in
+[`docs/shelves.md`](../shelves.md) at twenty titles each are a hundred and
+twenty on top of six. That is twenty-one times the requests a refresh makes
+today, against the ceiling under `## The request budget` that the source
+declines to commit to.
+
+Whether the second request can be folded into another one. Read at
+<https://developer.themoviedb.org/docs/append-to-response> on 2026-08-27:
+
+    The movie, TV show, TV season, TV episode and person detail methods all
+    support a query parameter called `append_to_response`.
+
+Detail methods, which none of the six addresses this plugin asks is. So the
+mechanism does not fold a certification into a list answer. What it folds is a
+certification into a detail request for one title, which is still one request
+per title. Whether it can be used on a list endpoint is not stated on that page
+and is not inferred here.
+
+What that is worth to #55, #57 and #93:
+
+- #55's fourth condition has a price rather than an unknown. Carrying the rating
+  is one request per title, from whichever of the two addresses the kind
+  decides, and the per-country shape arrives with it rather than being
+  avoidable.
+- #57's third condition asks for a rule for a title whose rating the source did
+  not supply. On these two addresses that case has two forms rather than one: a
+  `results` array that is empty, and one that holds no entry for the country the
+  ceiling belongs to. Neither reference says how often either occurs and nothing
+  here measures it.
+- #93's second condition wants titles above a maximum not stored at all rather
+  than filtered on the way out. On these two addresses the ceiling is read back
+  per title rather than asked for, because the parameters under
+  `## A content rating ceiling` are the discover endpoint's and none of the six
+  is discover. So a title kept out of the catalogue still costs the request that
+  found out it should be.
+
+What this section does not settle. Neither reference was asked against a live
+response, so what an answer holds for a title with no certification is
+documented rather than observed. Neither page states a rate cost of its own, and
+the arithmetic above is over the shelf table rather than over a refresh, since
+no refresh exists. That these two are the cheapest route to a rating is not
+established either: the detail methods named above were not read, and a list
+address that returned a certification is not something these two references
+would mention.
 
 ### An adult flag comes back on four of the six
 
@@ -254,12 +327,17 @@ response schema had. Six more have been read since, and they are the six this
 plugin asks. What is left unread is smaller than it was, and it is written out
 rather than described.
 
-The authentication scheme, the image configuration endpoint and the
-append-to-response mechanism were not read. Neither was any endpoint that
-answers about a single title, which is where a certification would have to come
-from and is named as unread rather than as absent. The discover endpoint's own
-response schema was not read either: what the section above records of discover
-is its parameters.
+The authentication scheme and the image configuration endpoint were not read.
+The discover endpoint's own response schema was not read either: what the
+section above records of discover is its parameters.
+
+This paragraph also named the append-to-response mechanism and every endpoint
+that answers about a single title as unread. Three pages have been read since,
+and they are the two certification addresses and append-to-response, under
+`### The two addresses a rating comes from`. What is still unread of that family
+is the detail methods themselves: `movie/{movie_id}` and `tv/{series_id}` were
+not read, so what a detail answer holds beside a certification is not on this
+page.
 
 The six references were read for the parameters they document and for the
 fields their result schemas document. Nothing else on those six pages was read,
