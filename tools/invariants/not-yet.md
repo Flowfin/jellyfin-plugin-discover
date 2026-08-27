@@ -34,23 +34,25 @@ a third party leaves through it.
 
 From #49, and the subject arrived. The plugin talks to the server through
 interfaces of its own, and the rule refuses a test that reaches past them. Those
-interfaces are in the tree, landed by #52 and #73:
+interfaces are in the tree, landed by #52 and #73, and the seam interface #95
+declared has since joined them without giving this entry a fifth reason to move:
 
     git grep -n 'public interface' -- 'Jellyfin.Plugin.Template/*.cs'
     Jellyfin.Plugin.Template/Randomness/IRandomSource.cs:21:public interface IRandomSource
+    Jellyfin.Plugin.Template/Seam/IWantReceiver.cs:31:public interface IWantReceiver
     Jellyfin.Plugin.Template/Sources/IMetadataSource.cs:36:public interface IMetadataSource
     Jellyfin.Plugin.Template/Surface/IDiscoverSurface.cs:26:public interface IDiscoverSurface
     Jellyfin.Plugin.Template/Time/IClock.cs:22:public interface IClock
 
 and the suite no longer names a server type everywhere. Seven files of
-forty-five do, and each is a fake standing in for a server interface, the
+fifty-one do, and each is a fake standing in for a server interface, the
 adapter's own tests, or a test of what the plugin declares to the server:
 
     git grep -lE '^using (MediaBrowser|Jellyfin\.Data|Jellyfin\.Database)' -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
     7
 
     git ls-files -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
-    45
+    51
 
 This entry said the interfaces do not exist and that every test necessarily
 names a server type. Both stopped being true when #52 and #73 landed, and the
