@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using Jellyfin.Plugin.Template.Sources;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Jellyfin.Plugin.Template.Tests;
@@ -50,6 +52,13 @@ public class AFreshInstallHoldsNoWayOutTests
     public void AStartWithNothingConfiguredOffersNoSource()
     {
         var services = new ServiceCollection();
+
+        // The server registers the logging abstractions before it calls a
+        // plugin's registrator, so a container built without them is a poorer
+        // model of the server than of this plugin. Named here since #95, which
+        // added the first registration that takes one.
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+
         new PluginServiceRegistrator().RegisterServices(services, new ServerApplicationHostThatRefusesEveryCall());
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions

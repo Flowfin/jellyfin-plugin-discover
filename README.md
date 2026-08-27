@@ -19,7 +19,7 @@ working. A discover page shows up in a client, because the surface is registered
 with the server:
 
     git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:63:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:64:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
 Every level of that page is empty, the top of it included. What the top level and
 any other address answer is no longer the same thing: the top is a level the
