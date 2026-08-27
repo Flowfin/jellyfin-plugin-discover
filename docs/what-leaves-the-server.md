@@ -20,13 +20,29 @@ it:
     exit=1
 
 so nothing constructs one, and the container the server builds from this plugin
-holds four registrations, none of which is a source:
+holds five registrations, none of which is a source:
 
     git show origin/master:Jellyfin.Plugin.Template/PluginServiceRegistrator.cs | grep -n 'AddSingleton'
-    38:        serviceCollection.AddSingleton<IClock, SystemClock>();
-    43:        serviceCollection.AddSingleton<IRandomSource, SystemRandomSource>();
-    50:        serviceCollection.AddSingleton<IDiscoverSurface, DiscoverSurface>();
-    63:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    39:        serviceCollection.AddSingleton<IClock, SystemClock>();
+    44:        serviceCollection.AddSingleton<IRandomSource, SystemRandomSource>();
+    51:        serviceCollection.AddSingleton<IDiscoverSurface, DiscoverSurface>();
+    64:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    76:        serviceCollection.AddSingleton<WantHandover>();
+
+The fifth arrived with the seam in #95 and it is the one on this list a reader
+should be able to dismiss for a stated reason rather than by its name. It offers
+a want to whatever implements `IWantReceiver` in the same server's container,
+which is another plugin in the same process, so it opens no connection and has
+no address. Nothing in this plugin implements that interface, and on a server
+with no requests plugin the container answers it with nothing:
+
+    git grep -rn ': IWantReceiver' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
+    exit=1
+
+What crosses it, on a server that does install a sibling, is fixed in
+[0004](decisions/0004-what-crosses-the-seam-to-a-requests-plugin.md) and is a
+handover between two plugins rather than traffic. Where that data goes after a
+sibling has it is that sibling's disclosure and not this one's.
 
 Browsing does not reach one either. Every level of the surface answers with no
 entries, the top level included, and the two answers it gives differ in the
