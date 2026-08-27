@@ -12,6 +12,14 @@ client change, and when a user asks for one of those titles a companion
 requests plugin can pick the request up. The plugin is meant to be useful on a
 server with no companion plugin installed.
 
+The sentence about every existing client is the one this repository cannot check
+for itself. What a client draws from what the server sent needs the client, a
+screen and somebody looking at one, which no run here can be. So which clients
+were tried, on which version, and what each of them drew is
+[#115](https://github.com/Flowfin/jellyfin-plugin-discover/issues/115), and that
+issue is what this page points at instead of naming a client. No client has been
+tried yet, so it carries no rows and this page claims nothing about any of them.
+
 ## Status
 
 Nothing in that description works yet, and one part of it now appears without
@@ -66,9 +74,10 @@ plugin therefore puts no catalogue on a server's disk:
 
 Read every sentence in the description above as a plan and not as behaviour you
 can install. The note at the top of this page is the same kind of sentence and
-needs the same reading. Nothing here has been tried with any client, and "any
-Jellyfin server" is narrower than it sounds: the package declares a floor, and a
-server below it does not load the plugin at all.
+needs the same reading, and the claim it makes about clients is answered where
+the description's is rather than a second time here. "any Jellyfin server" is
+narrower than it sounds: the package declares a floor, and a server below it does
+not load the plugin at all.
 
     git grep -n '^targetAbi' -- build.yaml
     build.yaml:10:targetAbi: "10.11.0.0"
