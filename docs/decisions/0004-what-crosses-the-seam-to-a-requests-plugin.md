@@ -68,6 +68,39 @@ than as an empty string or a zero, which is the rule the catalogue record itself
 holds and the reason it holds it: a source that returned no year is a different
 thing from a source that returned the year zero.
 
+## How the want identifier is computed
+
+Written under
+[#99](https://github.com/Flowfin/jellyfin-plugin-discover/issues/99). It is here
+rather than left to the code because the rule below says that changing how an
+existing field's value is computed is what raises the contract version, and a
+rule about a computation nobody wrote down cannot be broken visibly.
+
+`<source>:<user>:<identifier>`, in that order, with `:` between the three. The
+source is the name of the body that issued the identifier. The user is the
+server's identifier for the asking user, thirty-two hexadecimal digits and no
+separators. The identifier is that source's identifier for the title, exactly as
+the source spelled it: this plugin normalises nothing, so it is everything after
+the second `:` and a value carrying a `:` of its own crosses whole.
+
+Which of a title's identifiers is used is the highest-precedence one the title
+has, which is IMDb, then TMDB, then TheTVDB, and is the same one the server's own
+item identity is built from.
+
+Two consequences a receiver may rely on. Two users wanting one title are two
+wants, because the user is inside the value rather than in a field beside it.
+One user wanting one title is one want however many times the gesture is seen,
+because nothing that varies between runs reaches the computation.
+
+One residual, stated rather than removed. A title whose identifiers later gain
+one the precedence puts first has a different value here, so a receiver sees a
+second want. That is the same moment the server's own item identity moves, which
+is [#60](https://github.com/Flowfin/jellyfin-plugin-discover/issues/60), so what
+a user was looking at is a different item by then and a second want is what a
+second item means. A value computed over every identifier instead would move
+whenever a response carried one identifier more, which is far more often and for
+no such reason.
+
 ## What does not cross, and why not
 
 The catalogue record carries more than the list above. The rest stays here.
