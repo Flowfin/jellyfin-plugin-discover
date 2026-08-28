@@ -1,11 +1,11 @@
 # Decision record
 
-Four decisions in this plan shape everything built on top of them: how a
+Five decisions in this plan shape everything built on top of them: how a
 discover page is represented, who owns the catalogue, where that catalogue
-lives, and what crosses the seam to a requests plugin. Each one has an argument
-behind it, and each argument will be re-opened by whoever arrives next. This
-directory is so that the re-opening starts from the reasoning rather than from a
-reconstruction of it.
+lives, how it is laid out inside that place, and what crosses the seam to a
+requests plugin. Each one has an argument behind it, and each argument will be
+re-opened by whoever arrives next. This directory is so that the re-opening
+starts from the reasoning rather than from a reconstruction of it.
 
 ## The notes
 
@@ -15,6 +15,7 @@ reconstruction of it.
 | [0002](0002-this-plugin-owns-the-catalogue.md)                     | This plugin owns the catalogue, a requests plugin owns requests | Decided |
 | [0003](0003-the-catalogue-lives-in-the-plugins-own-data-folder.md) | Where the catalogue lives on disk                               | Decided |
 | [0004](0004-what-crosses-the-seam-to-a-requests-plugin.md)         | What crosses the seam to a requests plugin                      | Decided |
+| [0005](0005-the-catalogue-is-one-document-per-shelf.md)            | How the catalogue is laid out inside that folder                | Decided |
 
 Every row is decided. The last one was not until the version rule arrived under
 [#101](https://github.com/Flowfin/jellyfin-plugin-discover/issues/101), which is

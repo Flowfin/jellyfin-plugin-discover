@@ -147,11 +147,25 @@ server, and neither says what a later line does.
 
 ## What is not decided here
 
+THE LAYOUT IS DECIDED NOW, IN
+[0005](0005-the-catalogue-is-one-document-per-shelf.md), AND THE PARAGRAPH BELOW
+IS WHAT STOOD HERE UNTIL IT WAS. It is kept rather than replaced because it names
+the reason this note declined, and 0005's argument is that the reason stopped
+holding rather than that it was wrong.
+
 The layout inside the directory: one file per shelf, or one file for all. That
 is decided against the concurrency the refresh in
 [#87](https://github.com/Flowfin/jellyfin-plugin-discover/issues/87) needs, and
 #87 does not exist, so deciding now would be deciding by preference. It is the
 one condition on #65 that this note does not answer.
+
+What 0005 takes it against instead is three settled things that arrived without
+the refresh: partial success is already defined on
+[#79](https://github.com/Flowfin/jellyfin-plugin-discover/issues/79) and fixes
+the unit a write succeeds at, retention landed under
+[#68](https://github.com/Flowfin/jellyfin-plugin-discover/issues/68) and is
+enforced per record, and the store states its own bounds on a read's memory and
+on two writes of one document. This note's own decision is untouched by that.
 
 ## What would reverse this
 
