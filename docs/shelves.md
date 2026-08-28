@@ -6,14 +6,25 @@ shelf is shown, never what a shelf asks for. That is the answer to question 5 on
 [#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2), taken on
 2026-08-24, with operator-defined shelves a later and additive step.
 
-This page states the set and the reasoning for it. It is not a description of a
-mechanism: nothing in the tree reads it, and the record that will hold the set as
-data is
-[#85](https://github.com/Flowfin/jellyfin-plugin-discover/issues/85), which does
-not exist yet.
+This page states the set and the reasoning for it. The record that holds a shelf
+as data is
+[#85](https://github.com/Flowfin/jellyfin-plugin-discover/issues/85) and it
+exists now.
 
     git grep -c 'class Shelf\|record Shelf' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
-    exit=1
+    origin/master:Jellyfin.Plugin.Template/Shelves/Shelf.cs:1
+    exit=0
+
+The six below are instances of it rather than rows nothing reads, which is #86's
+own fourth condition and the difference between a record that admits a shelf and
+a set that is data:
+
+    git grep -l 'class ShippedShelves' -- 'Jellyfin.Plugin.Template/*.cs'
+    Jellyfin.Plugin.Template/Shelves/ShippedShelves.cs
+
+So the table under this sentence is no longer prose in every column. Which of its
+columns are held against that set and which are not is the last section of this
+page, and it is worth reading before the table is taken for more than it is.
 
 ## The set
 
@@ -126,19 +137,42 @@ answer.
   is built.
 - How often a refresh runs. That is
   [#87](https://github.com/Flowfin/jellyfin-plugin-discover/issues/87).
-- Turning a shelf off. The fourth condition on #86 asks that this be one setting,
-  and there is no shelf record and no setting to turn one off, which the command
-  at the top of this page shows.
+- Turning a shelf off. The fourth condition on #86 asks that this be one setting.
+  Every shelf above arrives on, carrying the flag a setting would move, and there
+  is still no setting and nothing that reads the flag, so a shelf turned off
+  today is turned off in nobody's sight.
 
 ## What holds this page true
 
-Nothing. No check reads it, no test asserts the set against anything, and the
-table above is prose beside code rather than derived from it. The day a shelf
-record exists, this set moves into it and this page becomes the reasoning beside
-the data; until then a name added to the adapter and not to this table, or the
-reverse, is caught by a reader or not at all.
+Three of the table's four columns, in both directions, and nothing else on the
+page.
 
-The commands on this page are re-run on the mainline by
-`tools/documented-commands/run.sh`, so a quotation that stops printing what is
-pasted under it is refused. That reaches the five blocks above and none of the
-sentences between them.
+`ShippedShelvesTests` reads this file, takes the rows between the header and the
+first line that is not one, and compares the first three cells of each against
+the set the build ships: what the row is called, the question in the spelling an
+adapter actually receives, and which kind of title it holds. A row here that no
+build ships fails, and a shelf a build ships with no row here fails, so a name
+added in one place and not the other reddens rather than being caught by a reader
+or not at all. The order is compared too, because the top level is drawn in the
+order the set states.
+
+    git grep -l 'ShippedShelvesTests' -- 'Jellyfin.Plugin.Template.Tests/*.cs'
+    Jellyfin.Plugin.Template.Tests/ShippedShelvesTests.cs
+
+The question column is taken from the query a shelf composes rather than from the
+name of an enum member, so it is held against the string an adapter keys on. The
+three questions are themselves a closed set the record carries, and the suite
+already asserts that every member of it is one the shipped adapter answers, so a
+question added in one place and not the other reds rather than becoming a shelf
+that is empty on every server.
+
+**The fourth column is unheld, and so is every sentence on this page.** What each
+shelf is for is a judgement, no reading of the tree makes it, and a row whose
+reason is wrong passes exactly like one whose reason is right. The same goes for
+the argument about why these three names and not others, for the request
+arithmetic, and for the paragraph saying the total is stated and not defended.
+
+The commands on this page are re-run by `tools/documented-commands/run.sh`, so a
+quotation that stops printing what is pasted under it is refused. Which blocks
+that reaches is printed by the run rather than counted here, and the blocks
+reading `origin/master` are compared on the mainline only.
