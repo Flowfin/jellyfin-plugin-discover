@@ -7,13 +7,17 @@ shelf is shown, never what a shelf asks for. That is the answer to question 5 on
 2026-08-24, with operator-defined shelves a later and additive step.
 
 This page states the set and the reasoning for it. It is not a description of a
-mechanism: nothing in the tree reads it, and the record that will hold the set as
-data is
-[#85](https://github.com/Flowfin/jellyfin-plugin-discover/issues/85), which does
-not exist yet.
+mechanism: nothing in the tree reads it. The record that holds a shelf as data is
+[#85](https://github.com/Flowfin/jellyfin-plugin-discover/issues/85) and it
+exists now.
 
     git grep -c 'class Shelf\|record Shelf' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
-    exit=1
+    origin/master:Jellyfin.Plugin.Template/Shelves/Shelf.cs:1
+    exit=0
+
+What has not happened is the six below becoming instances of it. That is #86's
+own fourth condition and it is the difference between a record that admits a
+shelf and a set that is data, so the table under this sentence is still prose.
 
 ## The set
 
@@ -126,17 +130,26 @@ answer.
   is built.
 - How often a refresh runs. That is
   [#87](https://github.com/Flowfin/jellyfin-plugin-discover/issues/87).
-- Turning a shelf off. The fourth condition on #86 asks that this be one setting,
-  and there is no shelf record and no setting to turn one off, which the command
-  at the top of this page shows.
+- Turning a shelf off. The fourth condition on #86 asks that this be one setting.
+  The record now carries the flag a setting would move, and there is no setting
+  and nothing that reads the flag, so a shelf turned off today is turned off in
+  nobody's sight.
 
 ## What holds this page true
 
 Nothing. No check reads it, no test asserts the set against anything, and the
-table above is prose beside code rather than derived from it. The day a shelf
-record exists, this set moves into it and this page becomes the reasoning beside
-the data; until then a name added to the adapter and not to this table, or the
-reverse, is caught by a reader or not at all.
+table above is prose beside code rather than derived from it. The set moves into
+the record on #86 and this page becomes the reasoning beside the data; until then
+a name added to the adapter and not to this table, or the reverse, is caught by a
+reader or not at all.
+
+One column of the table is held now and the rest is not, and the difference is
+worth knowing before it is read as more than it is. The three questions are a
+closed set the record carries, and the suite asserts that every member of it is
+one the shipped adapter answers, so a question added in one place and not the
+other reds rather than becoming a shelf that is empty on every server. Which six
+rows ship, what each is called and what each is for is unheld, because none of it
+is anywhere but here.
 
 The commands on this page are re-run on the mainline by
 `tools/documented-commands/run.sh`, so a quotation that stops printing what is
