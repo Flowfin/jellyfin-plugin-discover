@@ -23,15 +23,20 @@ is not: the two spellings otherwise return a page at a time, for as long as
 anybody keeps writing pages.
 
 The pattern is the full repository name rather than the account, and the
-difference is load bearing. `docs/gate-parity.md` reads the gate on a different
-repository in the same older account, and that one is not this repository:
+difference is load bearing. This paragraph rested it on three lines of
+`docs/gate-parity.md`, which read the gate on a different repository in the same
+older account, and said a rule matching the account would take those with it.
+That page names the gate at its current owner now, so the example is gone:
 
-    git grep -c 'iderex/jellyfin-plugin-sso' -- docs/gate-parity.md
-    docs/gate-parity.md:3
+    git grep -c 'iderex/jellyfin-plugin-sso' -- docs/gate-parity.md ; echo "exit=$?"
+    exit=1
 
-A rule matching the account would take those three lines with it and point the
-parity page at a repository that does not exist, which is a worse failure than
-the one this rule refuses.
+The reason is not gone with it, and this is the half to read rather than the
+count. An account-wide pattern refuses an address because of who used to hold
+it, not because the address is wrong, so it reaches every other board this tree
+quotes and refuses a correct one the day that board's page is written under the
+old account for a good reason. That it would refuse nothing today is a fact about
+this week's corpus rather than about the pattern.
 
 The subject is the file types this tree's text is written in: the documentation
 and the changelog, the source, the configuration page, the project and solution
