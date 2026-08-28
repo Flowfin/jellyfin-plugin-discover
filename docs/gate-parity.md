@@ -1,19 +1,26 @@
 # Adopt or decline, for every workflow on the target gate
 
-The target is the gate on `iderex/jellyfin-plugin-sso`, read at commit
+The target is the gate on `Flowfin/jellyfin-plugin-sso`, read at commit
 `eae9feb2edcf94be926b0204162da98f51337c9c`, which was the head of that
 repository's default branch when this table was written. It is not the head any
 more, so what fixes the pin is the commit itself rather than whatever `main`
 points at:
 
-    gh api repos/iderex/jellyfin-plugin-sso/commits/eae9feb2edcf94be926b0204162da98f51337c9c --jq .sha
+    gh api repos/Flowfin/jellyfin-plugin-sso/commits/eae9feb2edcf94be926b0204162da98f51337c9c --jq .sha
     eae9feb2edcf94be926b0204162da98f51337c9c
+
+This page named that repository under `iderex` in every call but one until now.
+That account does not own it, and those calls answered only because the forge
+redirects a repository that has moved, which is a courtesy rather than an
+address. One block below already read the same gate under `Flowfin`, so the page
+was carrying two names for one target and a reader had no way to tell which was
+current. Neither the pin nor any row moves for this correction.
 
 Where `main` stands today is a moving answer, so it is handed to the reader
 rather than pasted. A value written under this one is wrong again the next time
 the target takes a commit, and this page carried one:
 
-    gh api repos/iderex/jellyfin-plugin-sso/commits/main --jq .sha
+    gh api repos/Flowfin/jellyfin-plugin-sso/commits/main --jq .sha
 
 Naming the commit is what lets a reader tell whether this table has drifted. The
 target moves, and a table that did not say which state it was written against
@@ -33,7 +40,7 @@ whole table had been checked again when one row had.
 
 Both workflow sets are printed rather than restated:
 
-    gh api "repos/iderex/jellyfin-plugin-sso/contents/.github/workflows?ref=eae9feb2edcf94be926b0204162da98f51337c9c" --jq '.[].name' | sort
+    gh api "repos/Flowfin/jellyfin-plugin-sso/contents/.github/workflows?ref=eae9feb2edcf94be926b0204162da98f51337c9c" --jq '.[].name' | sort
     ls .github/workflows | sort
 
 Which checks stand behind a merge here is a property of the repository rather
