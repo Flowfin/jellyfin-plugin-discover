@@ -44,8 +44,12 @@ public sealed class CatalogueBounds
     /// Gets the most titles one shelf may hold before an operator says otherwise.
     /// </summary>
     /// <remarks>
-    /// Twenty, which is the one source's page size rather than a round number.
-    /// The constant it follows is <c>PageSize</c> in <c>TmdbSourceAdapter</c>.
+    /// Twenty, which is the one implemented source's own page size rather than a
+    /// round number. The constant it follows is <c>PageSize</c>, which lives with
+    /// that source's adapter, and <c>docs/configuration.md</c> pastes the command
+    /// that reads it. The adapter is not named here: <c>docs/sources/tmdb.md</c>
+    /// carries a search asserting that nothing in this plugin outside that file
+    /// names its type, and #73's boundary is what that search is about.
     ///
     /// A shelf of at most one page is one request per refresh, and every twenty
     /// titles above that is another request against a budget this plugin does
