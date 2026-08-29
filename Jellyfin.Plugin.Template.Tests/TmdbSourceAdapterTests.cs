@@ -6,9 +6,12 @@ using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Authentication;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Template.Catalogue;
+using Jellyfin.Plugin.Template.Configuration;
+using Jellyfin.Plugin.Template.Shelves;
 using Jellyfin.Plugin.Template.Sources;
 using Jellyfin.Plugin.Template.Tests.Fixtures;
 using Xunit;
@@ -849,6 +852,97 @@ public class TmdbSourceAdapterTests
 
         Assert.True(ceiling > TimeSpan.Zero, $"A ceiling of {ceiling} would forbid keeping anything at all.");
         Assert.True(ceiling < shortestSixMonths, $"A ceiling of {ceiling} can exceed the six months clause 1.C allows.");
+    }
+
+    /// <summary>
+    /// A source answering with ten times the bound leaves the bound holding.
+    /// </summary>
+    /// <remarks>
+    /// #58's second condition, driven along the path a shelf actually takes: the
+    /// shelf composes the question, the question carries the cap, and the
+    /// adapter stops reading at it. Ten times is the ratio that condition names,
+    /// and the point of the ratio is that a source is under no obligation to
+    /// answer with a page: nothing in the terms or the reference promises how
+    /// many entries arrive, which <c>docs/source-api/tmdb.md</c> records, so an
+    /// adapter that trusted the answer's length would be trusting a number the
+    /// source chooses.
+    /// <para>
+    /// Two assertions rather than one. The count is bounded, and the entries
+    /// kept are the first ones the source sent rather than an arbitrary slice,
+    /// because a bound that dropped from the front would quietly hide whatever a
+    /// source ranked highest.
+    /// </para>
+    /// <para>
+    /// The body is composed here rather than added to <c>TmdbFixtures</c> as a
+    /// base64 constant. Two hundred entries encoded is one line nobody can read
+    /// or edit, and the reason that file encodes its bodies is that a literal on
+    /// disk is normalised on the way into git. A body built in the test is never
+    /// on disk, so its bytes are exact by construction and the reason for the
+    /// encoding does not reach it.
+    /// </para>
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertions have been made.</returns>
+    [Fact]
+    public async Task APageTenTimesTheBoundIsCutToTheBound()
+    {
+        var cap = CatalogueBounds.DefaultTitlesPerShelf;
+
+        var shelf = new Shelf
+        {
+            DisplayName = "Trending films",
+            Question = ShelfQuestion.Trending,
+            Kind = DiscoverTitleKind.Movie,
+            Source = MetadataSource.Tmdb,
+            Cap = cap
+        };
+
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) =>
+                Task.FromResult(new SourceTransportReply(200, PageOf(cap * 10), null)),
+            configured: true,
+            new ClockATestAdvances(_fetched));
+
+        var answer = await adapter.FetchAsync(shelf.Ask(), CancellationToken.None).ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.Equal(cap, answer.Titles.Count);
+        Assert.Equal("A Film That Does Not Exist 1", answer.Titles[0].Name);
+        Assert.Equal($"A Film That Does Not Exist {cap}", answer.Titles[cap - 1].Name);
+    }
+
+    /// <summary>
+    /// A well-formed page of films with as many entries as asked for.
+    /// </summary>
+    /// <param name="entries">How many entries the page carries.</param>
+    /// <returns>The body, as the source would have sent it.</returns>
+    /// <remarks>
+    /// Every entry is complete and unremarkable, so the only thing that can cut
+    /// the answer short is the bound. An entry the mapping drops for a missing
+    /// identifier, a missing name or an adult flag would make a short answer
+    /// prove nothing.
+    /// </remarks>
+    private static string PageOf(int entries)
+    {
+        var body = new StringBuilder("{\"page\":1,\"results\":[", 256 * entries);
+
+        for (var index = 1; index <= entries; index++)
+        {
+            if (index > 1)
+            {
+                body.Append(',');
+            }
+
+            body.Append(CultureInfo.InvariantCulture, $"{{\"adult\":false,\"id\":{900000 + index},");
+            body.Append(CultureInfo.InvariantCulture, $"\"title\":\"A Film That Does Not Exist {index}\",");
+            body.Append(CultureInfo.InvariantCulture, $"\"original_title\":\"A Film That Does Not Exist {index}\",");
+            body.Append("\"overview\":\"A synthetic description standing in for the one the source returned.\",");
+            body.Append(CultureInfo.InvariantCulture, $"\"poster_path\":\"/synthetic-poster-{index}.jpg\",");
+            body.Append("\"release_date\":\"2019-07-04\",\"vote_average\":6.4}");
+        }
+
+        body.Append(CultureInfo.InvariantCulture, $"],\"total_pages\":1,\"total_results\":{entries}}}");
+
+        return body.ToString();
     }
 
     /// <summary>

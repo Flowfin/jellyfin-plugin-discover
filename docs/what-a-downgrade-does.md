@@ -55,13 +55,13 @@ The configuration carries a schema version, and the rule refuses any version
 that is not the current one, in both directions:
 
     git grep -n 'public const int CurrentSchemaVersion' -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
-    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:23:    public const int CurrentSchemaVersion = 1;
+    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:30:    public const int CurrentSchemaVersion = 1;
 
 The rule runs on one route, and that route is the save:
 
     git grep -n 'ThrowIfUnknown' -- 'Jellyfin.Plugin.Template/*.cs'
     Jellyfin.Plugin.Template/Configuration/ConfigurationSchema.cs:27:    public static void ThrowIfUnknown(PluginConfiguration configuration)
-    Jellyfin.Plugin.Template/Plugin.cs:52:            ConfigurationSchema.ThrowIfUnknown(pluginConfiguration);
+    Jellyfin.Plugin.Template/Plugin.cs:68:            ConfigurationSchema.ThrowIfUnknown(pluginConfiguration);
 
 So a downgraded build refuses to write a document whose version it does not
 know. It does not refuse to read one, and it cannot: the read is the server's

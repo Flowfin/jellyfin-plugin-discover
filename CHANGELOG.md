@@ -88,3 +88,9 @@ published. Whether the description is right is not judged by anything.
 - One place now states which server line the build targets, and the build
   refuses a package whose manifest disagrees with it
   ([#15](https://github.com/Flowfin/jellyfin-plugin-discover/issues/15)).
+- The configuration carries a bound on how many titles this plugin may write
+  into the library database, per shelf and in total, defaulting to twenty and a
+  hundred and twenty. A pair that contradicts itself, or one the shipped shelves
+  do not fit inside, is refused when the configuration is saved rather than
+  truncated later
+  ([#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58)).
