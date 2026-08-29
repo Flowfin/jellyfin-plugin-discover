@@ -121,6 +121,17 @@ checked against it:
 gh attestation verify <archive>.zip --repo <owner>/<repository>
 ```
 
+That checks which repository the archive came from and not which workflow minted
+the statement, which are different claims on a repository whose other workflows
+could mint one under the same identity. `gh attestation verify --help` calls
+`--repo` the minimum and names `--signer-workflow` and `--cert-identity` as what
+validates the signer workflow's path. The value that would pin the job above is not
+written here: nothing has been published from this repository, so there is no
+attestation to read a signer identity off, and one typed from expectation is the
+claim this repository does not make. That second flag and a run against a real
+published package are both
+[#124](https://github.com/Flowfin/jellyfin-plugin-discover/issues/124).
+
 Nothing here writes a plugin catalog. A GitHub release is the whole output. If this
 repository previously published through the Jellyfin meta plugins workflow, that path
 is gone and no catalog is fed until a manifest generator is added.
