@@ -220,6 +220,59 @@ that could ever leave this server about a named person, are deferred, and the
 argument is on its own page rather than summarised here:
 [`per-user-sources.md`](per-user-sources.md).
 
+### What is not held yet, and what it will be
+
+Everything above is what is true today. This page states both halves everywhere
+else, because a sentence that is true now and stops being true later is the one a
+reader keeps, and the section above owes the same second half. What arrives is
+not a stored record. It is a log line.
+
+The gesture that means a user wants a title is
+[#96](https://github.com/Flowfin/jellyfin-plugin-discover/issues/96) and is not
+built, so nothing in this plugin reaches the handover the seam registers:
+
+    git grep -n 'OfferAsync' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ':!Jellyfin.Plugin.Template/Seam/*' ; echo "exit=$?"
+    exit=1
+
+The list a want would be written to is in the tree and is constructed by nothing:
+
+    git grep -n 'new LocalWantRegister(' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
+    exit=1
+
+That list is held in memory and says so about itself, so it is not what an
+operator has to weigh. The handover beside it writes four lines into the server's
+log, and each of them names the want it is talking about:
+
+    git grep -c 'The want {WantIdentifier}' origin/master -- Jellyfin.Plugin.Template/Seam/WantHandover.cs
+    origin/master:Jellyfin.Plugin.Template/Seam/WantHandover.cs:4
+
+That placeholder is not opaque. A want identifier is derived rather than drawn,
+and the asking user's identifier is one of its three parts in plain text:
+
+    git grep -n 'source&gt;:&lt;user&gt;' origin/master -- Jellyfin.Plugin.Template/Seam/WantIdentifiers.cs
+    origin/master:Jellyfin.Plugin.Template/Seam/WantIdentifiers.cs:32:/// <c>&lt;source&gt;:&lt;user&gt;:&lt;identifier&gt;</c>, in that order. The
+
+So one of those lines states which account asked for which title at which source,
+at a moment the logging framework stamps, and none of that is visible in the
+message a reviewer reads. A server's log is on disk, is kept for as long as the
+operator's own retention says, and is the file that gets attached to a bug
+report. Nothing this plugin has reaches it. The register's own removal takes rows
+out of the list in memory and nothing else:
+
+    git grep -n 'public int Forget' origin/master -- Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs
+    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:256:    public int Forget(Guid user)
+
+and what an uninstall does and does not take is
+[`installing.md`](installing.md) rather than a second answer here.
+
+Which way out is taken is not decided on this page. Logging an opaque per-run
+token, logging the receiver and the outcome without the want, and leaving the
+lines as they stand with the retention disclosed here are three answers with
+different costs to an operator debugging a handover. The choice is recorded on
+[#70](https://github.com/Flowfin/jellyfin-plugin-discover/issues/70), which is
+the register this page imports rather than writes, and until it is taken this
+paragraph is what an operator has instead of an answer.
+
 ## The configuration page
 
 An administrator opening the plugin's page sends nothing outside the server, and
