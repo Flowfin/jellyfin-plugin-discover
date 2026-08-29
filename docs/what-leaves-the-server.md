@@ -226,16 +226,26 @@ An administrator opening the plugin's page sends nothing outside the server, and
 a test refuses the change rather than anybody remembering it:
 
     git grep -n 'ThePageRequestsNothingFromAHostOutsideTheServer' origin/master -- Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs
-    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:175:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
+    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:193:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
 
 ## What a user can turn off for themselves
 
 Nothing, and the heading is here rather than left out so the answer is readable.
-Everything this plugin can be told is one server-wide record with one field in
-it:
+Everything this plugin can be told is one server-wide record, and every field on
+it is server-wide:
 
     git grep -n 'public .* { get; set; }' origin/master -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
-    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:36:    public int SchemaVersion { get; set; }
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:45:    public int SchemaVersion { get; set; }
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:57:    public int MaximumTitlesPerShelf { get; set; }
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:68:    public int MaximumTitlesAcrossAllShelves { get; set; }
+
+The record held one field when this section was written and holds three now. The
+two that arrived with
+[#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) bound how
+many titles this plugin may write into the library database, and neither is keyed
+by a user or readable by one, so the answer above is unchanged rather than
+narrowly saved: what the sentence rests on is that no field here is a user's,
+not that there is only one.
 
 The page an administrator opens is not a page a user opens, and the neighbouring
 control on the server, which decides who sees a surface at all, is set by an
