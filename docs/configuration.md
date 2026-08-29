@@ -11,11 +11,88 @@ back. `ConfigurationReferenceTests` in the test project reads the settings off
 set, a different type or a different default, so a setting added without an
 entry here fails the gate rather than shipping undocumented.
 
+**No setting here has a control on the configuration page yet.** That page
+carries no script that reads or writes a configuration at all, so a control on it
+would be one an operator could move with no effect, which is worse than an
+absent one. Building the page is
+[#103](https://github.com/Flowfin/jellyfin-plugin-discover/issues/103). Until it
+lands, a setting other than its default is a hand edit of the plugin's
+configuration document on disk, and a document the plugin refuses is refused when
+the server hands it back rather than when it is typed.
+
 ## The settings
 
-| Setting         | Type  | Default | Introduced by                                                        |
-| --------------- | ----- | ------- | -------------------------------------------------------------------- |
-| `SchemaVersion` | `int` | `1`     | [#17](https://github.com/Flowfin/jellyfin-plugin-discover/issues/17) |
+| Setting                         | Type  | Default | Introduced by                                                        |
+| ------------------------------- | ----- | ------- | -------------------------------------------------------------------- |
+| `MaximumTitlesAcrossAllShelves` | `int` | `120`   | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) |
+| `MaximumTitlesPerShelf`         | `int` | `20`    | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) |
+| `SchemaVersion`                 | `int` | `1`     | [#17](https://github.com/Flowfin/jellyfin-plugin-discover/issues/17) |
+
+### MaximumTitlesPerShelf
+
+The most titles one shelf may hold. Twenty by default, which is the one source's
+own page size rather than a round number:
+
+    git grep -n 'private const int PageSize' -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:66:    private const int PageSize = 20;
+
+A shelf of at most one page costs one request per refresh. Every twenty titles
+above that costs another request against a budget this plugin does not own,
+which is [#78](https://github.com/Flowfin/jellyfin-plugin-discover/issues/78),
+so forty a shelf is twice the calls for a row a television remote has to scroll
+to reach.
+
+At the edges. Zero and anything below it are refused rather than read as "hold
+nothing": a plugin that holds nothing is one that has been turned off, which is
+[#109](https://github.com/Flowfin/jellyfin-plugin-discover/issues/109), and a
+bound of zero would leave every shelf drawn and empty with nothing saying why.
+There is no maximum of the setting's own. A large number is an operator's
+decision about their own server, and what is refused instead is a number that
+contradicts the one beside it.
+
+### MaximumTitlesAcrossAllShelves
+
+The most titles this plugin may write into the library database in total. Every
+title the surface returns becomes a row there, so this is the number an operator
+reads when they want to know what installing this costs them.
+
+A hundred and twenty by default, which is the shipped set at the per-shelf
+default rather than a second number chosen on its own. Six shelves ship:
+
+    git grep -c 'Row("' -- Jellyfin.Plugin.Template/Shelves/ShippedShelves.cs
+    Jellyfin.Plugin.Template/Shelves/ShippedShelves.cs:6
+
+Six shelves at twenty titles each is a hundred and twenty rows on a first
+install that changes nothing. The arithmetic is held rather than stated:
+`CatalogueBoundsTests` derives the default from the shipped set's own size, so a
+seventh shelf reddens the suite instead of quietly making the default
+configuration one the plugin refuses to save.
+
+**A hundred and twenty is a row count and not a size.** What a row costs on disk
+and in the library database has not been measured, which is
+[#71](https://github.com/Flowfin/jellyfin-plugin-discover/issues/71), so this
+default is defended against the request budget above and against nothing else.
+
+At the edges. Zero and below are refused for the same reason as the per-shelf
+bound. A total smaller than `MaximumTitlesPerShelf` is refused as well, because
+no set of shelves satisfies both, including a set of one; that is the ordinary
+typing mistake of lowering the total and forgetting the number beside it. And a
+total the shipped shelves do not fit inside is refused when the configuration is
+saved, rather than truncated at a refresh nobody is watching: a surface whose
+last shelves are short for a reason nothing on the screen explains is
+indistinguishable from a source that answered with nothing.
+
+The refusal names all four numbers, the shelf count, the per-shelf bound, the
+product and the total, because an operator's next action is to change one of
+them and they cannot choose which without seeing the arithmetic.
+
+**What has not been observed is what the dashboard draws.** The refusal happens
+in `Plugin.UpdateConfiguration`, so the save does not reach disk. Nothing in this
+repository has been run against a server, so how the message reaches the operator
+is unknown here; the configuration page is
+[#103](https://github.com/Flowfin/jellyfin-plugin-discover/issues/103) and
+refusing a bad setting as a general rule is
+[#105](https://github.com/Flowfin/jellyfin-plugin-discover/issues/105).
 
 ### SchemaVersion
 
@@ -39,18 +116,23 @@ was holding.
 
 ## What a setting costs
 
-Nothing on this page costs an operator anything measurable today, because the
-settings that will are not here yet. The two that will are the bound on what the
-catalogue writes into the library database and the cadence at which a source is
-called, and both come with a number rather than an adjective:
-[#71](https://github.com/Flowfin/jellyfin-plugin-discover/issues/71) measures
-what the catalogue costs on disk and in the database, and
-[#78](https://github.com/Flowfin/jellyfin-plugin-discover/issues/78) is where a
-source's own limits are respected. When either lands, its entry here states the
-number and the command that produced it.
+The first two settings that cost an operator something are here now, and they are
+the bound on what this plugin writes into the library database. Both state their
+cost above with the command that produced the number, which is what this section
+asked of them before they landed.
 
-A setting that costs something states its cost here on arrival, and the place
-for it is open before the first one lands.
+**The cost they state is a count of requests and a count of rows, and neither is
+a size.** How much disk the catalogue takes and how much the library database
+grows per title is
+[#71](https://github.com/Flowfin/jellyfin-plugin-discover/issues/71) and has not
+been measured, so a hundred and twenty rows is a number an operator can act on
+only if they already know what a row costs them. Nothing here tells them, and
+saying otherwise would be a defended default this repository does not have.
+
+The other setting that will cost something is the cadence at which a source is
+called, which is
+[#78](https://github.com/Flowfin/jellyfin-plugin-discover/issues/78). When it
+lands, its entry here states the number and the command that produced it.
 
 ## What the check holds, and what it does not
 

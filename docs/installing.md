@@ -78,20 +78,30 @@ by tests rather than by there being nothing that could break them:
     git grep -n 'public void AStartWithNothingConfiguredWritesNothing' -- Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs:93:    public void AStartWithNothingConfiguredWritesNothing()
 
-The configuration page carries no settings. The one property on the
-configuration is the schema version, which is not a control and which an
-operator has no reason to set:
+The configuration page carries no controls. The configuration itself now has
+three properties, and the two beside the schema version are the bounds on how
+many titles this plugin may write into the library database:
 
     git grep -n 'public .* { get; set; }' -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
-    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:36:    public int SchemaVersion { get; set; }
+    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:45:    public int SchemaVersion { get; set; }
+    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:57:    public int MaximumTitlesPerShelf { get; set; }
+    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:68:    public int MaximumTitlesAcrossAllShelves { get; set; }
 
-So there is no key to enter, no bound to choose, no refresh to start and no
-per-user decision to take. Each of those is an open issue rather than a step
-this page has left out:
+A property is not a control. The page has no script that reads or writes a
+configuration, so the two bounds are reachable today only by editing the
+plugin's configuration document on disk, and their defaults are what an operator
+who does nothing gets. What each one means and what it costs is
+`docs/configuration.md`, and the page that would carry them as controls is
+[#103](https://github.com/Flowfin/jellyfin-plugin-discover/issues/103).
+
+So there is no key to enter, no refresh to start and no per-user decision to
+take, and the bounds are set by hand or not at all. Each of those is an open
+issue rather than a step this page has left out:
 [#77](https://github.com/Flowfin/jellyfin-plugin-discover/issues/77) for where a
 source key comes from,
 [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) for the
-bound on what reaches the library database,
+rest of the bound on what reaches the library database, which still owes a
+measurement on a real server,
 [#88](https://github.com/Flowfin/jellyfin-plugin-discover/issues/88) for a
 refresh an operator can trigger, and
 [#57](https://github.com/Flowfin/jellyfin-plugin-discover/issues/57) for who

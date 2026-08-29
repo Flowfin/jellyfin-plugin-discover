@@ -28,9 +28,27 @@ public class ConfigurationPageTests
     /// SchemaVersion is written by the build and read by
     /// ConfigurationSchema.ThrowIfUnknown. A control for it would offer an
     /// operator a number whose only effect is to have their configuration
-    /// refused.
+    /// refused. That reason is permanent.
+    ///
+    /// The two bounds from #58 are here for a reason that is not, and it is
+    /// worth reading as temporary rather than as a decision that these are not
+    /// an operator's business. They are: they decide how many rows this plugin
+    /// writes into a library database. What is absent is not a control but the
+    /// page's whole control set, since this page carries no script that reads or
+    /// writes a configuration at all, and a control with nothing behind it is
+    /// the failure the check above names, a setting an operator can change with
+    /// no effect. Building the page is #103, and these two entries come out of
+    /// this list there.
+    ///
+    /// Until then the numbers are the defaults or a hand edit of the document on
+    /// disk, and docs/configuration.md says so where an operator reads it.
     /// </remarks>
-    private static readonly string[] HiddenFromThePage = ["SchemaVersion"];
+    private static readonly string[] HiddenFromThePage =
+    [
+        "MaximumTitlesAcrossAllShelves",
+        "MaximumTitlesPerShelf",
+        "SchemaVersion"
+    ];
 
     /// <summary>
     /// The page is embedded in the assembly under the name the plugin asks the
