@@ -254,9 +254,35 @@ and the asking user's identifier is one of its three parts in plain text:
 
 So one of those lines states which account asked for which title at which source,
 at a moment the logging framework stamps, and none of that is visible in the
-message a reviewer reads. A server's log is on disk, is kept for as long as the
-operator's own retention says, and is the file that gets attached to a bug
-report. Nothing this plugin has reaches it. The register's own removal takes rows
+message a reviewer reads.
+
+How long such a line lasts is the server's answer rather than this plugin's, and
+it is bounded rather than indefinite. The shipped logging configuration writes the
+rendered message to a file, rolls it daily, keeps three of them, and rolls again
+at a hundred megabytes:
+
+    git grep -n 'rollingInterval\|retainedFileCountLimit\|fileSizeLimitBytes' v10.11.11 v12.0-rc4 -- Jellyfin.Server/Resources/Configuration/logging.json
+    v10.11.11:Jellyfin.Server/Resources/Configuration/logging.json:25:                                "rollingInterval": "Day",
+    v10.11.11:Jellyfin.Server/Resources/Configuration/logging.json:26:                                "retainedFileCountLimit": 3,
+    v10.11.11:Jellyfin.Server/Resources/Configuration/logging.json:28:                                "fileSizeLimitBytes": 100000000,
+    v12.0-rc4:Jellyfin.Server/Resources/Configuration/logging.json:25:                                "rollingInterval": "Day",
+    v12.0-rc4:Jellyfin.Server/Resources/Configuration/logging.json:26:                                "retainedFileCountLimit": 3,
+    v12.0-rc4:Jellyfin.Server/Resources/Configuration/logging.json:28:                                "fileSizeLimitBytes": 100000000,
+
+read from a checkout of the server with both targeted lines fetched, so the three
+values are the same at each. Nothing in that configuration redacts a placeholder,
+and there is no destructuring policy anywhere in the server's logging setup, so
+the identifier is written as it renders. On a default install the line therefore
+survives about three days, and less on a busy server.
+
+Two things that answer does not cover, and an operator who wants a shorter one has
+to look at both. The operator's own copy is `logging.user.json`, which the server
+initialises for them and this plugin neither reads nor sets, so a raised retained
+count or a redirected sink is a different answer that no reading of this tree can
+see. And anything in front of the server that copies the console stream - a
+container runtime, a service manager, a log shipper - keeps it on its own schedule.
+
+Nothing this plugin has reaches any of that. The register's own removal takes rows
 out of the list in memory and nothing else:
 
     git grep -n 'public int Forget' origin/master -- Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs
@@ -339,7 +365,7 @@ the answer against the output pasted under it, on every push and every pull
 request, so every quotation above is one of its subjects.
 
 When that comparison is made is narrower than the fact that it runs, and taking
-the second for the first is the mistake to avoid here. Every quotation above
+the second for the first is the mistake to avoid here. All but one quotation above
 quotes `origin/master`, and the reader judges such a block only where the checkout
 stands on the mainline, printing it as refused with the reason otherwise:
 
@@ -351,6 +377,15 @@ pull request the same run says it judged none of them rather than saying they
 passed. That is the reader's own design rather than a gap in it: a page changed
 together with the file it quotes describes the tree it is about to land in, and
 comparing it against `origin/master` would refuse it for being right.
+
+The one exception is the retention block under "What is held about a person",
+which reads a checkout of the server at two tags. That is not this repository, so
+the reader refuses it wherever the run happens and no route here ever compares it.
+It is in the weaker half deliberately: what the server's shipped logging keeps is
+a fact about the server rather than about this tree, and there is nothing here to
+read it from. What catches it going stale is somebody with such a checkout running
+the command, the same as for the pages that quote the server's source elsewhere in
+this repository.
 
 That covers the quotations and nothing else on the page. A sentence with no
 command under it is not a subject there, so every conclusion drawn above from a
