@@ -376,4 +376,52 @@ public class WantHandoverTests
 
         Assert.Empty(implementations);
     }
+
+    /// <summary>
+    /// A replayed want and a live one reach a receiver as the two shapes the
+    /// contract names.
+    /// </summary>
+    /// <remarks>
+    /// The far side of the seam, which is where the replay marker on #335 is for.
+    /// The two wants differ in that field and in nothing else, they cross the
+    /// same handover, and what the receiver holds afterwards is one message
+    /// carrying the marker and one carrying nothing.
+    ///
+    /// Nothing here serialises. The message is a record handed to an interface
+    /// inside one process, which is what
+    /// `docs/decisions/0004-what-crosses-the-seam-to-a-requests-plugin.md`
+    /// decided the route is, so what a receiver reads is the object rather than
+    /// bytes and this is the strongest form the assertion has on this board.
+    ///
+    /// The want identifier is deliberately the same on both. A replay is the same
+    /// want under #99, so a receiver keying on that identifier sees one want and
+    /// a receiver reading this field sees where the second copy came from, and
+    /// those are the two answers the sibling asked for.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertions have been made.</returns>
+    [Fact]
+    public async Task AReplayedWantAndALiveOneReachAReceiverAsTheTwoShapesTheContractNames()
+    {
+        var sink = new SinkThatKeepsTheWantsItWasHanded();
+
+        var handover = new WantHandover(
+            new IWantReceiver[] { sink },
+            new LoggerThatRecordsWhatIsWritten<WantHandover>());
+
+        Assert.Equal(
+            WantHandoverOutcome.Accepted,
+            await handover.OfferAsync(AWant("want-1") with { Replay = true }, CancellationToken.None));
+
+        Assert.Equal(
+            WantHandoverOutcome.Accepted,
+            await handover.OfferAsync(AWant("want-1"), CancellationToken.None));
+
+        Assert.Equal(2, sink.Received.Count);
+
+        Assert.True(sink.Received[0].Replay);
+        Assert.Null(sink.Received[1].Replay);
+
+        Assert.Equal(sink.Received[0].WantIdentifier, sink.Received[1].WantIdentifier);
+        Assert.All(sink.Received, want => Assert.Equal(WantContract.CurrentVersion, want.ContractVersion));
+    }
 }

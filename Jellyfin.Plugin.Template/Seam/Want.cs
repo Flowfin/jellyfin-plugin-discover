@@ -9,7 +9,7 @@ namespace Jellyfin.Plugin.Template.Seam;
 /// <remarks>
 /// The field set is fixed in
 /// `docs/decisions/0004-what-crosses-the-seam-to-a-requests-plugin.md` and this
-/// type is that list expressed once. Seven fields cross and the rest of the
+/// type is that list expressed once. Eight fields cross and the rest of the
 /// catalogue record does not: the summary and the artwork location are the
 /// source's content and stay here, the original-language name is re-resolved by
 /// a receiver from the identifiers, and the catalogue record's own schema
@@ -37,6 +37,7 @@ public sealed record Want
     private readonly int? _releaseYear;
     private readonly Guid _askingUser;
     private readonly string _wantIdentifier = null!;
+    private readonly bool? _replay;
     private readonly int _contractVersion = WantContract.CurrentVersion;
 
     /// <summary>
@@ -243,6 +244,50 @@ public sealed record Want
             }
 
             _wantIdentifier = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets <see langword="true"/> where this want is being replayed from a
+    /// record made earlier, and null where it is live.
+    /// </summary>
+    /// <remarks>
+    /// The eighth field, decided on #335 against requests#93: a sibling that was
+    /// installed after this plugin had already been collecting wants replays the
+    /// list it holds through the same handover a live gesture takes, and a
+    /// receiver that cannot tell the two apart shows an operator a sudden queue
+    /// with no account of where it came from.
+    ///
+    /// A field a receiver may ignore, so the contract version does not move for
+    /// it. Absence is what an older build writes and absence means live, which
+    /// is why the marker says the unusual thing rather than the ordinary one:
+    /// the reverse spelling would make every want a build without this field
+    /// hands over read as a replay.
+    ///
+    /// Nothing in this tree replays anything yet. The local list is #97 and the
+    /// gesture that produces a live want at all is #96, so today this field is
+    /// set by the suite and by nothing else, exactly as the rest of this record
+    /// is.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the value is <see langword="false"/>. Absence already means
+    /// live, so a false is a second spelling of it and it is the value an unset
+    /// field reads as: a receiver meeting one would have to decide whether the
+    /// sender meant live or meant nothing, and those are the same want.
+    /// </exception>
+    public bool? Replay
+    {
+        get => _replay;
+        init
+        {
+            if (value == false)
+            {
+                throw new ArgumentException(
+                    "A want that is not a replay leaves this absent. False is what an unset field reads as and it is a second spelling of live, which is what absence already says.",
+                    nameof(value));
+            }
+
+            _replay = value;
         }
     }
 }
