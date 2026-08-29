@@ -64,6 +64,7 @@ second contract.
 | Asking user          | The server's identifier for the user who made the gesture.                                                                      | A request belongs to somebody. A receiver cannot ask this plugin later, because there is no route back.          |
 | Want identifier      | This plugin's own identifier for this want.                                                                                     | So a receiver can tell a repeat of one want from two wants, and so the same want handed over twice is one thing. |
 | Contract version     | Which version of this contract the message is written to.                                                                       | So a receiver can refuse a message it does not understand rather than read it as though the two versions agreed. |
+| Replay marker        | Present and true where the want is being replayed from a record made earlier. Absent where it is live.                          | So a receiver can tell a queue that arrived all at once from wants people are expressing now. Absent means live. |
 
 Absence is absence. A field the source gave nothing for is sent as absent rather
 than as an empty string or a zero, which is the rule the catalogue record itself
@@ -102,6 +103,80 @@ a user was looking at is a different item by then and a second want is what a
 second item means. A value computed over every identifier instead would move
 whenever a response carried one identifier more, which is far more often and for
 no such reason.
+
+## The replay marker, and the version it arrived at
+
+Decided on 27 August 2026 among the product calls on the sibling board,
+[requests#113](https://github.com/Flowfin/jellyfin-plugin-requests/issues/113),
+and carried here by
+[#335](https://github.com/Flowfin/jellyfin-plugin-discover/issues/335). The half
+of it the sibling holds is
+[requests#93](https://github.com/Flowfin/jellyfin-plugin-requests/issues/93).
+
+**What it is for.** A server can run this plugin for months before a requests
+plugin is installed. Every want made in that time is in the local list, which is
+[#97](https://github.com/Flowfin/jellyfin-plugin-discover/issues/97), and the
+contract is one way, so a receiver cannot pull it. What happens instead is that
+this side replays those wants through the same handover a live gesture takes.
+Without a marker, an operator installing a sibling meets a queue of requests
+that all arrived in one second and no account of where any of them came from.
+
+**Absent means live.** The marker is present and true on a replayed want and
+absent on a live one. That direction and not the reverse: absence is what a
+build with no such field writes, and a receiver reading absence as a replay
+would mark every want an older build ever handed it as adopted. There is no
+third state. A `false` is refused where the message is built rather than sent as
+a second spelling of live, for the same reason a release year of zero is
+refused - it is the value an unset field reads as, and a receiver meeting one
+cannot tell a sender that meant live from a sender that meant nothing.
+
+**It arrives at version 1, and this is why the number did not move.** Two rules
+in the section below say so separately, and either alone is enough.
+
+The first is that adding a field a receiver may ignore does not raise the
+number. This is exactly such a field: a receiver that never looks for it reads
+every want it could read before.
+
+The second is that version 1 is not frozen. Nothing has been published from this
+repository, so a change to the field set edits version 1 rather than minting
+version 2. Read on 2026-08-29:
+
+    gh release list --repo Flowfin/jellyfin-plugin-discover --limit 5 ; echo "exit=$?"
+    exit=0
+
+    git ls-remote --tags origin ; echo "exit=$?"
+    exit=0
+
+No release and no tag, so the window that paragraph describes is open.
+
+**What raising the number would have cost, measured rather than argued.** A
+receiver refuses a version it does not know, because the number only ever grows.
+So minting version 2 for a field nobody has to read would make every receiver
+built against version 1 refuse every want this plugin writes, replayed and live
+alike - which is the outcome the decision's own reason, that older versions stay
+valid, exists to avoid.
+
+The suite already refuses it. Setting `WantContract.CurrentVersion` to 2 and
+running the tests, on 2026-08-29, with the failing lines filtered out of the run
+and the per-test timings stripped:
+
+    dotnet test --configuration Release 2>&1 | grep -E '^  Fehler [A-Z]|^Fehler!' | sed 's/ \[[0-9]* ms\]$//'
+      Fehler Jellyfin.Plugin.Template.Tests.WantTests.TheReplayMarkerArrivedWithoutMovingTheContractVersion
+      Fehler Jellyfin.Plugin.Template.Tests.WantTests.AWantCarriesTheContractVersionThisBuildWrites
+      Fehler Jellyfin.Plugin.Template.Tests.ContractVersionAcrossTheSeamTests.AReceiverPinnedToTheFirstVersionTakesWhatThisBuildWrites
+    Fehler!      : Fehler:     3, erfolgreich:   408, übersprungen:     0, gesamt:   411, Dauer: 2 s - Jellyfin.Plugin.Template.Tests.dll (net9.0)
+
+The run is on a German-locale machine and its words are the runner's rather than
+this page's: `Fehler` is a failure, `erfolgreich` is a pass. The second of the
+three is the one that carries the argument - a receiver pinned to version 1 stops
+taking what this build writes - and the other two are the version being named in
+two places. The constant was put back before anything else was written.
+
+**What does not change for this field.** The row in the table of features that
+move source data, on [`docs/sources/tmdb.md`](../sources/tmdb.md), is unchanged
+and is not drift. That table exists to be checkable against every feature that
+moves a source's content, and the replay marker is this plugin's own statement
+about its own list rather than anything a source supplied.
 
 ## What does not cross, and why not
 

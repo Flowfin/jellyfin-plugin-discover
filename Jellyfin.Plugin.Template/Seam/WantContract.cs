@@ -30,6 +30,15 @@ public static class WantContract
     /// the first release edits version 1 rather than minting version 2. From
     /// the first release that ships this seam, the rule above applies as
     /// written.
+    ///
+    /// The replay marker on <see cref="Want"/> is the first field to arrive
+    /// that way, under #335. It arrives at version 1 rather than minting a
+    /// second one for two reasons that hold separately: it is a field a
+    /// receiver may ignore, which the rule above says does not raise the
+    /// number, and no release has shipped, which the paragraph above says
+    /// makes the field set version 1's rather than a successor's. The note
+    /// under `## How this contract changes` carries the argument and the
+    /// commands behind both.
     /// </remarks>
     public const int CurrentVersion = 1;
 }
