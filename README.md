@@ -57,7 +57,12 @@ container holds for it; it puts nothing there itself, and nothing at all is a
 complete state rather than a degraded one:
 
     git grep -n 'IWantReceiver' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:74:        // Nothing registers an IWantReceiver here, and that is the point rather
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:76:        // Nothing registers an IWantReceiver here, and that is the point rather
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:91:            provider.GetRequiredService<IEnumerable<IWantReceiver>>(),
+
+One line per half of the sentence above it. The first is the comment saying this
+plugin registers no receiver, and the second is the only other mention: the ask
+to the container for whatever anybody else registered.
 
 So on a server where nothing implements it a want has nowhere to go but a list
 this plugin keeps for the operator to read, and that list is
@@ -92,7 +97,7 @@ appears without working. A discover page shows up in a client, because the surfa
 with the server:
 
     git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:66:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:68:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
 Every level of that page is empty, the top of it included. What the top level and
 any other address answer is no longer the same thing: the top is a level the
@@ -121,7 +126,7 @@ run asks nobody:
     git grep -n 'IMetadataSource' -- 'Jellyfin.Plugin.Template/*.cs' ':!Jellyfin.Plugin.Template/Sources/'
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:13:/// six months, which <see cref="IMetadataSource.RetentionCeiling"/> carries as a
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:62:    public static CatalogueRetention Of(TimeSpan duration, IReadOnlyCollection<IMetadataSource> activeSources)
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:91:        // What it will ask is whatever implements IMetadataSource in this
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:107:        // What it will ask is whatever implements IMetadataSource in this
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:44:/// A source that throws is a fault rather than an answer. <see cref="IMetadataSource"/>
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:54:    private readonly IMetadataSource[] _sources;
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:81:        IReadOnlyCollection<IMetadataSource> sources,

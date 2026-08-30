@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Jellyfin.Plugin.Template.Randomness;
 using Jellyfin.Plugin.Template.Refresh;
 using Jellyfin.Plugin.Template.Seam;
@@ -9,6 +10,7 @@ using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.Template;
 
@@ -75,7 +77,21 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // than an omission. A sibling plugin registers one in its own
         // registrator; this plugin asks the container for whatever is there and
         // is complete when the answer is nothing, which is #95.
-        serviceCollection.AddSingleton<WantHandover>();
+        //
+        // Built by hand rather than by the container's own constructor choice,
+        // for the one argument the container cannot supply. Who may ask is
+        // #98's list and it is a configured value an operator changes while the
+        // server runs, so what is handed over is a read of it rather than an
+        // answer: a singleton holding an answer would go on refusing whoever
+        // was listed at the moment the container was built. Plugin.Instance is
+        // what the run has to go to for a configuration, exactly as
+        // DiscoverRefreshTask does, and a null one refuses every want rather
+        // than passing them all on.
+        serviceCollection.AddSingleton(provider => new WantHandover(
+            provider.GetRequiredService<IEnumerable<IWantReceiver>>(),
+            provider.GetRequiredService<ILogger<WantHandover>>(),
+            WantHandover.DefaultBound,
+            () => WhoMayAsk.From(Plugin.Instance?.Configuration)));
 
         // The refresh, under the interface the server's scheduler collects tasks
         // by, so an operator sees it in the dashboard beside every other one.

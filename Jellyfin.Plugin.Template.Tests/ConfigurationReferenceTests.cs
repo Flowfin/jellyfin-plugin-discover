@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -156,8 +157,25 @@ public static class ConfigurationReferenceTests
         _ when type == typeof(long) => "long",
         _ when type == typeof(bool) => "bool",
         _ when type == typeof(string) => "string",
+        _ when Element(type) is { } element => $"list of {TypeName(element)}",
         _ => type.Name
     };
+
+    /// <summary>
+    /// What one entry of a collection setting holds, or null where the setting is not one.
+    /// </summary>
+    /// <param name="type">The setting's type.</param>
+    /// <returns>The element type, or null.</returns>
+    /// <remarks>
+    /// Read off the type rather than matched against a list of collection
+    /// types, so a setting declared as the next one of them is rendered here
+    /// rather than reaching the page as <c>Collection`1</c>, which is a name no
+    /// operator would recognise and no reviewer would notice was wrong.
+    /// </remarks>
+    private static Type? Element(Type type) =>
+        type != typeof(string) && type.IsGenericType && typeof(IEnumerable).IsAssignableFrom(type)
+            ? type.GetGenericArguments().SingleOrDefault()
+            : null;
 
     /// <summary>
     /// The default as the page states it, read off a fresh configuration rather than off a
@@ -170,8 +188,28 @@ public static class ConfigurationReferenceTests
         null => "none",
         bool flag => flag ? "true" : "false",
         IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+        IEnumerable entries and not string => Literal(entries),
         _ => value.ToString() ?? "none"
     };
+
+    /// <summary>
+    /// The default of a collection setting as the page states it.
+    /// </summary>
+    /// <param name="entries">What a fresh configuration carries.</param>
+    /// <returns>The word for an empty collection, or its entries.</returns>
+    /// <remarks>
+    /// A word rather than the runtime's rendering of the object, which is the
+    /// type's own name and says nothing about what is in it. Every collection
+    /// setting this build carries defaults to empty; one that did not would
+    /// state its entries here rather than falling back to a shape a reader
+    /// cannot check against the page.
+    /// </remarks>
+    private static string Literal(IEnumerable entries)
+    {
+        var written = entries.Cast<object?>().Select(Literal).ToArray();
+
+        return written.Length == 0 ? "empty" : string.Join(", ", written);
+    }
 
     /// <summary>
     /// Walks up from the test assembly to the directory holding the named repository file.

@@ -12,7 +12,7 @@ answers is empty, so no discover title has reached any of the places listed
 here:
 
     git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:66:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:68:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
     git grep -n 'IsRoot ? SurfaceListing.EmptyLevel' -- Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs
     Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:166:            asked.Parent.IsRoot ? SurfaceListing.EmptyLevel : SurfaceListing.NoSuchLevel);
