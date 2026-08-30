@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.Template.Configuration;
@@ -66,6 +67,33 @@ public class PluginConfiguration : BasePluginConfiguration
     /// the same reason as the per-shelf bound beside it.
     /// </remarks>
     public int MaximumTitlesAcrossAllShelves { get; set; }
+
+    /// <summary>
+    /// Gets the server's identifiers of the users this plugin may not pass a want on for.
+    /// </summary>
+    /// <remarks>
+    /// #98's first condition, and it is a list of who may NOT rather than of who
+    /// may. Question 2 of that permission was answered on #2 on 2026-08-24 with
+    /// asking following browsing, so an empty list is a server where whoever may
+    /// browse may ask, and a list of who may would make a fresh install one
+    /// where nobody can.
+    ///
+    /// Empty by default, which is that answer expressed as bytes rather than as
+    /// a sentence: the setting an operator changes is one that takes something
+    /// away, and a first install has taken nothing away from anybody.
+    ///
+    /// Get-only, which is what an XML deserialiser needs from a collection and
+    /// what <c>CA2227</c> needs from a property. What reads it is
+    /// <see cref="Seam.WhoMayAsk"/>, and nothing else: a second reader parsing
+    /// these strings would be a second answer to the question that type exists
+    /// to answer once.
+    ///
+    /// Strings rather than <see cref="Guid"/>s. The document is XML an operator
+    /// edits by hand until #103 builds the page, and a value this build cannot
+    /// read is refused with the entry quoted back rather than deserialised into
+    /// something silently wrong.
+    /// </remarks>
+    public Collection<string> UsersRefusedTheAsk { get; } = new Collection<string>();
 
     /// <summary>
     /// Reads the two bounds as one value, refusing a pair that contradicts itself.

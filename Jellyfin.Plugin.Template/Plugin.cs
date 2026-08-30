@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Jellyfin.Plugin.Template.Configuration;
+using Jellyfin.Plugin.Template.Seam;
 using Jellyfin.Plugin.Template.Shelves;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
@@ -44,6 +45,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// never reaches disk and is never read back as if its fields meant what
     /// this build thinks they mean.
     /// <para>
+    /// The list of users this plugin may not ask for is refused here as well,
+    /// which is #98 meeting #105's shape: an entry that is not a user
+    /// identifier is a refusal nothing can apply, and it is caught at the save
+    /// rather than at the moment a person makes a gesture. What meets the same
+    /// bytes when they reached disk another way is <see cref="WhoMayAsk.From"/>,
+    /// which fails closed rather than trusting that this ran.
+    /// </para>
+    /// <para>
     /// The bounds on what reaches the library database are refused here too,
     /// which is #58's third condition: a pair that contradicts itself, or one
     /// the shipped shelves do not fit inside, is refused at the moment it is
@@ -66,6 +75,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         if (configuration is PluginConfiguration pluginConfiguration)
         {
             ConfigurationSchema.ThrowIfUnknown(pluginConfiguration);
+
+            WhoMayAsk.ThrowIfAnEntryIsUnreadable(pluginConfiguration);
 
             pluginConfiguration
                 .Bounds()

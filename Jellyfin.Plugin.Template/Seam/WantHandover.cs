@@ -36,12 +36,20 @@ namespace Jellyfin.Plugin.Template.Seam;
 /// caller untouched. Neither is an error on this side: the contract is one way
 /// with no delivery guarantee, and a want that reached nobody is the local
 /// list's, which is #97.
+///
+/// WHO MAY ASK IS DECIDED HERE AND NOWHERE ELSE, which is #98. This is the one
+/// place a want is offered, so it is the only place a refusal can be made that
+/// no caller can walk around, and the check runs before the receivers are
+/// looked at rather than beside them. What it reads is
+/// <see cref="WhoMayAsk"/>; nothing here parses a configuration or knows what a
+/// user identifier looks like.
 /// </remarks>
 public sealed class WantHandover
 {
     private readonly IWantReceiver[] _receivers;
     private readonly ILogger<WantHandover> _logger;
     private readonly TimeSpan _bound;
+    private readonly Func<WhoMayAsk> _whoMayAsk;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WantHandover"/> class.
@@ -70,9 +78,41 @@ public sealed class WantHandover
     /// a receiver that never answers - reachable in no time at all.
     /// </remarks>
     public WantHandover(IEnumerable<IWantReceiver> receivers, ILogger<WantHandover> logger, TimeSpan bound)
+        : this(receivers, logger, bound, () => WhoMayAsk.NobodyIsRefused)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WantHandover"/> class over a permission.
+    /// </summary>
+    /// <param name="receivers">Whatever the server's container holds, which is usually nothing.</param>
+    /// <param name="logger">Where a refused user, and a receiver that refused, threw or did not answer, is reported.</param>
+    /// <param name="bound">How long the caller waits for the receivers before giving up on them.</param>
+    /// <param name="whoMayAsk">Where the operator's list of refused users is read, once per want.</param>
+    /// <exception cref="ArgumentNullException">Thrown when any reference argument is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="bound"/> is negative.</exception>
+    /// <remarks>
+    /// A FUNCTION RATHER THAN A VALUE, and that is #98's whole difficulty in one
+    /// parameter. The list is a configured value an operator changes while the
+    /// server runs, and this type is a singleton the container builds once, so a
+    /// handover holding an answer would go on refusing whoever was listed when
+    /// the server started. It is read per want instead.
+    ///
+    /// The constructors above pass <see cref="WhoMayAsk.NobodyIsRefused"/>,
+    /// which is the state a fresh install is in rather than a permission nobody
+    /// wired up: the default is permissive, decided as question 2 on #2 on
+    /// 2026-08-24. What the server's own path passes is the live read, from
+    /// <c>PluginServiceRegistrator</c>.
+    /// </remarks>
+    public WantHandover(
+        IEnumerable<IWantReceiver> receivers,
+        ILogger<WantHandover> logger,
+        TimeSpan bound,
+        Func<WhoMayAsk> whoMayAsk)
     {
         ArgumentNullException.ThrowIfNull(receivers);
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(whoMayAsk);
 
         if (bound < TimeSpan.Zero)
         {
@@ -85,6 +125,7 @@ public sealed class WantHandover
         _receivers = receivers.Where(receiver => receiver is not null).ToArray();
         _logger = logger;
         _bound = bound;
+        _whoMayAsk = whoMayAsk;
     }
 
     /// <summary>
@@ -133,6 +174,32 @@ public sealed class WantHandover
     public async Task<WantHandoverOutcome> OfferAsync(Want want, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(want);
+
+        // #98's third condition, and it is the first statement after the null
+        // check on purpose. Everything below this line is a receiver being
+        // offered something, so a refusal placed anywhere else would be one a
+        // sink could already have seen. It is also ahead of the no-receiver
+        // answer: a want that may not be passed on was refused here whether or
+        // not a sibling happened to be installed, and reporting the absence of
+        // a sink instead would make the same gesture read two ways on two
+        // servers.
+        var whoMayAsk = _whoMayAsk();
+
+        if (whoMayAsk.Refuses(want.AskingUser))
+        {
+            // #98's second condition. Warning rather than information, because
+            // this is the operator's own rule firing on a real person's gesture
+            // and the two questions it raises - who was refused and why - are
+            // both answered on this line rather than in the configuration
+            // document they would otherwise have to go and read.
+            _logger.LogWarning(
+                "The want {WantIdentifier} was made by {AskingUser} and was not passed on, because {Reason}. Nothing was offered to any receiver.",
+                want.WantIdentifier,
+                want.AskingUser,
+                whoMayAsk.RefusesEverybodyBecause ?? "this server's configuration lists that user as one this plugin may not ask for");
+
+            return WantHandoverOutcome.RefusedHere;
+        }
 
         if (_receivers.Length == 0)
         {

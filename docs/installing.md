@@ -83,9 +83,9 @@ three properties, and the two beside the schema version are the bounds on how
 many titles this plugin may write into the library database:
 
     git grep -n 'public .* { get; set; }' -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
-    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:45:    public int SchemaVersion { get; set; }
-    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:57:    public int MaximumTitlesPerShelf { get; set; }
-    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:68:    public int MaximumTitlesAcrossAllShelves { get; set; }
+    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:46:    public int SchemaVersion { get; set; }
+    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:58:    public int MaximumTitlesPerShelf { get; set; }
+    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:69:    public int MaximumTitlesAcrossAllShelves { get; set; }
 
 A property is not a control. The page has no script that reads or writes a
 configuration, so the two bounds are reachable today only by editing the

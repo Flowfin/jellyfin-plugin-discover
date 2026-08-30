@@ -54,5 +54,23 @@ public enum WantHandoverOutcome
     /// happens, so an operator looking at a sibling that refuses everything sees
     /// the refusals rather than a count.
     /// </remarks>
-    NotAccepted = 3
+    NotAccepted = 3,
+
+    /// <summary>
+    /// This plugin refused to pass the want on, and no receiver was offered it.
+    /// </summary>
+    /// <remarks>
+    /// #98's second and third conditions, and it is a member of its own rather
+    /// than <see cref="NotAccepted"/> for the reason that separates
+    /// <see cref="NoReceiver"/> from it as well: the three say who decided.
+    /// Nobody decided, somebody else's plugin decided, and this plugin decided
+    /// are different answers to an operator asking why a user's gesture went
+    /// nowhere, and folding this one into the middle would report this plugin's
+    /// own refusal as a sibling's.
+    ///
+    /// It is not an error and it is not a failure of the seam. It is the
+    /// operator's configuration doing what they set it to do, which is why it is
+    /// an outcome rather than an exception.
+    /// </remarks>
+    RefusedHere = 4
 }

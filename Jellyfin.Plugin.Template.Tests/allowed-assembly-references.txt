@@ -53,6 +53,13 @@ System.Memory
 System.Security.Cryptography
 System.Threading
 
+# How the compiler spells a collection property on the configuration. The
+# operator's list of users who may not ask for a title is a Collection<string>,
+# and the reference the compiler writes for it names this facade rather than
+# System.ObjectModel. It is #98, it comes from the runtime the server already
+# runs on, and it is not packaged.
+System.ComponentModel
+
 # What the first source adapter reaches for, and the whole of what #74 added to
 # this list. System.Net.Http and System.Net.Primitives are the request and the
 # status it comes back with; Microsoft.Extensions.Http is the factory the server

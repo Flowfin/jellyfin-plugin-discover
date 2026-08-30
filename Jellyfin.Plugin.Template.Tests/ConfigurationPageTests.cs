@@ -42,12 +42,19 @@ public class ConfigurationPageTests
     ///
     /// Until then the numbers are the defaults or a hand edit of the document on
     /// disk, and docs/configuration.md says so where an operator reads it.
+    ///
+    /// UsersRefusedTheAsk is here for the same temporary reason and not for a
+    /// reason of its own. #98 makes it the operator's control over who may ask
+    /// for a title, so it belongs on the page more obviously than the two above
+    /// do; what keeps it off is that there is no control set to put it in. It
+    /// comes out of this list in #103 with them.
     /// </remarks>
     private static readonly string[] HiddenFromThePage =
     [
         "MaximumTitlesAcrossAllShelves",
         "MaximumTitlesPerShelf",
-        "SchemaVersion"
+        "SchemaVersion",
+        "UsersRefusedTheAsk"
     ];
 
     /// <summary>

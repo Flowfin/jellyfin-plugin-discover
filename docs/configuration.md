@@ -22,11 +22,12 @@ the server hands it back rather than when it is typed.
 
 ## The settings
 
-| Setting                         | Type  | Default | Introduced by                                                        |
-| ------------------------------- | ----- | ------- | -------------------------------------------------------------------- |
-| `MaximumTitlesAcrossAllShelves` | `int` | `120`   | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) |
-| `MaximumTitlesPerShelf`         | `int` | `20`    | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) |
-| `SchemaVersion`                 | `int` | `1`     | [#17](https://github.com/Flowfin/jellyfin-plugin-discover/issues/17) |
+| Setting                         | Type             | Default | Introduced by                                                        |
+| ------------------------------- | ---------------- | ------- | -------------------------------------------------------------------- |
+| `MaximumTitlesAcrossAllShelves` | `int`            | `120`   | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) |
+| `MaximumTitlesPerShelf`         | `int`            | `20`    | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) |
+| `SchemaVersion`                 | `int`            | `1`     | [#17](https://github.com/Flowfin/jellyfin-plugin-discover/issues/17) |
+| `UsersRefusedTheAsk`            | `list of string` | `empty` | [#98](https://github.com/Flowfin/jellyfin-plugin-discover/issues/98) |
 
 ### MaximumTitlesPerShelf
 
@@ -113,6 +114,56 @@ there is no earlier version to migrate from yet, and reading one lands in
 refused document is not deleted or rewritten, so an operator who has landed on
 one can move the file aside and start again with nothing lost that this plugin
 was holding.
+
+### UsersRefusedTheAsk
+
+The server's own identifiers of the users this plugin will not pass a want on
+for. Empty by default, and an empty list is not a permission that has been left
+unset: it is a server where whoever may browse the discover surface may also ask
+for a title.
+
+That default is the answer to question 2 of the permission on
+[#2](https://github.com/Flowfin/jellyfin-plugin-discover/issues/2) from
+2026-08-24, and it is why this setting names who may **not** rather than who
+may. A list of who may would leave a fresh install one where nobody can ask,
+which reads to an operator as a plugin that is broken rather than as one that is
+careful.
+
+**Seeing the surface is not this setting, and it is not this plugin's at all.**
+Whether a user sees the surface is a server permission, and a user nobody has
+configured holds it. This setting only takes the ask away from somebody who
+already has it, so a user who is not listed here has exactly the ability to ask
+that they have to browse.
+
+**Administrator status is not used as a proxy for it**, which is a decision
+rather than an oversight. On a household server there is one administrator, so a
+permission keyed on that flag would admit one person, and admitting one person
+is the opposite of what an operator installs this for.
+
+At the edges, and this one fails closed rather than open. Every entry is a user
+identifier as the server spells it; an entry that is not one, and the empty
+identifier, are refused when the configuration is saved, with the entry quoted
+back. A document that reached disk another way is met at the moment a want is
+offered, and there the whole list is treated as unreadable and **every** want is
+refused, including for users the list does not name. Honouring wants under a
+list this build cannot read would be the silent half of what
+[#98](https://github.com/Flowfin/jellyfin-plugin-discover/issues/98) exists
+against, so the unreadable case costs an operator every gesture on the server
+until they correct it, and the log line names which entry.
+
+A refusal is written to the log at warning level, naming the want, the user and
+which of the two reasons it was. That is where an operator sees it today, and it
+is the whole of "visibly to the operator" this build offers: there is no page
+that lists refused gestures, and building one is
+[#92](https://github.com/Flowfin/jellyfin-plugin-discover/issues/92) and
+[#103](https://github.com/Flowfin/jellyfin-plugin-discover/issues/103).
+
+**Nothing in this repository produces a want yet.** The gesture that makes one is
+[#96](https://github.com/Flowfin/jellyfin-plugin-discover/issues/96), so this
+setting is read by the handover and by the suite and by nothing else on a running
+server. It is stated here now rather than later because the identifier is
+permanent and an operator reading this page should not find the permission
+missing from it.
 
 ## What a setting costs
 
