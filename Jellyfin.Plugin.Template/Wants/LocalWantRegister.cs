@@ -28,17 +28,30 @@ namespace Jellyfin.Plugin.Template.Wants;
 /// and states none of its own. Where that number comes from on a running server
 /// is a setting, and settings are validated on save by #105.
 ///
-/// WHAT THIS DOES NOT DO IS SURVIVE A RESTART, and #97's fifth condition asks
-/// for exactly that. The list is held in memory and nothing writes it down.
-/// That is not an oversight to be read past: the store this plugin has is the
-/// catalogue's, argued in
-/// <c>docs/decisions/0003-the-catalogue-lives-in-the-plugins-own-data-folder.md</c>
-/// as the directory the catalogue lives in, and a want list is not the
-/// catalogue - it has no retention, #68 does not reach it, and #72 throws the
-/// catalogue away without meaning to throw this away with it. Where a want list
-/// is written is a decision with those three neighbours in it, and it is
-/// recorded on #97 rather than taken here by putting the file wherever the
-/// nearest writer already points.
+/// THIS SAID IT DOES NOT SURVIVE A RESTART, and it does where it is given a
+/// store. #97's fifth condition is what that is for. The decision the record on
+/// that issue held open was where a want list is written, and it is taken in
+/// <see cref="WantListStore"/> rather than here: a directory of its own beside
+/// the catalogue's, because #72 throws the catalogue away as one directory and
+/// #68's retention is about fetched records rather than about what a user asked
+/// for.
+///
+/// A register built without one still holds its rows in memory only, and that
+/// is the shape every test that is not about persistence uses. What it costs is
+/// stated rather than left to be discovered: nothing warns a caller who omits
+/// the store, so a server wired that way loses its list at every restart and
+/// nothing says so.
+///
+/// The write is through rather than at intervals. A list saved on a timer is one
+/// that loses whatever arrived after the last tick, and #97's first condition is
+/// that the list is complete rather than nearly complete. What it costs is a
+/// file write per gesture, on a list the bound already keeps small.
+///
+/// A write that fails is not swallowed. The caller made a gesture and the row it
+/// produced did not reach a disk, and a register that returned
+/// <see cref="LocalWantOutcome.Recorded"/> for a row nobody kept would be the
+/// lie this whole type exists against. The row stays in memory, because dropping
+/// it would lose a want the caller was told about in the same breath.
 ///
 /// Locked rather than left to the caller. The gesture arrives on whichever
 /// request thread the server was serving, so two users favouriting at once are
@@ -50,6 +63,8 @@ public sealed class LocalWantRegister
     private readonly Dictionary<string, LocalWant> _wants = new Dictionary<string, LocalWant>(StringComparer.Ordinal);
     private readonly object _gate = new object();
     private readonly int _bound;
+    private readonly WantListStore? _store;
+    private int _dropped;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LocalWantRegister"/> class.
@@ -62,16 +77,72 @@ public sealed class LocalWantRegister
     /// user as a broken button.
     /// </exception>
     public LocalWantRegister(int bound)
+        : this(bound, store: null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LocalWantRegister"/> class
+    /// that keeps its rows across a restart.
+    /// </summary>
+    /// <param name="bound">The most rows this register may hold.</param>
+    /// <param name="store">Where the rows are kept, or null to hold them in memory only.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the bound is zero or negative, for the reason on the other
+    /// constructor.
+    /// </exception>
+    /// <remarks>
+    /// What is already on the disk is loaded here rather than on the first read,
+    /// so a gesture that arrives before anybody has looked at the list is
+    /// compared against the bound the stored rows already occupy.
+    ///
+    /// Rows beyond the bound are dropped on the way in, oldest kept first, and
+    /// the drop is reported. The alternative is a register that starts over its
+    /// own bound and refuses every new gesture until somebody clears rows by
+    /// hand, which is a server whose button has stopped working for a reason no
+    /// operator can see. It happens when a bound is lowered, which is a setting
+    /// somebody changed rather than a fault.
+    /// </remarks>
+    public LocalWantRegister(int bound, WantListStore? store)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bound);
 
         _bound = bound;
+        _store = store;
+
+        if (store is null)
+        {
+            return;
+        }
+
+        foreach (var kept in store.Read())
+        {
+            if (_wants.Count >= _bound)
+            {
+                _dropped++;
+                continue;
+            }
+
+            _wants[kept.WantIdentifier] = kept;
+        }
     }
 
     /// <summary>
     /// Gets the most rows this register may hold.
     /// </summary>
     public int Bound => _bound;
+
+    /// <summary>
+    /// Gets how many stored rows did not fit the bound when this register was
+    /// built.
+    /// </summary>
+    /// <remarks>
+    /// Nonzero only where a bound was lowered under a list that was already
+    /// longer. It is a count rather than a log line because the operator's page
+    /// is where it belongs, which is #103, and a number nobody reads is still a
+    /// number somebody can.
+    /// </remarks>
+    public int DroppedOnLoad => _dropped;
 
     /// <summary>
     /// Gets how many rows it holds.
@@ -108,22 +179,10 @@ public sealed class LocalWantRegister
     /// </remarks>
     public IReadOnlyList<LocalWant> Wants()
     {
-        List<LocalWant> rows;
-
         lock (_gate)
         {
-            rows = new List<LocalWant>(_wants.Values);
+            return InOrder();
         }
-
-        rows.Sort(static (left, right) =>
-        {
-            var byDate = left.AskedAt.CompareTo(right.AskedAt);
-            return byDate != 0
-                ? byDate
-                : string.CompareOrdinal(left.WantIdentifier, right.WantIdentifier);
-        });
-
-        return rows;
     }
 
     /// <summary>
@@ -157,6 +216,7 @@ public sealed class LocalWantRegister
                 }
 
                 _wants[want.WantIdentifier] = standing.Reasked();
+                Keep();
                 return LocalWantOutcome.Reasked;
             }
 
@@ -166,6 +226,7 @@ public sealed class LocalWantRegister
             }
 
             _wants[want.WantIdentifier] = LocalWant.From(want, at);
+            Keep();
             return LocalWantOutcome.Recorded;
         }
     }
@@ -201,6 +262,7 @@ public sealed class LocalWantRegister
             }
 
             _wants[wantIdentifier] = standing.Withdrawn(at);
+            Keep();
             return true;
         }
     }
@@ -226,7 +288,13 @@ public sealed class LocalWantRegister
 
         lock (_gate)
         {
-            return _wants.Remove(wantIdentifier);
+            if (!_wants.Remove(wantIdentifier))
+            {
+                return false;
+            }
+
+            Keep();
+            return true;
         }
     }
 
@@ -279,7 +347,54 @@ public sealed class LocalWantRegister
                 _wants.Remove(key);
             }
 
+            if (doomed.Count > 0)
+            {
+                Keep();
+            }
+
             return doomed.Count;
         }
     }
+
+    /// <summary>
+    /// The rows in the order the operator's page and the file both use.
+    /// </summary>
+    /// <returns>The rows, oldest asking first.</returns>
+    /// <remarks>
+    /// One order for the two readers rather than one each. A file written in a
+    /// different order from the page would make a restart look like the list had
+    /// been rearranged, and the register is the only thing that could say it had
+    /// not.
+    ///
+    /// Called with the lock held, by both of its callers.
+    /// </remarks>
+    private List<LocalWant> InOrder()
+    {
+        var rows = new List<LocalWant>(_wants.Values);
+
+        rows.Sort(static (left, right) =>
+        {
+            var byDate = left.AskedAt.CompareTo(right.AskedAt);
+
+            return byDate != 0
+                ? byDate
+                : string.CompareOrdinal(left.WantIdentifier, right.WantIdentifier);
+        });
+
+        return rows;
+    }
+
+    /// <summary>
+    /// Writes what is held, where this register was given somewhere to write it.
+    /// </summary>
+    /// <remarks>
+    /// Called with the lock held, so the file is written in the same order the
+    /// changes were made and two gestures cannot interleave into a list that
+    /// holds neither.
+    ///
+    /// A failure is not caught here. What it means is that a row the caller was
+    /// told about did not reach a disk, and swallowing it would leave the caller
+    /// believing a thing this type exists to make true.
+    /// </remarks>
+    private void Keep() => _store?.Write(InOrder());
 }

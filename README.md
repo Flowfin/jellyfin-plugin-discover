@@ -141,6 +141,7 @@ plugin therefore puts no catalogue on a server's disk:
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentStoreTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentVersionTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueLayoutTests.cs
+    Jellyfin.Plugin.Template.Tests/WantListStoreTests.cs
 
 Read every sentence above this section as a plan and not as behaviour you can
 install. That covers what a television shows and what this plugin does not do,
