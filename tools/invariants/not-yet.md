@@ -45,14 +45,14 @@ declared has since joined them without giving this entry a fifth reason to move:
     Jellyfin.Plugin.Template/Time/IClock.cs:22:public interface IClock
 
 and the suite no longer names a server type everywhere. Nine files of
-sixty-eight do, and each is a fake standing in for a server interface, the
+sixty-nine do, and each is a fake standing in for a server interface, the
 adapter's own tests, or a test of what the plugin declares to the server:
 
     git grep -lE '^using (MediaBrowser|Jellyfin\.Data|Jellyfin\.Database)' -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
     9
 
     git ls-files -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
-    68
+    69
 
 The two that moved both counts arrived with the scheduled refresh in #87 and
 are the same two shapes as the seven before them: a serialiser standing in for
