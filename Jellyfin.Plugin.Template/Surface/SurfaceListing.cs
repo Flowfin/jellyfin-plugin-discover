@@ -61,9 +61,9 @@ public sealed class SurfaceListing
     /// </summary>
     /// <remarks>
     /// The total is zero, which is this surface saying it knows the level and
-    /// the level is empty. That is the half of the pair a client draws as a
-    /// shelf standing empty rather than as a shelf that has gone, and
-    /// <see cref="NoSuchLevel"/> is the other half.
+    /// the level is empty. <see cref="NoSuchLevel"/> is the other half of the
+    /// pair and says the level is not one this surface has. How far that
+    /// difference travels is written at the other half.
     /// </remarks>
     public static SurfaceListing EmptyLevel { get; } = new SurfaceListing(_nothing, 0);
 
@@ -76,7 +76,17 @@ public sealed class SurfaceListing
     /// one value until #54 was answered, and one value cannot tell a shelf that
     /// is configured and empty from an address whose shelf has been removed, so
     /// a test for the second case passed on whatever the first case happened to
-    /// return and a client had nothing to draw the difference from.
+    /// return.
+    /// <para>
+    /// The difference stops at this plugin. The server takes a total from a
+    /// channel and answers a level out of the library instead of out of what
+    /// the channel returned, on both targeted lines, so the one field these
+    /// two values differ in reaches nobody outside this assembly. What that
+    /// costs an operator is a row on <c>docs/limits.md</c> and the commands
+    /// behind the reading are on #54. Nothing here reads the server's source,
+    /// so this paragraph is a claim rather than something a run refuses, and
+    /// it is the paragraph to re-derive before it is relied on.
+    /// </para>
     /// <para>
     /// What separates them is the total and nothing else, so the bound is worth
     /// stating: a level this surface recognises always states its total, which
