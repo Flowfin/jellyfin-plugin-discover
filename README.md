@@ -137,6 +137,7 @@ plugin therefore puts no catalogue on a server's disk:
     git grep -rln 'new CatalogueDirectory\|new CatalogueDocumentStore' -- '*.cs'
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDirectoryTests.cs
+    Jellyfin.Plugin.Template.Tests/CatalogueDocumentBodyTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentStoreTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentVersionTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueLayoutTests.cs

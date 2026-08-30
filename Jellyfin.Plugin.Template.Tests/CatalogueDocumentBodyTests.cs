@@ -342,7 +342,7 @@ public class CatalogueDocumentBodyTests
     public void AnArtworkLocationThatIsNotAnAbsoluteAddressIsRefused()
     {
         var document = Text(Everything()).Replace(
-            "https://image.themoviedb.example/w500/heat.jpg",
+            "https://cdn.example.invalid/w500/heat.jpg",
             "/w500/heat.jpg",
             StringComparison.Ordinal);
 
@@ -431,7 +431,7 @@ public class CatalogueDocumentBodyTests
         OriginalName = "Heat 1995",
         ReleaseYear = 1995,
         Summary = "Two crews on one job",
-        ArtworkLocation = new Uri("https://image.themoviedb.example/w500/heat.jpg"),
+        ArtworkLocation = new Uri("https://cdn.example.invalid/w500/heat.jpg"),
         VoteAverage = 8.2,
         VoteCount = 15234,
         FetchedAt = _fetchedAt,
