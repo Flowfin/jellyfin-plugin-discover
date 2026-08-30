@@ -44,15 +44,20 @@ declared has since joined them without giving this entry a fifth reason to move:
     Jellyfin.Plugin.Template/Surface/IDiscoverSurface.cs:26:public interface IDiscoverSurface
     Jellyfin.Plugin.Template/Time/IClock.cs:22:public interface IClock
 
-and the suite no longer names a server type everywhere. Seven files of
-sixty-four do, and each is a fake standing in for a server interface, the
+and the suite no longer names a server type everywhere. Nine files of
+sixty-eight do, and each is a fake standing in for a server interface, the
 adapter's own tests, or a test of what the plugin declares to the server:
 
     git grep -lE '^using (MediaBrowser|Jellyfin\.Data|Jellyfin\.Database)' -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
-    7
+    9
 
     git ls-files -- 'Jellyfin.Plugin.Template.Tests/*.cs' | wc -l
-    64
+    68
+
+The two that moved both counts arrived with the scheduled refresh in #87 and
+are the same two shapes as the seven before them: a serialiser standing in for
+the server's, and the tests of what the task declares to the server's
+scheduler.
 
 This entry said the interfaces do not exist and that every test necessarily
 names a server type. Both stopped being true when #52 and #73 landed, and the

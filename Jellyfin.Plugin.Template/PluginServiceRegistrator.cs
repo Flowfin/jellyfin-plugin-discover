@@ -1,11 +1,13 @@
 using System;
 using Jellyfin.Plugin.Template.Randomness;
+using Jellyfin.Plugin.Template.Refresh;
 using Jellyfin.Plugin.Template.Seam;
 using Jellyfin.Plugin.Template.Surface;
 using Jellyfin.Plugin.Template.Time;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Plugins;
+using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Jellyfin.Plugin.Template;
@@ -74,5 +76,22 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // registrator; this plugin asks the container for whatever is there and
         // is complete when the answer is nothing, which is #95.
         serviceCollection.AddSingleton<WantHandover>();
+
+        // The refresh, under the interface the server's scheduler collects tasks
+        // by, so an operator sees it in the dashboard beside every other one.
+        // Registered as the server's interface rather than as the class for the
+        // same reason the surface above is: a registration under the concrete
+        // type is one the server's own collection never sees.
+        //
+        // Singleton because the server holds a task for as long as it runs and
+        // because the task is what refuses a second run while one is going. Two
+        // instances would have a gate each, and two gates do not exclude each
+        // other, which is #87's third condition lost to a lifetime.
+        //
+        // What it will ask is whatever implements IMetadataSource in this
+        // container, and nothing registers one, so a start with nothing
+        // configured builds a task that asks nobody. That is the state
+        // AFreshInstallHoldsNoWayOutTests asserts from the other side.
+        serviceCollection.AddSingleton<IScheduledTask, DiscoverRefreshTask>();
     }
 }
