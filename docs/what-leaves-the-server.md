@@ -286,7 +286,7 @@ Nothing this plugin has reaches any of that. The register's own removal takes ro
 out of the list in memory and nothing else:
 
     git grep -n 'public int Forget' origin/master -- Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs
-    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:256:    public int Forget(Guid user)
+    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:324:    public int Forget(Guid user)
 
 and what an uninstall does and does not take is
 [`installing.md`](installing.md) rather than a second answer here.
