@@ -155,6 +155,7 @@ builds one:
     Jellyfin.Plugin.Template.Tests/CatalogueLayoutTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueRefreshTests.cs
     Jellyfin.Plugin.Template.Tests/DiscoverRefreshTaskTests.cs
+    Jellyfin.Plugin.Template.Tests/WantIdentifierAcrossARefreshTests.cs
     Jellyfin.Plugin.Template.Tests/WantListStoreTests.cs
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs
 
