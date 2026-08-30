@@ -79,9 +79,16 @@ public interface IDiscoverSurface
     /// an ordinary thing for a client to send. A level this surface does
     /// recognise and which holds nothing is
     /// <see cref="SurfaceListing.EmptyLevel"/> instead, and the two differ in
-    /// the total rather than in the entries. That is #54, answered: a client
-    /// that cannot tell the two apart draws a shelf that is gone as a shelf
-    /// standing empty, and waits for it to fill.
+    /// the total rather than in the entries. That is #54, answered.
+    /// <para>
+    /// Who the difference is for is worth stating, because it is not a
+    /// client. The server answers a level out of the library rather than out
+    /// of what a channel returned, so the total these two answers differ in
+    /// travels no further than this assembly: a caller inside this plugin can
+    /// tell an empty level from an absent one and nobody outside it can. The
+    /// reading is on #54 and the row an operator meets is on
+    /// <c>docs/limits.md</c>.
+    /// </para>
     /// </remarks>
     Task<SurfaceListing> ListAsync(SurfaceLevelRequest request, CancellationToken cancellationToken);
 }
