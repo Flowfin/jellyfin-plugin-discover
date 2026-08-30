@@ -64,7 +64,7 @@ public sealed class LocalWantRegister
     private readonly object _gate = new object();
     private readonly int _bound;
     private readonly WantListStore? _store;
-    private int _dropped;
+    private readonly int _dropped;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LocalWantRegister"/> class.
