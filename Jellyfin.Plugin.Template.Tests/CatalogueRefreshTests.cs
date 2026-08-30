@@ -524,6 +524,120 @@ public class CatalogueRefreshTests
     }
 
     /// <summary>
+    /// A source that keeps failing is reported differently from one that failed
+    /// once, and a source that answers puts the count back to nothing.
+    /// </summary>
+    /// <remarks>
+    /// #79's fourth condition. What it exists against is a standing
+    /// misconfiguration that reads like a blip, so the assertion is that the
+    /// second failure is distinguishable from the first, and that a run of
+    /// failures is broken by an answer rather than by anything else.
+    ///
+    /// The count is on one refresh across several runs, because that is what
+    /// the question is about: a result knows one run, and consecutive means the
+    /// runs before it. A test that built a refresh per run would assert nothing.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ASourceThatKeepsFailingIsToldFromOneThatFailedOnce()
+    {
+        var folder = Folder("refresh-failing-again");
+        Remove(folder);
+        try
+        {
+            var shelf = Row(cap: 2);
+            var query = shelf.Ask();
+            var source = new SourceThatAnswersFromWhatATestGaveIt(MetadataSource.Tmdb);
+            var refresh = RefreshOver(source, Store(folder));
+
+            source.Answer(query, SourceAnswer.TemporarilyFailed("a bad ten minutes"));
+
+            var first = await refresh.RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+            var second = await refresh.RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+            var third = await refresh.RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+
+            Assert.Equal(1, first.Shelves[0].ConsecutiveFailures);
+            Assert.Equal(2, second.Shelves[0].ConsecutiveFailures);
+            Assert.Equal(3, third.Shelves[0].ConsecutiveFailures);
+
+            source.Answer(query, SourceAnswer.Answered(new[] { Title("Answered at last", "1", votes: 1) }, totalCount: 1));
+
+            var answered = await refresh.RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+
+            Assert.Equal(0, answered.Shelves[0].ConsecutiveFailures);
+
+            source.Answer(query, SourceAnswer.RateLimited(TimeSpan.FromMinutes(1), "too many requests"));
+
+            var afterwards = await refresh.RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+
+            Assert.Equal(1, afterwards.Shelves[0].ConsecutiveFailures);
+        }
+        finally
+        {
+            Remove(folder);
+        }
+    }
+
+    /// <summary>
+    /// A shelf nobody asked does not count as a shelf that failed.
+    /// </summary>
+    /// <remarks>
+    /// The three outcomes that are not a failure, against the one that is. A
+    /// source that has not been set up says in its own words that nothing is
+    /// wrong, and a count that climbed on it would read as a standing fault on
+    /// every server that has configured no source, which is every server today.
+    /// A shelf that is turned off and a shelf a run never reached were not
+    /// asked at all, and reporting either as a failure tells an operator about
+    /// a fault that is their own instruction or their own cancellation.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AShelfNobodyAskedIsNotAShelfThatFailed()
+    {
+        var folder = Folder("refresh-not-a-failure");
+        Remove(folder);
+        try
+        {
+            var unconfigured = Row(cap: 2);
+            var off = Row(cap: 2, ShelfQuestion.Popular) with { Enabled = false };
+
+            var notSetUp = await new CatalogueRefresh(
+                Array.Empty<IMetadataSource>(),
+                Store(folder),
+                new ClockATestAdvances(_fetchedAt),
+                new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
+                .RunAsync(new[] { unconfigured, off }, progress: null, CancellationToken.None);
+
+            Assert.Equal(SourceOutcome.NotConfigured, notSetUp.Shelves[0].SourceOutcome);
+            Assert.Equal(0, notSetUp.Shelves[0].ConsecutiveFailures);
+            Assert.Equal(ShelfRefreshOutcome.TurnedOff, notSetUp.Shelves[1].Outcome);
+            Assert.Equal(0, notSetUp.Shelves[1].ConsecutiveFailures);
+
+            using var stopped = new CancellationTokenSource();
+            await stopped.CancelAsync();
+
+            var cancelled = await new CatalogueRefresh(
+                Array.Empty<IMetadataSource>(),
+                Store(folder),
+                new ClockATestAdvances(_fetchedAt),
+                new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
+                .RunAsync(new[] { unconfigured }, progress: null, stopped.Token);
+
+            Assert.Equal(ShelfRefreshOutcome.Cancelled, cancelled.Shelves[0].Outcome);
+            Assert.Equal(0, cancelled.Shelves[0].ConsecutiveFailures);
+
+            // A result cannot be built saying a source that was not set up has
+            // failed, so the rule is the type's rather than the refresh's.
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => ShelfRefreshResult.PreviousKept("A row", "trending-movie", SourceAnswer.NotConfigured(), consecutiveFailures: 1));
+        }
+        finally
+        {
+            Remove(folder);
+        }
+    }
+
+    /// <summary>
     /// Nothing that could not be run is admitted.
     /// </summary>
     /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>

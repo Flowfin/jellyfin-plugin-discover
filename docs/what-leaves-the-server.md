@@ -20,14 +20,30 @@ it:
     exit=1
 
 so nothing constructs one, and the container the server builds from this plugin
-holds five registrations, none of which is a source:
+holds six registrations, none of which is a source:
 
     git show origin/master:Jellyfin.Plugin.Template/PluginServiceRegistrator.cs | grep -n 'AddSingleton'
-    39:        serviceCollection.AddSingleton<IClock, SystemClock>();
-    44:        serviceCollection.AddSingleton<IRandomSource, SystemRandomSource>();
-    51:        serviceCollection.AddSingleton<IDiscoverSurface, DiscoverSurface>();
-    64:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
-    76:        serviceCollection.AddSingleton<WantHandover>();
+    41:        serviceCollection.AddSingleton<IClock, SystemClock>();
+    46:        serviceCollection.AddSingleton<IRandomSource, SystemRandomSource>();
+    53:        serviceCollection.AddSingleton<IDiscoverSurface, DiscoverSurface>();
+    66:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    78:        serviceCollection.AddSingleton<WantHandover>();
+    95:        serviceCollection.AddSingleton<IScheduledTask, DiscoverRefreshTask>();
+
+The sixth arrived with the refresh in #87 and is the one on this list nearest to
+being an exception, so it is worth reading closely rather than dismissing. It is
+the scheduled task the server runs, and a run of it is the moment this plugin
+would ask a source. What it asks is whatever the same container holds under the
+source interface, and nothing puts anything there, so what it holds is the empty
+set and a run reports every shelf as its source not being set up. It opens no
+connection of its own: the type that could is the adapter above, and the command
+above this one is what says nothing constructs it.
+
+That is a narrower guarantee than the one the paragraph above it makes, and the
+difference is worth stating. Before the refresh there was no code path from a
+schedule to a source at all; now there is one and it ends in an empty set. What
+holds it empty is a registration nobody has written rather than the absence of a
+caller.
 
 The fifth arrived with the seam in #95 and it is the one on this list a reader
 should be able to dismiss for a stated reason rather than by its name. It offers
@@ -177,11 +193,23 @@ question is open rather than that the answer is the comfortable one.
 
 ## What is held about a person
 
-Nothing. The plugin persists no record of any kind, because the one thing in it
-that writes to disk is reached by nothing:
+Nothing, and the reason moved with the refresh in #87. The one thing in this
+plugin that writes to disk is now reached, by the scheduled task:
 
     git grep -n 'new CatalogueDocumentStore(' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
-    exit=1
+    origin/master:Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:327:                new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
+    exit=0
+
+What that store can be handed is a shelf's titles and nothing else, so what a
+run could write is what a metadata source answered about films and series. It
+holds no field about a person: `DiscoverTitle` is what a document carries and
+the section above is where its shape is read. And a run today writes nothing at
+all, because the container holds no source, which is the paragraph under
+`## Today, an installed plugin sends nothing anywhere`.
+
+So the sentence this section leads with is unchanged and its support is
+narrower: nothing about a person is held because nothing in the one writer's
+reach is about a person, rather than because the writer is unreachable.
 
 A user identifier reaches the plugin when somebody browses, and it is answered
 with rather than kept. Every site it appears at is a per-user answer being asked

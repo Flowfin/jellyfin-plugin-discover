@@ -124,9 +124,9 @@ run asks nobody:
     Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:91:        // What it will ask is whatever implements IMetadataSource in this
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:44:/// A source that throws is a fault rather than an answer. <see cref="IMetadataSource"/>
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:54:    private readonly IMetadataSource[] _sources;
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:80:        IReadOnlyCollection<IMetadataSource> sources,
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:90:        var taken = new List<IMetadataSource>(sources.Count);
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:310:    private IMetadataSource? SourceFor(MetadataSource source)
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:81:        IReadOnlyCollection<IMetadataSource> sources,
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:91:        var taken = new List<IMetadataSource>(sources.Count);
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:355:    private IMetadataSource? SourceFor(MetadataSource source)
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:66:    private readonly IReadOnlyList<IMetadataSource> _sources;
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:98:        IEnumerable<IMetadataSource> sources,
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:110:        var taken = new List<IMetadataSource>();

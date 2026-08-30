@@ -29,7 +29,8 @@ public sealed class ShelfRefreshResult
         ShelfRefreshOutcome outcome,
         SourceOutcome sourceOutcome,
         int titlesWritten,
-        string? sourceMessage)
+        string? sourceMessage,
+        int consecutiveFailures)
     {
         ShelfName = shelfName;
         DocumentName = documentName;
@@ -37,6 +38,7 @@ public sealed class ShelfRefreshResult
         SourceOutcome = sourceOutcome;
         TitlesWritten = titlesWritten;
         SourceMessage = sourceMessage;
+        ConsecutiveFailures = consecutiveFailures;
     }
 
     /// <summary>
@@ -93,6 +95,33 @@ public sealed class ShelfRefreshResult
     public string? SourceMessage { get; }
 
     /// <summary>
+    /// Gets how many runs in a row this shelf's source has failed, counting
+    /// this one.
+    /// </summary>
+    /// <remarks>
+    /// #79's fourth condition, which asks that a source that has failed
+    /// repeatedly be reported differently from one that failed once, so a
+    /// standing misconfiguration does not read as a blip. A number rather than
+    /// a flag, because where a reader draws the line between the two is theirs
+    /// and a flag would be this type taking it.
+    ///
+    /// One on the first failure and zero on every other outcome. A source that
+    /// answered has not failed; a shelf that is turned off and a shelf a run
+    /// never reached were not asked, and reporting either as a failure would
+    /// tell an operator about a fault that is their own instruction or their
+    /// own cancellation.
+    ///
+    /// A source reporting that it has not been set up is not counted either,
+    /// and that is a decision rather than an oversight.
+    /// <see cref="SourceOutcome.NotConfigured"/> says in its own words that
+    /// nothing is wrong and nothing is retried, so counting it would climb on
+    /// every server that has configured no source and make the one number that
+    /// separates a standing fault from a blip read as a standing fault
+    /// everywhere.
+    /// </remarks>
+    public int ConsecutiveFailures { get; }
+
+    /// <summary>
     /// The result of a shelf whose source answered and whose document was replaced.
     /// </summary>
     /// <param name="shelfName">What the shelf is called.</param>
@@ -113,7 +142,8 @@ public sealed class ShelfRefreshResult
             ShelfRefreshOutcome.Refreshed,
             SourceOutcome.Answered,
             titlesWritten,
-            sourceMessage: null);
+            sourceMessage: null,
+            consecutiveFailures: 0);
     }
 
     /// <summary>
@@ -134,7 +164,8 @@ public sealed class ShelfRefreshResult
             ShelfRefreshOutcome.TurnedOff,
             SourceOutcome.None,
             titlesWritten: 0,
-            sourceMessage: null);
+            sourceMessage: null,
+            consecutiveFailures: 0);
     }
 
     /// <summary>
@@ -143,6 +174,10 @@ public sealed class ShelfRefreshResult
     /// <param name="shelfName">What the shelf is called.</param>
     /// <param name="documentName">The document its titles are kept in.</param>
     /// <param name="answer">What the source said instead of answering.</param>
+    /// <param name="consecutiveFailures">
+    /// How many runs in a row this shelf's source has failed, counting this
+    /// one, or zero where the source reported that it has not been set up.
+    /// </param>
     /// <returns>The result.</returns>
     /// <exception cref="ArgumentException">Thrown when either name is absent or blank.</exception>
     /// <exception cref="ArgumentNullException">Thrown when the answer is null.</exception>
@@ -151,11 +186,16 @@ public sealed class ShelfRefreshResult
     /// source answered is refreshed rather than kept and building this result
     /// from it would record a failure that did not happen.
     /// </exception>
-    public static ShelfRefreshResult PreviousKept(string shelfName, string documentName, SourceAnswer answer)
+    public static ShelfRefreshResult PreviousKept(
+        string shelfName,
+        string documentName,
+        SourceAnswer answer,
+        int consecutiveFailures)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(shelfName);
         ArgumentException.ThrowIfNullOrWhiteSpace(documentName);
         ArgumentNullException.ThrowIfNull(answer);
+        ArgumentOutOfRangeException.ThrowIfNegative(consecutiveFailures);
 
         if (answer.Outcome is SourceOutcome.Answered or SourceOutcome.None)
         {
@@ -165,13 +205,22 @@ public sealed class ShelfRefreshResult
                 "A shelf keeps what it had because its source did not answer. An answer is a refresh, and None is what an unset field reads as.");
         }
 
+        if (answer.Outcome is SourceOutcome.NotConfigured && consecutiveFailures != 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(consecutiveFailures),
+                consecutiveFailures,
+                "A source that has not been set up has not failed. Counting it would climb on every server that configured no source, and the number that separates a standing fault from a blip would read as a standing fault everywhere.");
+        }
+
         return new ShelfRefreshResult(
             shelfName,
             documentName,
             ShelfRefreshOutcome.PreviousKept,
             answer.Outcome,
             titlesWritten: 0,
-            answer.SourceMessage);
+            answer.SourceMessage,
+            consecutiveFailures);
     }
 
     /// <summary>
@@ -192,6 +241,7 @@ public sealed class ShelfRefreshResult
             ShelfRefreshOutcome.Cancelled,
             SourceOutcome.None,
             titlesWritten: 0,
-            sourceMessage: null);
+            sourceMessage: null,
+            consecutiveFailures: 0);
     }
 }
