@@ -148,6 +148,7 @@ builds one:
 
     git grep -rln 'new CatalogueDirectory\|new CatalogueDocumentStore' -- '*.cs'
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs
+    Jellyfin.Plugin.Template.Tests/AddingASourceTouchesNoShelfCodeTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDirectoryTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentBodyTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentStoreTests.cs
