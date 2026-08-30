@@ -337,13 +337,20 @@ public class CatalogueDocumentBodyTests
     /// The record refuses a relative one for the same reason it is refused here:
     /// artwork is referenced where the source keeps it, per #62, so a location
     /// that does not say which host that is is one a client cannot draw.
+    ///
+    /// The location this puts in the document carries no leading separator, and
+    /// that is not cosmetic. A value beginning with one is an absolute file path
+    /// on a Unix runtime and is not one on Windows, so a fixture written that
+    /// way asserts a refusal on the machine it was written on and asserts
+    /// nothing on the machine the gate runs. It was written that way first and
+    /// the gate is where that showed.
     /// </remarks>
     [Fact]
     public void AnArtworkLocationThatIsNotAnAbsoluteAddressIsRefused()
     {
         var document = Text(Everything()).Replace(
             "https://cdn.example.invalid/w500/heat.jpg",
-            "/w500/heat.jpg",
+            "w500/heat.jpg",
             StringComparison.Ordinal);
 
         Assert.Throws<InvalidDataException>(() => CatalogueDocumentBody.Read(Encoding.UTF8.GetBytes(document)));
