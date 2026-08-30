@@ -81,8 +81,17 @@ public class DiscoverSurfaceAdapterTests
     }
 
     /// <summary>
-    /// A request naming a folder asks the surface for that level, with the paging the server sent.
+    /// A request naming a folder asks the surface for that level, carrying whatever paging the query held.
     /// </summary>
+    /// <remarks>
+    /// The server sends none: the query it builds for a level carries a user, a
+    /// sort and a folder and neither a start index nor a limit, at both
+    /// targeted lines, and the reading is on #54. So this is a guard against
+    /// the day one of the two fields is set rather than a case anybody has
+    /// seen, and it is worth having for that: the fields are on the type the
+    /// server hands over, an adapter that dropped them would drop them
+    /// silently, and #61 is where honouring them becomes a promise.
+    /// </remarks>
     /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
     [Fact]
     public async Task ARequestNamingAFolderCarriesItAndItsPagingThrough()
