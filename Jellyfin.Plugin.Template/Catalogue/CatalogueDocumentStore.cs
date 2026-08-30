@@ -297,6 +297,51 @@ public sealed class CatalogueDocumentStore
         return Encoding.ASCII.GetBytes(Header(checksum));
     }
 
+    /// <summary>
+    /// Removes one document, if it is there.
+    /// </summary>
+    /// <param name="documentName">The document's file name.</param>
+    /// <returns>True where a document was removed, false where there was none.</returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown by <see cref="CatalogueDirectory.DocumentPath"/> for a name that
+    /// is not one this store may write, which is the same refusal
+    /// <see cref="Write"/> and <see cref="Read"/> meet.
+    /// </exception>
+    /// <remarks>
+    /// One document rather than the directory. <see cref="CatalogueDirectory.RemoveEverything"/>
+    /// is the operator throwing the catalogue away and reaches every shelf at
+    /// once; this is one shelf's records going past the retention while the
+    /// rest of the catalogue is fine, which is #68's second condition, and a
+    /// sweep that had to use the wider one would empty a catalogue to expire a
+    /// row of it.
+    ///
+    /// Absence is not a failure and is not logged. A sweep asks about every
+    /// document a shelf could have, and a first run on a fresh server has none
+    /// of them, so a warning per absent document would put a line in the log of
+    /// every install for a state that is ordinary.
+    ///
+    /// It takes the write lock, so a removal cannot land between the temporary
+    /// file being written and the move that replaces the document. Without it a
+    /// sweep could delete the document a concurrent write had just moved into
+    /// place, leaving a shelf empty for a reason nothing recorded.
+    /// </remarks>
+    public bool Remove(string documentName)
+    {
+        var documentPath = _directory.DocumentPath(documentName);
+
+        lock (_writing)
+        {
+            if (!File.Exists(documentPath))
+            {
+                return false;
+            }
+
+            File.Delete(documentPath);
+
+            return true;
+        }
+    }
+
     private static void Discard(string temporaryPath)
     {
         try

@@ -126,12 +126,14 @@ run asks nobody:
     git grep -n 'IMetadataSource' -- 'Jellyfin.Plugin.Template/*.cs' ':!Jellyfin.Plugin.Template/Sources/'
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:13:/// six months, which <see cref="IMetadataSource.RetentionCeiling"/> carries as a
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:62:    public static CatalogueRetention Of(TimeSpan duration, IReadOnlyCollection<IMetadataSource> activeSources)
+    Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:130:        IReadOnlyCollection<IMetadataSource> activeSources,
+    Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:131:        out IMetadataSource? cappedBy)
     Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:107:        // What it will ask is whatever implements IMetadataSource in this
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:44:/// A source that throws is a fault rather than an answer. <see cref="IMetadataSource"/>
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:54:    private readonly IMetadataSource[] _sources;
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:81:        IReadOnlyCollection<IMetadataSource> sources,
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:91:        var taken = new List<IMetadataSource>(sources.Count);
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:355:    private IMetadataSource? SourceFor(MetadataSource source)
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:83:        IReadOnlyCollection<IMetadataSource> sources,
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:93:        var taken = new List<IMetadataSource>(sources.Count);
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:497:    private IMetadataSource? SourceFor(MetadataSource source)
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:66:    private readonly IReadOnlyList<IMetadataSource> _sources;
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:98:        IEnumerable<IMetadataSource> sources,
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:110:        var taken = new List<IMetadataSource>();
@@ -160,6 +162,7 @@ builds one:
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentVersionTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueLayoutTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueRefreshTests.cs
+    Jellyfin.Plugin.Template.Tests/CatalogueRetentionSweepTests.cs
     Jellyfin.Plugin.Template.Tests/DiscoverRefreshTaskTests.cs
     Jellyfin.Plugin.Template.Tests/PluginDataPurgeTests.cs
     Jellyfin.Plugin.Template.Tests/WantIdentifierAcrossARefreshTests.cs

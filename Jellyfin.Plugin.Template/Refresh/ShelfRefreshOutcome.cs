@@ -4,10 +4,10 @@ namespace Jellyfin.Plugin.Template.Refresh;
 /// What one run did to one shelf.
 /// </summary>
 /// <remarks>
-/// Five answers rather than a success and a failure, because a shelf that was
-/// not asked, a shelf that was asked and answered, and a shelf whose source
-/// could not answer leave the catalogue in three different states and an
-/// operator with three different things to do.
+/// A member per state the catalogue is left in rather than a success and a
+/// failure, because a shelf that was not asked, a shelf that was asked and
+/// answered, and a shelf whose source could not answer leave the catalogue in
+/// three different states and an operator with three different things to do.
 ///
 /// The pair this exists for is <see cref="Refreshed"/> against
 /// <see cref="PreviousKept"/>. #79 asks that a failed fetch never replace good
@@ -68,5 +68,30 @@ public enum ShelfRefreshOutcome
     /// An operator who cancelled a refresh and then reads that four shelves
     /// failed has been told about a fault that is their own instruction.
     /// </remarks>
-    Cancelled = 4
+    Cancelled = 4,
+
+    /// <summary>
+    /// The shelf was not refreshed and what it held had gone past the
+    /// retention, so that was removed rather than kept.
+    /// </summary>
+    /// <remarks>
+    /// #68's second condition, and it is a member of its own because
+    /// <see cref="PreviousKept"/> becomes a false statement the moment a sweep
+    /// runs. That member says whatever this shelf held it still holds; a
+    /// document whose records are past the retention is one this plugin may not
+    /// go on holding, so after the sweep the shelf holds less than it did or
+    /// nothing at all.
+    ///
+    /// It is reached from <see cref="PreviousKept"/> and from
+    /// <see cref="TurnedOff"/>, which are the two states that leave a document
+    /// standing. A turned-off shelf is included on purpose: the ceiling is the
+    /// source's terms rather than this plugin's housekeeping, and terms do not
+    /// stop applying because an operator switched a row off.
+    ///
+    /// <see cref="ShelfRefreshResult.SourceOutcome"/> and the failure count are
+    /// carried over from the result this replaces, so what an operator reads
+    /// still says why the shelf was not refreshed as well as what the sweep
+    /// took.
+    /// </remarks>
+    Expired = 5
 }
