@@ -8,11 +8,19 @@ namespace Jellyfin.Plugin.Template.Surface;
 /// What one level of the surface holds, as the answer to one request for it.
 /// </summary>
 /// <remarks>
-/// The count is separate from the entries because a request can ask for a page
-/// of a level, and a client drawing a scrollbar needs to know how much is
-/// behind the page it was given. A null count is this surface saying it does
-/// not know rather than saying zero, and those are answers a client draws
-/// differently.
+/// The count is separate from the entries so a level answered as a page can
+/// still say how large it is, and a null count is this surface saying it does
+/// not know rather than saying zero.
+/// <para>
+/// Who reads either is worth stating, because it is not a client. The server
+/// builds its query for a channel level with a user, a sort and a folder and
+/// with no start index and no limit, so no page is ever asked for; and it
+/// answers the level out of the library rather than out of what the channel
+/// returned, so the count never leaves this assembly. Both hold at the two
+/// targeted lines and the commands are on #54. What the field is for here is
+/// this plugin's own callers, and the pair of named answers below, which tell
+/// a level that holds nothing from one that is not there.
+/// </para>
 /// </remarks>
 public sealed class SurfaceListing
 {
@@ -33,8 +41,10 @@ public sealed class SurfaceListing
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when the count is negative, or is smaller than the number of
     /// entries handed over. A total smaller than the page it describes is a
-    /// paging fault, and a client asked to draw it shows a scrollbar that ends
-    /// before the rows do.
+    /// paging fault, and it is refused where the value is made rather than
+    /// carried onward, because a listing that says fewer than it holds is
+    /// incoherent whoever reads it. Nobody outside this plugin does, per the
+    /// remark on the type.
     /// </exception>
     public SurfaceListing(IEnumerable<SurfaceEntry> entries, int? totalCount)
     {
