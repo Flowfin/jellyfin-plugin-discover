@@ -57,7 +57,7 @@ container holds for it; it puts nothing there itself, and nothing at all is a
 complete state rather than a degraded one:
 
     git grep -n 'IWantReceiver' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:72:        // Nothing registers an IWantReceiver here, and that is the point rather
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:74:        // Nothing registers an IWantReceiver here, and that is the point rather
 
 So on a server where nothing implements it a want has nowhere to go but a list
 this plugin keeps for the operator to read, and that list is
@@ -92,7 +92,7 @@ appears without working. A discover page shows up in a client, because the surfa
 with the server:
 
     git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:64:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:66:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
 Every level of that page is empty, the top of it included. What the top level and
 any other address answer is no longer the same thing: the top is a level the
@@ -112,17 +112,29 @@ than the sentence resting on a reading of the source:
 So what installing this gets you today is a page with nothing on it and nothing
 saying why.
 
-Nothing leaves the server for a metadata source. The types that would ask one
-are in the tree, and the two files in the plugin outside the source directory
-that name the interface take one as a parameter rather than keeping one, so
-nothing on a running server holds one. The only callers that build the adapter
-are in the test project:
+Nothing leaves the server for a metadata source, and the reason has moved one
+step. Something on a running server does hold sources now: the scheduled refresh
+in #87 is registered, and it takes whatever the container has under the source
+interface. Nothing puts anything there, so what it holds is the empty set and a
+run asks nobody:
 
     git grep -n 'IMetadataSource' -- 'Jellyfin.Plugin.Template/*.cs' ':!Jellyfin.Plugin.Template/Sources/'
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:13:/// six months, which <see cref="IMetadataSource.RetentionCeiling"/> carries as a
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:62:    public static CatalogueRetention Of(TimeSpan duration, IReadOnlyCollection<IMetadataSource> activeSources)
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:91:        // What it will ask is whatever implements IMetadataSource in this
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:44:/// A source that throws is a fault rather than an answer. <see cref="IMetadataSource"/>
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:54:    private readonly IMetadataSource[] _sources;
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:80:        IReadOnlyCollection<IMetadataSource> sources,
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:90:        var taken = new List<IMetadataSource>(sources.Count);
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:310:    private IMetadataSource? SourceFor(MetadataSource source)
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:66:    private readonly IReadOnlyList<IMetadataSource> _sources;
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:98:        IEnumerable<IMetadataSource> sources,
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:110:        var taken = new List<IMetadataSource>();
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:127:        _sources = Array.Empty<IMetadataSource>();
     Jellyfin.Plugin.Template/Shelves/Shelf.cs:194:    /// <see cref="IMetadataSource"/> asks that, and finding out means issuing a
     Jellyfin.Plugin.Template/Shelves/Shelf.cs:253:    public Shelf ValidatedAgainst(IReadOnlyCollection<IMetadataSource> activeSources)
+
+The only callers that build the adapter are still in the test project:
 
     git grep -rln 'new TmdbSourceAdapter' -- '*.cs'
     Jellyfin.Plugin.Template.Tests/CatalogueRetentionTests.cs
@@ -130,9 +142,9 @@ are in the test project:
     Jellyfin.Plugin.Template.Tests/SourceResponseFuzzTests.cs
     Jellyfin.Plugin.Template.Tests/TmdbSourceAdapterTests.cs
 
-The catalogue is the same shape. A record, a directory and a document store
-exist, the only place one is constructed is the suite, and installing this
-plugin therefore puts no catalogue on a server's disk:
+The catalogue has moved the same step. A record, a directory and a document
+store exist, and the scheduled refresh is the first thing outside the suite that
+builds one:
 
     git grep -rln 'new CatalogueDirectory\|new CatalogueDocumentStore' -- '*.cs'
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs
@@ -141,7 +153,15 @@ plugin therefore puts no catalogue on a server's disk:
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentStoreTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDocumentVersionTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueLayoutTests.cs
+    Jellyfin.Plugin.Template.Tests/CatalogueRefreshTests.cs
+    Jellyfin.Plugin.Template.Tests/DiscoverRefreshTaskTests.cs
     Jellyfin.Plugin.Template.Tests/WantListStoreTests.cs
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs
+
+It builds one on its first run rather than when the plugin is registered, so
+installing this plugin still puts no catalogue on a server's disk, which
+`AFreshInstallWritesNothingTests` holds by reading the disk after a start. What
+a run then writes is nothing, because there is no source to answer a shelf.
 
 Read every sentence above this section as a plan and not as behaviour you can
 install. That covers what a television shows and what this plugin does not do,

@@ -166,7 +166,7 @@ start:
     Jellyfin.Plugin.Template/Surface/DiscoverSurface.cs:65:        Name = "Discover",
 
     git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:64:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:66:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
 Nothing has been published from this repository, so no install carries a row
 under that name and the cost above is still ahead of every server rather than
