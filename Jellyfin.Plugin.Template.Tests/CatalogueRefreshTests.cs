@@ -39,6 +39,8 @@ public class CatalogueRefreshTests
 
     private static readonly string[] _theTwoUnderTheCap = new[] { "The loud one", "The third one" };
 
+    private static readonly string[] _theOrderTheIdentifiersDecide = new[] { "3", "0", "1", "2" };
+
     /// <summary>
     /// A shelf whose source answered holds what it gave, in the shelf's order
     /// and under the shelf's bound.
@@ -443,6 +445,85 @@ public class CatalogueRefreshTests
     }
 
     /// <summary>
+    /// Two runs over the same answer produce the same document, byte for byte,
+    /// and so does a run over the same titles listed in another sequence.
+    /// </summary>
+    /// <remarks>
+    /// #91's third condition, and it is asserted on the bytes rather than on
+    /// the names. What that issue is written against is a shelf that looks
+    /// changed to everything downstream, and what everything downstream compares
+    /// is the document: the server caches what a surface returned and decides
+    /// whether to ask again from a version this plugin declares, so two
+    /// documents that hold the same titles in the same order and differ anywhere
+    /// else are still two refreshes a client redraws.
+    ///
+    /// The titles are tied on everything a user sees, so the run has to reach
+    /// the last key the order has. Two of them carry one vote count, one score
+    /// and one name, and are told apart only by their identifiers; a comparison
+    /// that stopped before the identity would leave their order to the sequence
+    /// the source listed them in, which is exactly the source behaviour this
+    /// issue's second paragraph names as normal.
+    ///
+    /// The second sequence is reversed rather than drawn, because `no-random`
+    /// refuses a drawn one and because a shuffle a test cannot reproduce is a
+    /// failure nobody can repeat.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task TheSameAnswerInAnySequenceProducesTheSameDocument()
+    {
+        var folder = Folder("refresh-order");
+        Remove(folder);
+        try
+        {
+            var shelf = Row(cap: 4);
+            var document = CatalogueLayout.DocumentName(shelf);
+
+            var listed = new[]
+            {
+                Tied("Alike", "1"),
+                Tied("Alike", "2"),
+                Title("The loud one", "3", votes: 900),
+                Tied("Alike", "0")
+            };
+
+            var reversed = new[] { listed[3], listed[2], listed[1], listed[0] };
+
+            var store = Store(folder);
+
+            await RefreshOver(Answering(shelf, SourceAnswer.Answered(listed, totalCount: 4)), store)
+                .RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+
+            var first = store.Read(document);
+
+            await RefreshOver(Answering(shelf, SourceAnswer.Answered(listed, totalCount: 4)), store)
+                .RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+
+            var again = store.Read(document);
+
+            await RefreshOver(Answering(shelf, SourceAnswer.Answered(reversed, totalCount: 4)), store)
+                .RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+
+            var shuffled = store.Read(document);
+
+            Assert.Equal(first, again);
+            Assert.Equal(first, shuffled);
+
+            // The tie was reached rather than avoided: the three titles that are
+            // alike in everything a user sees come back in their identifiers'
+            // order, under the one title that outranks them.
+            Assert.Equal(
+                _theOrderTheIdentifiersDecide,
+                CatalogueDocumentBody.Read(first!).Select(title => title.Identity.Identifiers[0].Value).ToArray(),
+                StringComparer.Ordinal);
+        }
+        finally
+        {
+            Remove(folder);
+        }
+    }
+
+    /// <summary>
     /// Nothing that could not be run is admitted.
     /// </summary>
     /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
@@ -490,6 +571,19 @@ public class CatalogueRefreshTests
         Kind = DiscoverTitleKind.Movie,
         Name = name,
         VoteCount = votes,
+        FetchedAt = _fetchedAt,
+        Identity = new DiscoverTitleIdentity(new[]
+        {
+            new ProviderIdentifier(MetadataSource.Tmdb, identifier)
+        })
+    };
+
+    private static DiscoverTitle Tied(string name, string identifier) => new DiscoverTitle
+    {
+        Kind = DiscoverTitleKind.Movie,
+        Name = name,
+        VoteCount = 5,
+        VoteAverage = 7.0,
         FetchedAt = _fetchedAt,
         Identity = new DiscoverTitleIdentity(new[]
         {
