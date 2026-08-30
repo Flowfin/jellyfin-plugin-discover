@@ -23,12 +23,12 @@ so nothing constructs one, and the container the server builds from this plugin
 holds six registrations, none of which is a source:
 
     git show origin/master:Jellyfin.Plugin.Template/PluginServiceRegistrator.cs | grep -n 'AddSingleton'
-    41:        serviceCollection.AddSingleton<IClock, SystemClock>();
-    46:        serviceCollection.AddSingleton<IRandomSource, SystemRandomSource>();
-    53:        serviceCollection.AddSingleton<IDiscoverSurface, DiscoverSurface>();
-    66:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
-    78:        serviceCollection.AddSingleton<WantHandover>();
-    95:        serviceCollection.AddSingleton<IScheduledTask, DiscoverRefreshTask>();
+    43:        serviceCollection.AddSingleton<IClock, SystemClock>();
+    48:        serviceCollection.AddSingleton<IRandomSource, SystemRandomSource>();
+    55:        serviceCollection.AddSingleton<IDiscoverSurface, DiscoverSurface>();
+    68:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    90:        serviceCollection.AddSingleton(provider => new WantHandover(
+    111:        serviceCollection.AddSingleton<IScheduledTask, DiscoverRefreshTask>();
 
 The sixth arrived with the refresh in #87 and is the one on this list nearest to
 being an exception, so it is worth reading closely rather than dismissing. It is
@@ -268,14 +268,23 @@ The list a want would be written to is in the tree and is constructed by nothing
     exit=1
 
 That list is held in memory and says so about itself, so it is not what an
-operator has to weigh. The handover beside it writes four lines into the server's
+operator has to weigh. The handover beside it writes five lines into the server's
 log, and each of them names the want it is talking about:
 
     git grep -c 'The want {WantIdentifier}' origin/master -- Jellyfin.Plugin.Template/Seam/WantHandover.cs
-    origin/master:Jellyfin.Plugin.Template/Seam/WantHandover.cs:4
+    origin/master:Jellyfin.Plugin.Template/Seam/WantHandover.cs:5
 
-That placeholder is not opaque. A want identifier is derived rather than drawn,
-and the asking user's identifier is one of its three parts in plain text:
+THE FIFTH ARRIVED WITH THE PERMISSION IN #98 AND IT IS THE ONE THAT NAMES A
+PERSON WITHOUT NEEDING THE PARAGRAPH BELOW. It is the refusal written when this
+plugin will not pass a want on, and it carries the asking user as a placeholder
+of its own beside the want. So one line in this file states, in the plainest
+form on the page, that a named account asked for a title and was refused; the
+count above is where that is read from, and a reader who takes the four other
+lines as the whole of it is reading a sentence this one replaced.
+
+The placeholder the other four carry is not opaque either. A want identifier is
+derived rather than drawn, and the asking user's identifier is one of its three
+parts in plain text:
 
     git grep -n 'source&gt;:&lt;user&gt;' origin/master -- Jellyfin.Plugin.Template/Seam/WantIdentifiers.cs
     origin/master:Jellyfin.Plugin.Template/Seam/WantIdentifiers.cs:32:/// <c>&lt;source&gt;:&lt;user&gt;:&lt;identifier&gt;</c>, in that order. The
@@ -333,26 +342,48 @@ An administrator opening the plugin's page sends nothing outside the server, and
 a test refuses the change rather than anybody remembering it:
 
     git grep -n 'ThePageRequestsNothingFromAHostOutsideTheServer' origin/master -- Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs
-    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:193:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
+    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:200:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
 
 ## What a user can turn off for themselves
 
 Nothing, and the heading is here rather than left out so the answer is readable.
-Everything this plugin can be told is one server-wide record, and every field on
-it is server-wide:
+Everything this plugin can be told is one server-wide record:
 
-    git grep -n 'public .* { get; set; }' origin/master -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
-    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:45:    public int SchemaVersion { get; set; }
-    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:57:    public int MaximumTitlesPerShelf { get; set; }
-    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:68:    public int MaximumTitlesAcrossAllShelves { get; set; }
+    git grep -n 'public .* { get' origin/master -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:46:    public int SchemaVersion { get; set; }
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:58:    public int MaximumTitlesPerShelf { get; set; }
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:69:    public int MaximumTitlesAcrossAllShelves { get; set; }
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:96:    public Collection<string> UsersRefusedTheAsk { get; } = new Collection<string>();
 
-The record held one field when this section was written and holds three now. The
+THIS SENTENCE SAID EVERY FIELD ON THAT RECORD WAS SERVER-WIDE, AND THE SEARCH IT
+RESTED ON WOULD HAVE GONE ON AGREEING WITH IT. The pattern was
+`public .* { get; set; }`, which asks about a spelling, and the field that
+arrived with
+[#98](https://github.com/Flowfin/jellyfin-plugin-discover/issues/98) is written
+`{ get; }` because a collection an XML deserialiser fills carries no setter. So
+the claim was about what the record holds and the command was about how three of
+its lines are typed, and the two came apart the moment a fourth line was typed
+differently. The pattern above is the widened one, and it is what found this.
+
+The fourth field is keyed by a user. It is the list of accounts this plugin may
+not pass a want on for, so it holds the server's own identifier for a person,
+one entry per account an operator has restricted. That is a record about named
+people on the plugin's own disk, and it is what
+[#70](https://github.com/Flowfin/jellyfin-plugin-discover/issues/70) collects
+rather than something this page decides.
+
+The answer to this section's own question is still nothing, and it is now for a
+narrower reason. The field is a control an operator sets over a user, not one a
+user sets over themselves: nothing lets the person named in it read it, change
+it or turn anything off. What the sentence rested on before, that no field here
+is a user's, is no longer available, and what holds the answer up instead is that
+no field here is settable BY a user.
+
+The record held one field when this section was written and holds four now. The
 two that arrived with
 [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) bound how
 many titles this plugin may write into the library database, and neither is keyed
-by a user or readable by one, so the answer above is unchanged rather than
-narrowly saved: what the sentence rests on is that no field here is a user's,
-not that there is only one.
+by a user or readable by one.
 
 The page an administrator opens is not a page a user opens, and the neighbouring
 control on the server, which decides who sees a surface at all, is set by an
