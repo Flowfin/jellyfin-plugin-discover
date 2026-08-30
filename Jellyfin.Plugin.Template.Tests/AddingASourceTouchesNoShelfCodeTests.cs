@@ -198,7 +198,7 @@ public class AddingASourceTouchesNoShelfCodeTests
 
     private static Shelf Row(MetadataSource source, ShelfQuestion question) => new Shelf
     {
-        DisplayName = "A row from " + source.ToString(),
+        DisplayName = "A row from " + source,
         Question = question,
         Kind = DiscoverTitleKind.Movie,
         Source = source,
