@@ -108,7 +108,7 @@ public class CatalogueRefreshTests
     [InlineData(SourceOutcome.NotConfigured)]
     public async Task AShelfWhoseSourceCouldNotAnswerKeepsEveryByteItHad(SourceOutcome outcome)
     {
-        var folder = Folder("refresh-keeps-" + outcome.ToString());
+        var folder = Folder("refresh-keeps-" + outcome);
         Remove(folder);
         try
         {
