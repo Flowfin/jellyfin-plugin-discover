@@ -55,6 +55,7 @@ public sealed class CatalogueRefresh
     private readonly CatalogueDocumentStore _store;
     private readonly IClock _clock;
     private readonly ILogger<CatalogueRefresh> _logger;
+    private readonly Dictionary<string, int> _failuresInARow = new Dictionary<string, int>(StringComparer.Ordinal);
 
     private int _running;
 
@@ -233,12 +234,13 @@ public sealed class CatalogueRefresh
         var run = RefreshRun.Of(startedAt, _clock.UtcNow, cancelled, results);
 
         _logger.LogInformation(
-            "A discover catalogue refresh took {Shelves} shelves, refreshed {Refreshed}, kept what {Kept} already held, skipped {Off} that are turned off and did not reach {Unreached}.",
+            "A discover catalogue refresh took {Shelves} shelves, refreshed {Refreshed}, kept what {Kept} already held, skipped {Off} that are turned off, did not reach {Unreached}, and found {Standing} whose source has now failed more than once in a row.",
             run.Shelves.Count,
             run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.Refreshed),
             run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.PreviousKept),
             run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.TurnedOff),
-            run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.Cancelled));
+            run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.Cancelled),
+            run.Shelves.Count(result => result.ConsecutiveFailures > 1));
 
         return run;
     }
@@ -267,10 +269,7 @@ public sealed class CatalogueRefresh
 
         if (source is null)
         {
-            return ShelfRefreshResult.PreviousKept(
-                shelf.DisplayName,
-                documentName,
-                SourceAnswer.NotConfigured());
+            return Kept(shelf, documentName, SourceAnswer.NotConfigured());
         }
 
         var answer = await source.FetchAsync(shelf.Ask(), cancellationToken).ConfigureAwait(false);
@@ -283,7 +282,7 @@ public sealed class CatalogueRefresh
                 answer.Outcome,
                 documentName);
 
-            return ShelfRefreshResult.PreviousKept(shelf.DisplayName, documentName, answer);
+            return Kept(shelf, documentName, answer);
         }
 
         var titles = answer.Titles
@@ -298,7 +297,53 @@ public sealed class CatalogueRefresh
 
         _store.Write(documentName, payload);
 
+        _failuresInARow.Remove(documentName);
+
         return ShelfRefreshResult.Refreshed(shelf.DisplayName, documentName, titles.Length);
+    }
+
+    /// <summary>
+    /// The result of a shelf whose source did not answer, with the run of
+    /// failures behind it counted.
+    /// </summary>
+    /// <param name="shelf">The shelf.</param>
+    /// <param name="documentName">The document its titles are kept in.</param>
+    /// <param name="answer">What the source said instead of answering.</param>
+    /// <returns>What happened to this shelf.</returns>
+    /// <remarks>
+    /// #79's fourth condition. The count is kept here rather than on the result
+    /// because a result is one run and the question is about the runs before
+    /// it, and it is keyed on the document name rather than on the shelf
+    /// because that name is derived from a closed pair of vocabularies: the
+    /// table can hold one entry per document this plugin can name and no more,
+    /// so a shelf renamed, re-capped or reordered does not leave an entry
+    /// behind and nothing grows without a bound.
+    ///
+    /// A source that has not been set up leaves the count where it is, for the
+    /// reason <see cref="ShelfRefreshResult.ConsecutiveFailures"/> carries, and
+    /// that is the one branch here that is not arithmetic.
+    ///
+    /// THE COUNT LIVES FOR AS LONG AS THE PROCESS AND NO LONGER. A server that
+    /// restarts starts every shelf at nothing, so what this separates is a
+    /// standing fault from a blip within one run of the server rather than
+    /// across its life. Making it survive would mean writing it down, and where
+    /// a shelf's run state is kept is #92's question rather than this one's;
+    /// this is the bound to read before treating the number as a history.
+    /// </remarks>
+    private ShelfRefreshResult Kept(Shelf shelf, string documentName, SourceAnswer answer)
+    {
+        if (answer.Outcome is SourceOutcome.NotConfigured)
+        {
+            return ShelfRefreshResult.PreviousKept(shelf.DisplayName, documentName, answer, consecutiveFailures: 0);
+        }
+
+        _failuresInARow.TryGetValue(documentName, out var before);
+
+        var now = before + 1;
+
+        _failuresInARow[documentName] = now;
+
+        return ShelfRefreshResult.PreviousKept(shelf.DisplayName, documentName, answer, now);
     }
 
     /// <summary>

@@ -12,8 +12,15 @@ as data is
 exists now.
 
     git grep -c 'class Shelf\|record Shelf' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
+    origin/master:Jellyfin.Plugin.Template/Refresh/ShelfRefreshResult.cs:1
     origin/master:Jellyfin.Plugin.Template/Shelves/Shelf.cs:1
     exit=0
+
+The second file is not a second shelf. It is what one run of the refresh in
+[#87](https://github.com/Flowfin/jellyfin-plugin-discover/issues/87) did to one
+shelf, which is state of a run rather than a definition, and #85's record says
+in its own words why the two are not one type: everything on it changes without
+the shelf's definition changing.
 
 The six below are instances of it rather than rows nothing reads, which is #86's
 own fourth condition and the difference between a record that admits a shelf and
