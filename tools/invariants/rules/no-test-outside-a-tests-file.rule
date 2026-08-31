@@ -1,0 +1,38 @@
+Id: no-test-outside-a-tests-file
+Pattern: ^[[:space:]]*\[(Fact|Theory)\b
+Subject: *Tests/*.cs
+Except: :!*Tests/*Tests.cs
+Issue: 49
+
+A test declared in a file the suite's naming convention says is not a test file
+is a test no rule written against test files can see. This rule exists so that
+`no-server-type-in-a-test` means what its prose says: that rule's subject is
+`*Tests/*Tests.cs`, so that the fakes standing in for server interfaces are
+outside it by construction rather than exempted by a list that grows with every
+fake. A test written into a file named after what it does instead would sit in
+the same place as those fakes and be judged by neither.
+
+The convention is the suite's own and was not invented here. A file whose name
+ends `Tests.cs` holds tests; every other file in the test project is apparatus -
+a fake, a recorder, a seed, a mutation set - and is named after what it is. That
+convention was already whole when this rule landed, so nothing was renamed for
+it.
+
+What it catches is the honest mistake rather than an evasion: a test added to
+the file that already holds the fake it drives, because that is where the
+author was already typing. The consequence is invisible at the moment it is
+made and it is not the test failing, it is a neighbouring rule going quiet on
+one file with nothing red anywhere.
+
+The pattern reads the attribute at the start of a line, which is where an
+attribute on a method sits in this tree, and it names the two xunit declares a
+test with. `[InlineData]` and `[MemberData]` are deliberately not here: they
+decorate a test rather than declare one, and a file carrying them without a
+`[Theory]` has no test in it.
+
+Its bounds. An attribute written on the same line as the method it decorates is
+not at the start of a line and is not matched. A test declared by a custom
+attribute of this repository's own would be a name this pattern does not carry,
+and there is none. And a file inside the subject that holds no test at all is
+not the thing being refused: what is refused is a test outside a test file, so
+apparatus stays where it is and needs nothing.

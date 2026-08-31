@@ -1,0 +1,55 @@
+Id: no-server-type-in-a-test
+Pattern: ^using (MediaBrowser|Jellyfin\.Data|Jellyfin\.Database)
+Subject: *Tests/*Tests.cs
+Except: :!*SurfaceAdapterTests.cs :!*RefreshTaskTests.cs :!*PluginServiceRegistratorTests.cs :!*PackagedPluginIdentityTests.cs
+Issue: 49
+
+A test that constructs a server type drags in the server's assembly graph, and a
+test that needs a database or a library manager is a test somebody deletes. The
+way out is that the plugin talks to the server through interfaces of its own and
+the tests talk to hand-written fakes of those, which is what #49 asks for. The
+payoff is not speed: a fake can count the calls made to it, and several
+done-whens in this plan are written as counts, so a test that reaches past the
+interface is a test that cannot make the assertion it was written for.
+
+The pattern reads the import line rather than a type name, because the set of
+server types is not enumerable and the namespace is what every one of them
+arrives through. Anchoring at the start of the line is what makes it an import
+rather than a mention: a sentence in a remark naming `MediaBrowser` is a file
+talking about the server, and a file talking about the server is not a file
+reaching into it. `Jellyfin.Data` and `Jellyfin.Database` are beside
+`MediaBrowser` because the server's own types live under all three and a rule
+naming one of them would move the reach rather than refuse it.
+
+THE SUBJECT IS A TEST FILE AND THAT IS THE WHOLE OF WHY THE EXCEPTIONS ARE FOUR
+AND NOT NINE. A fake standing in for a server interface has to name the type it
+implements; that is its job, and it is #49's own first condition. A rule
+excepting each fake by name would be a list of today's fakes, and the list grows
+every time the plugin talks to one more of the server, silently, with nothing
+red. So the fakes are outside the subject rather than exempted inside it: this
+lint's suite names a test file `<something>Tests.cs` and names apparatus after
+what it does, and the subject is written to that convention. What keeps the
+convention load bearing is `no-test-outside-a-tests-file`, without which a test
+could be written into a file this subject does not reach and the property would
+be silently narrower than its prose.
+
+THE EXCEPTIONS ARE THE SEAMS TO THE SERVER, NOT THE FILES THAT ARE RED TODAY.
+Four files in the plugin speak the server's vocabulary because they are where it
+has to be spoken - the surface adapter, the scheduled task, the plugin class and
+the registrator - and the tests of those four have to speak it to call them at
+all. #49's condition writes that carve-out as "the adapter's own tests", which
+was the whole of the seam on the day it was written and is not any more, and
+this rule is the condition read against the tree rather than against its own
+wording. `no-channel-type-outside-surface` already excepts two of the same four
+for the same reason. A test file outside them that has to be renamed to pass is
+the rule telling its author it is on the wrong side of the boundary, which is the
+sentence that neighbour already carries.
+
+Its bound is the one every rule here has, and one more. A line at a time: a
+server type reached through a fully qualified name written inside a method body
+carries no import for this to match, and a global using in a project file would
+put the import somewhere this subject does not read. What holds those is the
+same thing that holds the whole boundary in what is built rather than in what is
+written - `SuiteAssemblyReferencesTests` refuses any assembly the allow-list
+beside it does not name - and this rule is the earlier and cheaper of the two
+rather than a replacement for it.
