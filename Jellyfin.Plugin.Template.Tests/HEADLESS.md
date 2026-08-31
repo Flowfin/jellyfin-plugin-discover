@@ -194,6 +194,18 @@ for the compiler to write down.
   test here holds. That is
   [#115](https://github.com/Flowfin/jellyfin-plugin-discover/issues/115), a
   manual matrix rather than a test.
+- What a client draws from what the surface returns is not held by anything here
+  either, and it is a different absence from the one above rather than a second
+  statement of it: the configuration page is a page this repository ships, and a
+  client is a program somebody else released. Whether the surface appeared,
+  whether shelves and titles drew, what pressing play did and what the ask
+  gesture did all need that client, a screen and a person looking at one, so the
+  means is the display the first prohibition on this page refuses rather than a
+  test nobody got round to writing. What replaces it is a dated record of which
+  clients were tried and what each one did, at
+  [#115](https://github.com/Flowfin/jellyfin-plugin-discover/issues/115). That
+  record does not exist yet, so the replacement here is named and not built, and
+  a client nobody has tried is untried rather than assumed to work.
 - Whether a real metadata endpoint presents a certificate this runtime accepts is
   outside the injected handler by construction. The handler exists so that no
   test needs a real endpoint, which means no test learns anything about one.
