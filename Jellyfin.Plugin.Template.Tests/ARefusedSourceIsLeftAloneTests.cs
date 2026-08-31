@@ -196,7 +196,7 @@ public class ARefusedSourceIsLeftAloneTests
 
             var clock = new ClockATestAdvances(_noon);
             var written = new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>();
-            var refresh = new CatalogueRefresh(new[] { source }, Store(folder), clock, written);
+            var refresh = new CatalogueRefresh(new[] { source }, Store(folder), null, clock, written);
 
             for (var run = 0; run < SourceRest.Tries; run++)
             {
@@ -312,6 +312,7 @@ public class ARefusedSourceIsLeftAloneTests
         new CatalogueRefresh(
             new[] { source },
             store,
+            null,
             clock,
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
 

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Template.Catalogue;
+using Jellyfin.Plugin.Template.Server;
 using Jellyfin.Plugin.Template.Shelves;
 using Jellyfin.Plugin.Template.Sources;
 using Jellyfin.Plugin.Template.Time;
@@ -53,6 +54,7 @@ public sealed class CatalogueRefresh
 {
     private readonly IMetadataSource[] _sources;
     private readonly CatalogueDocumentStore _store;
+    private readonly IServerLibrary? _library;
     private readonly IClock _clock;
     private readonly ILogger<CatalogueRefresh> _logger;
     private readonly Dictionary<string, int> _failuresInARow = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -77,22 +79,39 @@ public sealed class CatalogueRefresh
     /// </summary>
     /// <param name="sources">The sources this server is set up to ask.</param>
     /// <param name="store">Where a shelf's titles are kept.</param>
+    /// <param name="library">
+    /// What this server already holds, or null where nothing can answer that.
+    /// </param>
     /// <param name="clock">The clock a run is timed by.</param>
     /// <param name="logger">Where a run says what it did.</param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when any argument is null, or when the sources hold a null.
+    /// Thrown when any argument but <paramref name="library"/> is null, or when
+    /// the sources hold a null.
     /// </exception>
     /// <remarks>
+    /// <para>
     /// An empty set of sources is the ordinary state of a server nobody has
     /// configured rather than an error, so it is admitted. What such a run does
     /// is ask nobody and write nothing, and every shelf comes back
     /// <see cref="ShelfRefreshOutcome.PreviousKept"/> with
     /// <see cref="SourceOutcome.NotConfigured"/>, which is what #63 asks an
     /// operator be able to see.
+    /// </para>
+    /// <para>
+    /// THE LIBRARY IS NULLABLE AND THAT IS A STATE OF THE TREE RATHER THAN AN
+    /// OPTION. #89 asks that titles the server already has be left out of a
+    /// shelf, and nothing in this repository implements
+    /// <see cref="IServerLibrary"/> yet, so a run today has nobody to ask and
+    /// keeps every title a source offered. The parameter is required rather
+    /// than defaulted so that every caller states which of the two it is in,
+    /// and a run with no library says so in its own log line instead of looking
+    /// like a run that asked and found nothing.
+    /// </para>
     /// </remarks>
     public CatalogueRefresh(
         IReadOnlyCollection<IMetadataSource> sources,
         CatalogueDocumentStore store,
+        IServerLibrary? library,
         IClock clock,
         ILogger<CatalogueRefresh> logger)
     {
@@ -111,6 +130,7 @@ public sealed class CatalogueRefresh
 
         _sources = taken.ToArray();
         _store = store;
+        _library = library;
         _clock = clock;
         _logger = logger;
 
@@ -468,7 +488,7 @@ public sealed class CatalogueRefresh
             return Kept(shelf, documentName, answer);
         }
 
-        var titles = answer.Titles
+        var titles = WithoutWhatThisServerHas(shelf, answer.Titles)
             .OrderBy(title => title, shelf.Order)
             .Take(shelf.Cap)
             .ToArray();
@@ -483,6 +503,86 @@ public sealed class CatalogueRefresh
         _failuresInARow.Remove(documentName);
 
         return ShelfRefreshResult.Refreshed(shelf.DisplayName, documentName, titles.Length);
+    }
+
+    /// <summary>
+    /// Drops the titles this server already holds.
+    /// </summary>
+    /// <param name="shelf">The shelf the titles were offered for.</param>
+    /// <param name="offered">What the source answered with.</param>
+    /// <returns>The titles this server does not have.</returns>
+    /// <remarks>
+    /// <para>
+    /// #89. A discover page's whole premise is titles the server does not have,
+    /// so a film the household already owns is the defect a user notices first.
+    /// The rule is one sentence over both kinds: A TITLE IS OWNED WHEN THE
+    /// SERVER HOLDS AT LEAST ONE PART OF IT, where a part is the film for a
+    /// movie and an episode for a series. The series half is #2's answer of
+    /// 2026-08-24 rather than this file's invention, and it is why the seam
+    /// answers with a count instead of a yes: a series a server carries with no
+    /// episode is a row in a library rather than something anybody can watch.
+    /// </para>
+    /// <para>
+    /// It runs here rather than while a user is browsing, which is the other
+    /// half of that answer. The price is one library question per title per
+    /// refresh, paid on a schedule, instead of the same questions paid again
+    /// every time a client opens a row.
+    /// </para>
+    /// <para>
+    /// IT RUNS BEFORE THE CAP RATHER THAN AFTER IT. A shelf's cap is how many
+    /// titles it shows, so filtering afterwards would hand a user a row of
+    /// three because seventeen of the twenty offered were already on the
+    /// server, and the number an operator set would silently mean something
+    /// else. What it costs is that the question is asked of every title a
+    /// source offered rather than of the capped set, and that cost is the one
+    /// the paragraph above names.
+    /// </para>
+    /// <para>
+    /// WHAT IS COMPARED IS THE IDENTITY AND NOTHING ELSE, held by the seam's
+    /// signature rather than by this method: <see cref="IServerLibrary"/> is
+    /// handed an identity and a kind, so no title text crosses it and two
+    /// titles sharing a name are two questions with two answers.
+    /// </para>
+    /// <para>
+    /// With no library to ask, every title is kept and the run says so. That is
+    /// the state of this tree rather than a mode: nothing implements the seam,
+    /// which the constructor's remark carries.
+    /// </para>
+    /// </remarks>
+    private IReadOnlyList<DiscoverTitle> WithoutWhatThisServerHas(Shelf shelf, IReadOnlyList<DiscoverTitle> offered)
+    {
+        if (_library is null)
+        {
+            _logger.LogDebug(
+                "The shelf {Shelf} kept all {Offered} titles its source offered, because nothing on this server answers what the library already holds.",
+                shelf.DisplayName,
+                offered.Count);
+
+            return offered;
+        }
+
+        var kept = new List<DiscoverTitle>(offered.Count);
+
+        foreach (var title in offered)
+        {
+            if (_library.PartsHeld(title.Identity, title.Kind) > 0)
+            {
+                continue;
+            }
+
+            kept.Add(title);
+        }
+
+        if (kept.Count != offered.Count)
+        {
+            _logger.LogInformation(
+                "The shelf {Shelf} left out {Owned} of the {Offered} titles its source offered, because this server already holds them.",
+                shelf.DisplayName,
+                offered.Count - kept.Count,
+                offered.Count);
+        }
+
+        return kept;
     }
 
     /// <summary>

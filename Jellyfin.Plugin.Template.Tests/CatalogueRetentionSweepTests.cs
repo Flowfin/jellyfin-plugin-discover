@@ -494,6 +494,7 @@ public class CatalogueRetentionSweepTests
         new CatalogueRefresh(
             new[] { source },
             store,
+            null,
             clock,
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
 
