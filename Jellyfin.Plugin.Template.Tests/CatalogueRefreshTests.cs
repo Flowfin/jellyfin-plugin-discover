@@ -41,6 +41,13 @@ public class CatalogueRefreshTests
 
     private static readonly string[] _theOrderTheIdentifiersDecide = new[] { "3", "0", "1", "2" };
 
+    // Longer than every rest #78 imposes on the refusals below, and short
+    // enough that nothing a run stored goes past the one-day ceiling the fake
+    // source declares. A run that asks a source it refused a moment ago is what
+    // that issue exists against, so a test asserting what several runs in a row
+    // report has to let time pass between them.
+    private static readonly TimeSpan _pastAnyRest = TimeSpan.FromMinutes(30);
+
     /// <summary>
     /// A shelf whose source answered holds what it gave, in the shelf's order
     /// and under the shelf's bound.
@@ -548,13 +555,17 @@ public class CatalogueRefreshTests
             var shelf = Row(cap: 2);
             var query = shelf.Ask();
             var source = new SourceThatAnswersFromWhatATestGaveIt(MetadataSource.Tmdb);
-            var refresh = RefreshOver(source, Store(folder));
+            var clock = new ClockATestAdvances(_fetchedAt);
+            var refresh = RefreshOver(source, Store(folder), clock);
 
             source.Answer(query, SourceAnswer.TemporarilyFailed("a bad ten minutes"));
 
             var first = await refresh.RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+            clock.Advance(_pastAnyRest);
             var second = await refresh.RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+            clock.Advance(_pastAnyRest);
             var third = await refresh.RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+            clock.Advance(_pastAnyRest);
 
             Assert.Equal(1, first.Shelves[0].ConsecutiveFailures);
             Assert.Equal(2, second.Shelves[0].ConsecutiveFailures);
@@ -563,6 +574,7 @@ public class CatalogueRefreshTests
             source.Answer(query, SourceAnswer.Answered(new[] { Title("Answered at last", "1", votes: 1) }, totalCount: 1));
 
             var answered = await refresh.RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
+            clock.Advance(_pastAnyRest);
 
             Assert.Equal(0, answered.Shelves[0].ConsecutiveFailures);
 
@@ -720,11 +732,14 @@ public class CatalogueRefreshTests
         return source;
     }
 
-    private static CatalogueRefresh RefreshOver(IMetadataSource source, CatalogueDocumentStore store) =>
+    private static CatalogueRefresh RefreshOver(
+        IMetadataSource source,
+        CatalogueDocumentStore store,
+        ClockATestAdvances? clock = null) =>
         new CatalogueRefresh(
             new[] { source },
             store,
-            new ClockATestAdvances(_fetchedAt),
+            clock ?? new ClockATestAdvances(_fetchedAt),
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
 
     private static CatalogueDocumentStore Store(string folder) =>
