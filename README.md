@@ -129,11 +129,11 @@ run asks nobody:
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:130:        IReadOnlyCollection<IMetadataSource> activeSources,
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:131:        out IMetadataSource? cappedBy)
     Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:107:        // What it will ask is whatever implements IMetadataSource in this
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:44:/// A source that throws is a fault rather than an answer. <see cref="IMetadataSource"/>
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:54:    private readonly IMetadataSource[] _sources;
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:94:        IReadOnlyCollection<IMetadataSource> sources,
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:104:        var taken = new List<IMetadataSource>(sources.Count);
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:587:    private IMetadataSource? SourceFor(MetadataSource source)
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:45:/// A source that throws is a fault rather than an answer. <see cref="IMetadataSource"/>
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:55:    private readonly IMetadataSource[] _sources;
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:112:        IReadOnlyCollection<IMetadataSource> sources,
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:123:        var taken = new List<IMetadataSource>(sources.Count);
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:687:    private IMetadataSource? SourceFor(MetadataSource source)
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:66:    private readonly IReadOnlyList<IMetadataSource> _sources;
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:98:        IEnumerable<IMetadataSource> sources,
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:110:        var taken = new List<IMetadataSource>();
@@ -167,6 +167,7 @@ builds one:
     Jellyfin.Plugin.Template.Tests/CatalogueRetentionSweepTests.cs
     Jellyfin.Plugin.Template.Tests/DiscoverRefreshTaskTests.cs
     Jellyfin.Plugin.Template.Tests/PluginDataPurgeTests.cs
+    Jellyfin.Plugin.Template.Tests/TitlesTheServerAlreadyHasTests.cs
     Jellyfin.Plugin.Template.Tests/WantIdentifierAcrossARefreshTests.cs
     Jellyfin.Plugin.Template.Tests/WantListStoreTests.cs
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs

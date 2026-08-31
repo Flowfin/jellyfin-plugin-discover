@@ -131,6 +131,38 @@ personalisation, and
 lands. The set above is meant to be readable as the set that survives either
 answer.
 
+## Titles this server already has
+
+A shelf leaves out a title this server already holds, because a discover page's
+whole premise is titles it does not. The rule is one sentence over both kinds a
+shelf can carry:
+
+> A title is owned when the server holds at least one part of it, where a part
+> is the film for a movie and an episode for a series.
+
+The series half is the one an operator cannot derive from watching a shelf, and
+it is why it is written here. A series the server carries as a row with no
+episode under it — added by hand, or left behind when the files went — is not
+something anybody in the household can watch, so it does not count as owned and
+the shelf may still offer it. One episode is enough to make it owned, and the
+shelf stops offering it from then on.
+
+What is compared is the identifiers a source supplied and never the title text.
+Two films can share a name, and a comparison by name takes the one this server
+does not have off the shelf along with the one it does.
+
+The comparison is made when a shelf is refreshed rather than when somebody opens
+it. That costs one library question per title per refresh, paid on a schedule,
+instead of the same questions paid again every time a client draws a row. What
+that number is on a library large enough to matter has not been measured, and
+[#89](https://github.com/Flowfin/jellyfin-plugin-discover/issues/89) is where it
+belongs.
+
+**Nothing on a server answers that question yet.** The rule and the seam it asks
+through are in the build, and no implementation of the seam over the server's
+own library exists, so a refresh today keeps every title its source offered and
+says so in its log. That issue carries what the missing half costs.
+
 ## What this page does not decide
 
 - How many titles a shelf holds, and the bound on what reaches the library
@@ -138,10 +170,10 @@ answer.
 - The order titles are drawn in. That is
   [#91](https://github.com/Flowfin/jellyfin-plugin-discover/issues/91), and it is
   this plugin's rather than the source's.
-- Whether a title the server already has is filtered out. Answered on #2 on
-  2026-08-24 as filtered, and
-  [#89](https://github.com/Flowfin/jellyfin-plugin-discover/issues/89) is where it
-  is built.
+- What a refresh costs on a library large enough for the owned-title comparison
+  above to be worth timing, and what implements the seam that comparison asks
+  through. Both are
+  [#89](https://github.com/Flowfin/jellyfin-plugin-discover/issues/89).
 - How often a refresh runs. That is
   [#87](https://github.com/Flowfin/jellyfin-plugin-discover/issues/87).
 - Turning a shelf off. The fourth condition on #86 asks that this be one setting.

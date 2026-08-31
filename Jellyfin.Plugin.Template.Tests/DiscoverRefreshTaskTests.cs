@@ -160,6 +160,7 @@ public class DiscoverRefreshTaskTests
                     new CatalogueDocumentStore(
                         new CatalogueDirectory(folder),
                         new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>()),
+                    null,
                     new ClockATestAdvances(_now),
                     new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>()),
                 shelves,
@@ -205,6 +206,7 @@ public class DiscoverRefreshTaskTests
                     new CatalogueDocumentStore(
                         new CatalogueDirectory(folder),
                         new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>()),
+                    null,
                     new ClockATestAdvances(_now),
                     new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>()),
                 ShippedShelves.Bounded(CatalogueBounds.DefaultTitlesPerShelf),
@@ -233,6 +235,7 @@ public class DiscoverRefreshTaskTests
             new CatalogueDocumentStore(
                 new CatalogueDirectory(Folder("task-refusals")),
                 new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>()),
+            null,
             new ClockATestAdvances(_now),
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
 

@@ -393,6 +393,7 @@ public class CatalogueRefreshTests
             var run = await new CatalogueRefresh(
                 Array.Empty<IMetadataSource>(),
                 store,
+                null,
                 new ClockATestAdvances(_fetchedAt),
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
@@ -438,6 +439,7 @@ public class CatalogueRefreshTests
             var run = await new CatalogueRefresh(
                 new[] { source },
                 Store(folder),
+                null,
                 clock,
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
@@ -616,6 +618,7 @@ public class CatalogueRefreshTests
             var notSetUp = await new CatalogueRefresh(
                 Array.Empty<IMetadataSource>(),
                 Store(folder),
+                null,
                 new ClockATestAdvances(_fetchedAt),
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { unconfigured, off }, progress: null, CancellationToken.None);
@@ -631,6 +634,7 @@ public class CatalogueRefreshTests
             var cancelled = await new CatalogueRefresh(
                 Array.Empty<IMetadataSource>(),
                 Store(folder),
+                null,
                 new ClockATestAdvances(_fetchedAt),
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { unconfigured }, progress: null, stopped.Token);
@@ -664,11 +668,18 @@ public class CatalogueRefreshTests
             var clock = new ClockATestAdvances(_fetchedAt);
             var log = new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>();
 
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(null!, store, clock, log));
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), null!, clock, log));
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null!, log));
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, clock, null!));
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(new IMetadataSource[] { null! }, store, clock, log));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(null!, store, null, clock, log));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), null!, null, clock, log));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, null!, log));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, clock, null!));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(new IMetadataSource[] { null! }, store, null, clock, log));
+
+            // The library is the one argument a null is an answer to rather
+            // than a fault, so it is absent from the five above and asserted
+            // here instead. A server with nothing able to say what it already
+            // holds is the state of this tree, which is #89, and a refresh that
+            // refused to be built for it would refuse every run there is.
+            _ = new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, clock, log);
 
             var refresh = RefreshOver(new SourceThatAnswersFromWhatATestGaveIt(MetadataSource.Tmdb), store);
 
@@ -739,6 +750,7 @@ public class CatalogueRefreshTests
         new CatalogueRefresh(
             new[] { source },
             store,
+            null,
             clock ?? new ClockATestAdvances(_fetchedAt),
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
 

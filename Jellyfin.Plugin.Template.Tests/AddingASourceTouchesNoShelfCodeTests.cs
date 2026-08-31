@@ -72,6 +72,7 @@ public class AddingASourceTouchesNoShelfCodeTests
             var run = await new CatalogueRefresh(
                 new IMetadataSource[] { first, second },
                 store,
+                null,
                 new ClockATestAdvances(_fetchedAt),
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { ours, theirs }, progress: null, CancellationToken.None);

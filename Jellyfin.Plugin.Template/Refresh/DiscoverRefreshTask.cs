@@ -322,9 +322,17 @@ public sealed class DiscoverRefreshTask : IScheduledTask
                 return null;
             }
 
+            // No library to ask. #89's filter is in the refresh and the seam it
+            // asks through is IServerLibrary; what is missing is an
+            // implementation of that seam over the server's own library, which
+            // is a second adapter beside the surface's and is named on that
+            // issue with what it costs. Until one exists, a run keeps every
+            // title its source offered, and the refresh writes that rather than
+            // leaving it to be inferred from a shelf that filtered nothing.
             _refresh = new CatalogueRefresh(
                 _sources,
                 new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
+                null,
                 _clock,
                 _refreshLogger);
 
