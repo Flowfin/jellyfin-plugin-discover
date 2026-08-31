@@ -45,9 +45,11 @@ are active:
     git grep -n 'public static CatalogueRetention Of' origin/master -- Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs
     origin/master:Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:62:    public static CatalogueRetention Of(TimeSpan duration, IReadOnlyCollection<IMetadataSource> activeSources)
 
-Removing what a retention refuses to serve is the rest of that issue. One
-document for all makes the smallest such removal a rewrite of every shelf; one
-document per shelf makes it a rewrite of the shelf whose records expired.
+Removing what a retention refuses to serve is a refresh's own step now, and the
+layout is what makes it cheap: a run rewrites the shelf whose records expired,
+or removes that shelf's document where none of them survived, and every other
+shelf is untouched because it is a different file. One document for all would
+make the smallest such removal a rewrite of every shelf.
 
 **The store states its own bounds and they point one way.** A read holds the
 whole payload in memory to check it against its own checksum, so a document's

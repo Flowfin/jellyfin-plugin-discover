@@ -57,6 +57,8 @@ public sealed class CatalogueRefresh
     private readonly ILogger<CatalogueRefresh> _logger;
     private readonly Dictionary<string, int> _failuresInARow = new Dictionary<string, int>(StringComparer.Ordinal);
 
+    private readonly CatalogueRetention _retention;
+
     private int _running;
 
     /// <summary>
@@ -100,6 +102,28 @@ public sealed class CatalogueRefresh
         _store = store;
         _clock = clock;
         _logger = logger;
+
+        // Built here rather than taken as an argument, because both halves of
+        // it are already in this constructor: the number is the shipped default
+        // until an operator can type one, which is #103, and the ceiling it is
+        // held under belongs to the sources handed over on the line above.
+        //
+        // InForce rather than Of. Of judges a number somebody typed and refuses
+        // one no active source allows, which belongs at the save; a run has to
+        // do something whatever the sources say, because the records are
+        // already on disk and the terms already apply to them. So a stricter
+        // source shortens this rather than making the refresh unbuildable, and
+        // the shortening is reported rather than absorbed.
+        _retention = CatalogueRetention.InForce(CatalogueRetention.Default, _sources, out var cappedBy);
+
+        if (cappedBy is not null)
+        {
+            _logger.LogInformation(
+                "The catalogue retention this refresh applies is {RetentionDays} days rather than the {ConfiguredDays} days configured, because {Source} allows no longer. The ceiling is that source's terms rather than this plugin's preference.",
+                _retention.Duration.TotalDays,
+                CatalogueRetention.Default.TotalDays,
+                cappedBy.Source);
+        }
     }
 
     /// <summary>
@@ -112,6 +136,17 @@ public sealed class CatalogueRefresh
     /// is for saying so on a page.
     /// </remarks>
     public bool IsRunning => Volatile.Read(ref _running) == 1;
+
+    /// <summary>
+    /// Gets how long this run may keep what a source answered with.
+    /// </summary>
+    /// <remarks>
+    /// Read by the suite so that the number a sweep applies is the one
+    /// <see cref="CatalogueRetention"/> declares rather than one asserted twice.
+    /// It is the shipped default checked against this run's sources, and the
+    /// setting that will replace the default is #103's.
+    /// </remarks>
+    public CatalogueRetention Retention => _retention;
 
     /// <summary>
     /// Asks every shelf's source and writes what came back.
@@ -211,13 +246,13 @@ public sealed class CatalogueRefresh
             }
             else if (!shelf.Enabled)
             {
-                results.Add(ShelfRefreshResult.TurnedOff(shelf.DisplayName, documentName));
+                results.Add(Swept(ShelfRefreshResult.TurnedOff(shelf.DisplayName, documentName)));
             }
             else
             {
                 try
                 {
-                    results.Add(await OneShelfAsync(shelf, documentName, cancellationToken).ConfigureAwait(false));
+                    results.Add(Swept(await OneShelfAsync(shelf, documentName, cancellationToken).ConfigureAwait(false)));
                 }
                 catch (OperationCanceledException)
                 {
@@ -234,15 +269,122 @@ public sealed class CatalogueRefresh
         var run = RefreshRun.Of(startedAt, _clock.UtcNow, cancelled, results);
 
         _logger.LogInformation(
-            "A discover catalogue refresh took {Shelves} shelves, refreshed {Refreshed}, kept what {Kept} already held, skipped {Off} that are turned off, did not reach {Unreached}, and found {Standing} whose source has now failed more than once in a row.",
+            "A discover catalogue refresh took {Shelves} shelves, refreshed {Refreshed}, kept what {Kept} already held, took what {Expired} held past the {RetentionDays}-day retention, skipped {Off} that are turned off, did not reach {Unreached}, and found {Standing} whose source has now failed more than once in a row.",
             run.Shelves.Count,
             run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.Refreshed),
             run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.PreviousKept),
+            run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.Expired),
+            _retention.Duration.TotalDays,
             run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.TurnedOff),
             run.Shelves.Count(result => result.Outcome is ShelfRefreshOutcome.Cancelled),
             run.Shelves.Count(result => result.ConsecutiveFailures > 1));
 
         return run;
+    }
+
+    /// <summary>
+    /// Takes whatever a document this run left standing holds past the retention.
+    /// </summary>
+    /// <param name="result">What this run did to the shelf.</param>
+    /// <returns>
+    /// The same result where nothing expired, and an
+    /// <see cref="ShelfRefreshOutcome.Expired"/> one where something did.
+    /// </returns>
+    /// <remarks>
+    /// #68's second condition, in the half that is about not KEEPING a record
+    /// past the retention. The other half, not serving one, is the same
+    /// question asked of the same type: everything that reads a stored document
+    /// goes through <see cref="CatalogueRetention.StillHeld"/>, and this is its
+    /// first caller. Nothing else in this plugin reads a catalogue document
+    /// yet, so this is the whole of the read path today rather than one of
+    /// several.
+    ///
+    /// It runs on the two outcomes that leave a document standing and on no
+    /// others. A refreshed shelf's document was written in this run out of what
+    /// a source has just answered, so nothing in it can be past the retention
+    /// and reading it back would be a second read per shelf per run for an
+    /// answer that is known. A cancelled shelf was not reached at all, and
+    /// doing work after a cancellation is the thing a cancellation asked to
+    /// stop.
+    ///
+    /// A TURNED-OFF SHELF IS SWEPT TOO, which is the part worth reading twice.
+    /// The ceiling under this number is a source's terms rather than this
+    /// plugin's housekeeping, and terms do not stop applying because an
+    /// operator switched a row off. A sweep that skipped them would leave the
+    /// records a server keeps longest as exactly the ones nothing looks at.
+    ///
+    /// Every failure here leaves the document alone and the result unchanged. A
+    /// document that is absent, that the store refused, or whose bytes are not
+    /// a body this build reads is not a document whose records can be dated, so
+    /// removing it would be a sweep deleting what it could not judge. The store
+    /// reports the ones it refuses; this reports the third case, once, with the
+    /// document named.
+    /// </remarks>
+    private ShelfRefreshResult Swept(ShelfRefreshResult result)
+    {
+        if (result.Outcome is not (ShelfRefreshOutcome.PreviousKept or ShelfRefreshOutcome.TurnedOff))
+        {
+            return result;
+        }
+
+        var payload = _store.Read(result.DocumentName);
+
+        if (payload is null)
+        {
+            return result;
+        }
+
+        IReadOnlyList<DiscoverTitle> stored;
+
+        try
+        {
+            stored = CatalogueDocumentBody.Read(payload);
+        }
+        catch (InvalidDataException reason)
+        {
+            _logger.LogWarning(
+                reason,
+                "The document {Document} could not be read as a catalogue body, so nothing in it was dated and it was left where it is. Its shelf keeps whatever it holds until a source answers for it again.",
+                result.DocumentName);
+
+            return result;
+        }
+
+        var held = _retention.StillHeld(stored, _clock.UtcNow);
+
+        if (held.Count == stored.Count)
+        {
+            return result;
+        }
+
+        if (held.Count == 0)
+        {
+            _store.Remove(result.DocumentName);
+
+            _logger.LogInformation(
+                "The document {Document} held {Dropped} records and every one of them was older than the {RetentionDays}-day retention, so the document was removed rather than kept. Its shelf was not refreshed in this run, so it holds nothing until a source answers for it.",
+                result.DocumentName,
+                stored.Count,
+                _retention.Duration.TotalDays);
+        }
+        else
+        {
+            using var payloadToKeep = new MemoryStream();
+
+            CatalogueDocumentBody.Write(payloadToKeep, held);
+            payloadToKeep.Position = 0;
+
+            _store.Write(result.DocumentName, payloadToKeep);
+
+            _logger.LogInformation(
+                "The document {Document} held {Dropped} records older than the {RetentionDays}-day retention, which were removed, and {Kept} that are still held and were written back.",
+                result.DocumentName,
+                stored.Count - held.Count,
+                _retention.Duration.TotalDays,
+                held.Count);
+        }
+
+        return ShelfRefreshResult.Expired(result, held.Count);
     }
 
     /// <summary>

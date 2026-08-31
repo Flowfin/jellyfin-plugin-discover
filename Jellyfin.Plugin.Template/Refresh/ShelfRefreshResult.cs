@@ -7,7 +7,7 @@ namespace Jellyfin.Plugin.Template.Refresh;
 /// What one run did to one shelf, with the reason beside it.
 /// </summary>
 /// <remarks>
-/// Made through one of the four named constructors below and never through a
+/// Made through one of the named constructors below and never through a
 /// constructor of its own, so a result cannot be built that says the previous
 /// contents were kept and also reports titles written, or that says a shelf was
 /// refreshed and carries a source failure. Which fields are meaningful follows
@@ -243,5 +243,49 @@ public sealed class ShelfRefreshResult
             titlesWritten: 0,
             sourceMessage: null,
             consecutiveFailures: 0);
+    }
+
+    /// <summary>
+    /// The result of a shelf whose kept document had records past the retention.
+    /// </summary>
+    /// <param name="previous">The result the sweep replaces, which says why the shelf was not refreshed.</param>
+    /// <param name="titlesKept">How many of its records were still held and were written back.</param>
+    /// <returns>The result.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="previous"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the count is negative, or when the result being replaced is
+    /// not one that left a document standing. A refreshed shelf's document was
+    /// written by this run out of what a source has just answered, so nothing
+    /// in it can be past the retention, and a cancelled shelf was not reached
+    /// at all.
+    /// </exception>
+    /// <remarks>
+    /// Derived from the result it replaces rather than built from parts, which
+    /// is what keeps the sweep from erasing the reason. An operator reading a
+    /// page wants both halves of the sentence: the source has not answered for
+    /// however many runs, AND what the shelf was holding has now gone. Rebuilt
+    /// from a shelf name and a count, this would answer only the second.
+    /// </remarks>
+    public static ShelfRefreshResult Expired(ShelfRefreshResult previous, int titlesKept)
+    {
+        ArgumentNullException.ThrowIfNull(previous);
+        ArgumentOutOfRangeException.ThrowIfNegative(titlesKept);
+
+        if (previous.Outcome is not (ShelfRefreshOutcome.PreviousKept or ShelfRefreshOutcome.TurnedOff))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(previous),
+                previous.Outcome,
+                "A sweep only reaches a shelf whose document this run left standing, which is one whose source did not answer and one that is turned off. Any other outcome either wrote the document in this run or never looked at it.");
+        }
+
+        return new ShelfRefreshResult(
+            previous.ShelfName,
+            previous.DocumentName,
+            ShelfRefreshOutcome.Expired,
+            previous.SourceOutcome,
+            titlesKept,
+            previous.SourceMessage,
+            previous.ConsecutiveFailures);
     }
 }
