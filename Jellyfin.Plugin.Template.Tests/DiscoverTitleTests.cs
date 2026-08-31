@@ -10,9 +10,17 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// </summary>
 /// <remarks>
 /// Every record below is built the way an adapter would build one out of a
-/// response, by hand. There is no parser and no adapter in the tree yet, so
-/// what is proven here is the record and its identity rather than the mapping
-/// from a source's wire format onto them, which is #73 and #74.
+/// response, by hand, so what is proven here is the record and its identity
+/// rather than the mapping from a source's wire format onto them.
+///
+/// The reason for building them by hand is no longer that nothing could build
+/// one. It was that there was no parser and no adapter in the tree, and #73 and
+/// #74 landed both: <c>TmdbSourceAdapter</c> reads a response and
+/// <c>TmdbSourceAdapterTests</c> is where that mapping is asserted. What holds
+/// here is the separation rather than the absence. A file that built its records
+/// through the adapter would fail on a change to the wire format for a reason
+/// that has nothing to do with what a title is, and the two would then be one
+/// assertion wearing two names.
 /// </remarks>
 public class DiscoverTitleTests
 {
