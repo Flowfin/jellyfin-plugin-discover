@@ -57,6 +57,17 @@ public sealed class CatalogueRefresh
     private readonly ILogger<CatalogueRefresh> _logger;
     private readonly Dictionary<string, int> _failuresInARow = new Dictionary<string, int>(StringComparer.Ordinal);
 
+    // #78's third and fourth conditions. Built here rather than taken as an
+    // argument for the same reason the retention below is: everything it needs
+    // is a declared constant and a clock this class already holds, and a run
+    // that could be handed a rest with no backoff in it would be a run in which
+    // the guard is optional.
+    //
+    // It holds no logger, so what an operator is told about a source this
+    // plugin has given up on is written here, once, at the moment the giving up
+    // happens rather than once per shelf that then goes unasked.
+    private readonly SourceRest _rest = new SourceRest();
+
     private readonly CatalogueRetention _retention;
 
     private int _running;
@@ -395,12 +406,25 @@ public sealed class CatalogueRefresh
     /// <param name="cancellationToken">Stops the fetch.</param>
     /// <returns>What happened to this shelf.</returns>
     /// <remarks>
+    /// <para>
     /// A shelf naming a source this server is not set up to ask is answered
     /// exactly as a configured source that reported it has not been set up,
     /// because that is what it is from the shelf's side and because
     /// <see cref="Shelf.ValidatedAgainst"/> is where such a shelf is refused, at
     /// the moment a configuration is saved rather than in the middle of a run
     /// nobody is watching.
+    /// </para>
+    /// <para>
+    /// A source that refused is not asked again until it said it may be, which
+    /// is #78's third condition, and is not asked more than
+    /// <see cref="SourceRest.Tries"/> times in a row whatever it said, which is
+    /// the fourth. Both are decided by <see cref="SourceRest"/> and neither
+    /// waits: a shelf whose source is resting is one this run does not ask, so
+    /// six shelves on one refusing source cost one request rather than six.
+    /// That is where the second request into a refusal is prevented rather than
+    /// in the adapter, which reports a refusal and decides nothing about when
+    /// to ask again.
+    /// </para>
     /// </remarks>
     private async Task<ShelfRefreshResult> OneShelfAsync(
         Shelf shelf,
@@ -414,7 +438,24 @@ public sealed class CatalogueRefresh
             return Kept(shelf, documentName, SourceAnswer.NotConfigured());
         }
 
+        if (_rest.RestingFor(shelf.Source, _clock.UtcNow) is { } left)
+        {
+            var standing = _rest.Standing(shelf.Source);
+
+            _logger.LogInformation(
+                "The shelf {Shelf} was not asked, because {Source} answered {Outcome} and is being left alone for another {RestMinutes} minutes. Its document {Document} still holds what it held.",
+                shelf.DisplayName,
+                shelf.Source,
+                standing.Outcome,
+                left.TotalMinutes,
+                documentName);
+
+            return Kept(shelf, documentName, standing);
+        }
+
         var answer = await source.FetchAsync(shelf.Ask(), cancellationToken).ConfigureAwait(false);
+
+        Rested(shelf.Source, answer);
 
         if (answer.Outcome is not SourceOutcome.Answered)
         {
@@ -442,6 +483,55 @@ public sealed class CatalogueRefresh
         _failuresInARow.Remove(documentName);
 
         return ShelfRefreshResult.Refreshed(shelf.DisplayName, documentName, titles.Length);
+    }
+
+    /// <summary>
+    /// Leaves a source that refused alone, and tells the operator where this
+    /// plugin has stopped taking it at its word.
+    /// </summary>
+    /// <param name="source">The source that was asked.</param>
+    /// <param name="answer">What it gave.</param>
+    /// <remarks>
+    /// The two refusals are the two this acts on, and the other two answers are
+    /// not silence. An answer clears the count, so a source that fails once a
+    /// week is never left alone for six hours; a source that has not been set
+    /// up is left exactly where it was, because nothing is wrong with it and
+    /// the fault is in what built the shelf, which is the reading
+    /// <see cref="ShelfRefreshResult.ConsecutiveFailures"/> already carries on
+    /// the same case.
+    ///
+    /// The warning is written once, on the run in which the threshold is
+    /// reached, rather than on every shelf that then goes unasked. An operator
+    /// reading six lines saying a source has been given up on would be reading
+    /// about six shelves rather than about one source.
+    /// </remarks>
+    private void Rested(MetadataSource source, SourceAnswer answer)
+    {
+        if (answer.Outcome is SourceOutcome.Answered)
+        {
+            _rest.Answered(source);
+
+            return;
+        }
+
+        if (answer.Outcome is not (SourceOutcome.RateLimited or SourceOutcome.TemporarilyFailed))
+        {
+            return;
+        }
+
+        var taken = _rest.Refused(source, answer, _clock.UtcNow);
+
+        if (!taken.GaveUp)
+        {
+            return;
+        }
+
+        _logger.LogWarning(
+            "{Source} has refused {Refusals} times in a row, most recently with {Outcome}, so it is being left alone until {Until:u} rather than asked again. Every shelf it feeds keeps what it holds until then, and nothing here retries sooner even where the source named a shorter wait.",
+            source,
+            taken.Refusals,
+            answer.Outcome,
+            taken.Until);
     }
 
     /// <summary>
