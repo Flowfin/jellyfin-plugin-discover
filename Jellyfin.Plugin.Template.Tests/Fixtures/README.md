@@ -29,7 +29,7 @@ the reader that section is written for.
 
 ## Nothing captures a fixture during a test run
 
-A fixture is recorded by a route a maintainer runs deliberately. The suite never
+A fixture is recorded by a route somebody runs deliberately. The suite never
 records one, because a suite that can record from a source is a suite that can
 reach one, and a test that reaches a source is what
 [#46](https://github.com/Flowfin/jellyfin-plugin-discover/issues/46) exists to
