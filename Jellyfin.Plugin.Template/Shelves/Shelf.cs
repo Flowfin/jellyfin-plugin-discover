@@ -246,9 +246,20 @@ public sealed record Shelf
     /// server actually has, so that the save path calls it rather than each
     /// subsystem checking at its own moment.
     ///
-    /// It is not called from anywhere yet, because there is no save path. That
-    /// is #105 and it is recorded there and on #85 rather than worked around
-    /// with a caller invented to give this a reference.
+    /// It is not called from anywhere yet, and the reason is no longer the one
+    /// this remark gave. There is a save path. <c>Plugin.UpdateConfiguration</c>
+    /// refuses a schema this build does not know, an unreadable entry on the
+    /// list of users who may not ask, and a bound the shipped shelves do not fit
+    /// inside. What it cannot do is supply the argument: the server constructs a
+    /// plugin with an application-paths and an XML-serializer instance and
+    /// nothing else, so that route has no way of asking the container what it
+    /// holds, and nothing registers an <see cref="IMetadataSource"/> there to be
+    /// asked about, which <c>PluginServiceRegistrator</c> says of itself. A call
+    /// added at the save today would judge every shipped shelf against an empty
+    /// set and refuse every save on every install. So what is missing is a
+    /// configured source rather than a save, and that is recorded on #85 and
+    /// #105 rather than worked around with a caller invented to give this a
+    /// reference.
     /// </remarks>
     public Shelf ValidatedAgainst(IReadOnlyCollection<IMetadataSource> activeSources)
     {
