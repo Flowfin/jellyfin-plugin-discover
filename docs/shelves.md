@@ -175,6 +175,25 @@ item the server does have should be shown it anyway is still undecided: today
 the question is asked of the server rather than of a user, so the answer is the
 same for everybody.
 
+## A shelf that came back empty, and a shelf nobody asked
+
+Both are a row with nothing in it, and they are not the same thing. One is a
+source that answered and had nothing to offer; the other is a shelf no refresh
+has ever reached. An operator told only that a row is empty cannot tell a quiet
+source from a plugin that has never run.
+
+What separates them is not the contents, since both are no titles. A shelf whose
+source answered with nothing has a catalogue document holding no titles. A shelf
+no run has ever reached has no document at all.
+
+**The absence means three things and the empty document means one.** A shelf has
+no document when no run has reached it, when its source has never once answered,
+and when every record it held aged past the retention and the document was
+removed. So the empty document is a state an operator can be told about exactly,
+and the absence is one they cannot, and which of the three they are shown is
+[#63](https://github.com/Flowfin/jellyfin-plugin-discover/issues/63) with a page
+to show it on.
+
 ## What this page does not decide
 
 - How many titles a shelf holds, and the bound on what reaches the library

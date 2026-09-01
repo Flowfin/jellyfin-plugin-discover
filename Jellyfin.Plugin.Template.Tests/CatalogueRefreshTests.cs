@@ -654,6 +654,67 @@ public class CatalogueRefreshTests
     }
 
     /// <summary>
+    /// A shelf that came back empty is told from a shelf nobody has ever asked.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// #63's third condition, in the half the catalogue can answer. Both states
+    /// are a row with no titles in it, so what separates them is not the
+    /// contents: a shelf whose source answered with nothing has a document
+    /// holding no titles, and a shelf no run has ever reached has no document
+    /// at all.
+    /// </para>
+    /// <para>
+    /// It is asserted here because it is a property of the refresh rather than
+    /// a fact about a file. A run that skipped the write when a source answered
+    /// with nothing would look, on the disk and to everything that reads it,
+    /// exactly like a run that had never happened - and skipping it is the
+    /// obvious saving somebody makes later, because an empty document reads as
+    /// a file that buys nothing.
+    /// </para>
+    /// <para>
+    /// WHAT THIS DOES NOT SAY IS THE OTHER DIRECTION. An absent document is not
+    /// only a shelf nobody asked: a shelf whose source has never answered has
+    /// none either, and so does one whose every record aged past the retention,
+    /// which <c>Swept</c> removes by name. So the empty document means one
+    /// thing and the absence means three, and which of the three an operator is
+    /// shown is #63's to decide with a page to show it on.
+    /// </para>
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AShelfThatCameBackEmptyIsToldFromAShelfNobodyAsked()
+    {
+        var folder = Folder("refresh-empty-answer");
+        Remove(folder);
+        try
+        {
+            var asked = Row(cap: 2);
+            var neverAsked = Row(cap: 2, ShelfQuestion.Popular);
+
+            var store = Store(folder);
+            var run = await RefreshOver(
+                Answering(asked, SourceAnswer.Answered(Array.Empty<DiscoverTitle>(), totalCount: 0)),
+                store)
+                .RunAsync(new[] { asked }, progress: null, CancellationToken.None);
+
+            Assert.Equal(ShelfRefreshOutcome.Refreshed, Assert.Single(run.Shelves).Outcome);
+            Assert.Equal(0, run.Shelves[0].TitlesWritten);
+
+            var emptied = store.Read(CatalogueLayout.DocumentName(asked));
+
+            Assert.NotNull(emptied);
+            Assert.Empty(CatalogueDocumentBody.Read(emptied));
+
+            Assert.Null(store.Read(CatalogueLayout.DocumentName(neverAsked)));
+        }
+        finally
+        {
+            Remove(folder);
+        }
+    }
+
+    /// <summary>
     /// Nothing that could not be run is admitted.
     /// </summary>
     /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
@@ -676,9 +737,10 @@ public class CatalogueRefreshTests
 
             // The library is the one argument a null is an answer to rather
             // than a fault, so it is absent from the five above and asserted
-            // here instead. A server with nothing able to say what it already
-            // holds is the state of this tree, which is #89, and a refresh that
-            // refused to be built for it would refuse every run there is.
+            // here instead. A run composed with nobody to ask is what every
+            // test in this file is, and a refresh that refused to be built for
+            // it would refuse every run here. What a server hands over instead
+            // is ServerLibraryAdapter, which is #89.
             _ = new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, clock, log);
 
             var refresh = RefreshOver(new SourceThatAnswersFromWhatATestGaveIt(MetadataSource.Tmdb), store);
