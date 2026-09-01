@@ -57,8 +57,8 @@ container holds for it; it puts nothing there itself, and nothing at all is a
 complete state rather than a degraded one:
 
     git grep -n 'IWantReceiver' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:76:        // Nothing registers an IWantReceiver here, and that is the point rather
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:91:            provider.GetRequiredService<IEnumerable<IWantReceiver>>(),
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:82:        // Nothing registers an IWantReceiver here, and that is the point rather
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:97:            provider.GetRequiredService<IEnumerable<IWantReceiver>>(),
 
 One line per half of the sentence above it. The first is the comment saying this
 plugin registers no receiver, and the second is the only other mention: the ask
@@ -97,7 +97,7 @@ appears without working. A discover page shows up in a client, because the surfa
 with the server:
 
     git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:68:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:74:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
 Every level of that page is empty, the top of it included. What the top level and
 any other address answer is no longer the same thing: the top is a level the
@@ -128,16 +128,16 @@ run asks nobody:
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:62:    public static CatalogueRetention Of(TimeSpan duration, IReadOnlyCollection<IMetadataSource> activeSources)
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:130:        IReadOnlyCollection<IMetadataSource> activeSources,
     Jellyfin.Plugin.Template/Catalogue/CatalogueRetention.cs:131:        out IMetadataSource? cappedBy)
-    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:107:        // What it will ask is whatever implements IMetadataSource in this
+    Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:131:        // What it will ask is whatever implements IMetadataSource in this
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:45:/// A source that throws is a fault rather than an answer. <see cref="IMetadataSource"/>
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:55:    private readonly IMetadataSource[] _sources;
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:112:        IReadOnlyCollection<IMetadataSource> sources,
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:123:        var taken = new List<IMetadataSource>(sources.Count);
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:687:    private IMetadataSource? SourceFor(MetadataSource source)
-    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:66:    private readonly IReadOnlyList<IMetadataSource> _sources;
-    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:98:        IEnumerable<IMetadataSource> sources,
-    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:110:        var taken = new List<IMetadataSource>();
-    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:127:        _sources = Array.Empty<IMetadataSource>();
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:114:        IReadOnlyCollection<IMetadataSource> sources,
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:125:        var taken = new List<IMetadataSource>(sources.Count);
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:689:    private IMetadataSource? SourceFor(MetadataSource source)
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:67:    private readonly IReadOnlyList<IMetadataSource> _sources;
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:101:        IEnumerable<IMetadataSource> sources,
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:115:        var taken = new List<IMetadataSource>();
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:133:        _sources = Array.Empty<IMetadataSource>();
     Jellyfin.Plugin.Template/Shelves/Shelf.cs:194:    /// <see cref="IMetadataSource"/> asks that, and finding out means issuing a
     Jellyfin.Plugin.Template/Shelves/Shelf.cs:256:    /// holds, and nothing registers an <see cref="IMetadataSource"/> there to be
     Jellyfin.Plugin.Template/Shelves/Shelf.cs:264:    public Shelf ValidatedAgainst(IReadOnlyCollection<IMetadataSource> activeSources)
