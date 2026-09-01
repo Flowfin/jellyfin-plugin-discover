@@ -20,17 +20,18 @@ it:
     exit=1
 
 so nothing constructs one, and the container the server builds from this plugin
-holds six registrations, none of which is a source:
+holds seven registrations, none of which is a source:
 
     git show origin/master:Jellyfin.Plugin.Template/PluginServiceRegistrator.cs | grep -n 'AddSingleton'
-    43:        serviceCollection.AddSingleton<IClock, SystemClock>();
-    48:        serviceCollection.AddSingleton<IRandomSource, SystemRandomSource>();
-    55:        serviceCollection.AddSingleton<IDiscoverSurface, DiscoverSurface>();
-    68:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
-    90:        serviceCollection.AddSingleton(provider => new WantHandover(
-    111:        serviceCollection.AddSingleton<IScheduledTask, DiscoverRefreshTask>();
+    45:        serviceCollection.AddSingleton<IClock, SystemClock>();
+    50:        serviceCollection.AddSingleton<IRandomSource, SystemRandomSource>();
+    57:        serviceCollection.AddSingleton<IDiscoverSurface, DiscoverSurface>();
+    74:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
+    96:        serviceCollection.AddSingleton(provider => new WantHandover(
+    117:        serviceCollection.AddSingleton<IServerLibrary>(provider =>
+    135:        serviceCollection.AddSingleton<IScheduledTask, DiscoverRefreshTask>();
 
-The sixth arrived with the refresh in #87 and is the one on this list nearest to
+The seventh arrived with the refresh in #87 and is the one on this list nearest to
 being an exception, so it is worth reading closely rather than dismissing. It is
 the scheduled task the server runs, and a run of it is the moment this plugin
 would ask a source. What it asks is whatever the same container holds under the
@@ -44,6 +45,22 @@ difference is worth stating. Before the refresh there was no code path from a
 schedule to a source at all; now there is one and it ends in an empty set. What
 holds it empty is a registration nobody has written rather than the absence of a
 caller.
+
+The sixth arrived with the owned-title filter in #89 and it is the only one on
+this list that asks the server a question of its own. It is handed a title's
+identifiers and whether the title is a film or a series, and it answers with how
+many parts of that title this server holds. What crosses it is fixed by the
+signature rather than by a sentence beside the signature, so no title text
+crosses it at all:
+
+    git grep -n 'int PartsHeld' origin/master -- Jellyfin.Plugin.Template/Server/IServerLibrary.cs
+    origin/master:Jellyfin.Plugin.Template/Server/IServerLibrary.cs:55:    int PartsHeld(DiscoverTitleIdentity identity, DiscoverTitleKind kind);
+
+The question and the answer both stay inside the server. The answer decides
+whether a title is put on a shelf, it is not a field on anything the catalogue
+stores, and nothing carries it outward. What it asks about is what the server
+holds rather than what a given user may see, so it is one answer for everybody
+on the server; whether it should be is #89's fifth condition and is open.
 
 The fifth arrived with the seam in #95 and it is the one on this list a reader
 should be able to dismiss for a stated reason rather than by its name. It offers
@@ -197,7 +214,7 @@ Nothing, and the reason moved with the refresh in #87. The one thing in this
 plugin that writes to disk is now reached, by the scheduled task:
 
     git grep -n 'new CatalogueDocumentStore(' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
-    origin/master:Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:327:                new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
+    origin/master:Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:339:                new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
     exit=0
 
 What that store can be handed is a shelf's titles and nothing else, so what a
