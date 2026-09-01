@@ -5,9 +5,15 @@ using System.Threading.Tasks;
 namespace Jellyfin.Plugin.Template.Refresh;
 
 /// <summary>
-/// The one place in this plugin that spends real time.
+/// Where a refresh's waiting reaches the runtime's own timer.
 /// </summary>
 /// <remarks>
+/// NOT THE ONLY PLACE IN THIS PLUGIN THAT SPENDS REAL TIME, WHICH THIS SUMMARY
+/// CLAIMED. <see cref="Seam.WantHandover"/> bounds a handover with the same
+/// timer, and did so before this file existed. <see cref="IPause"/> carries why
+/// the two are different shapes and why neither this file nor that one is
+/// refused by anything.
+///
 /// It holds no state and it makes no decision, which is the same shape
 /// <see cref="Time.SystemClock"/> has and for the same reason: everything this
 /// type could usefully decide is something a test would then have no way to

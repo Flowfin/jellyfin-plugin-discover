@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Jellyfin.Plugin.Template.Refresh;
 
 /// <summary>
-/// The only thing in this plugin that lets real time pass.
+/// How a refresh lets real time pass.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,19 +19,27 @@ namespace Jellyfin.Plugin.Template.Refresh;
 /// <para>
 /// It is here rather than beside the clock because the pacing this exists for
 /// lives with whatever drives a refresh, which is where #2 put it on
-/// 2026-08-24, and because nothing else in this plugin waits for anything. A
-/// second waiter belongs behind this interface rather than beside
-/// <see cref="SystemPause"/>, for the reason <c>no-wall-clock</c> gives about
-/// its own exception.
+/// 2026-08-24.
+/// </para>
+/// <para>
+/// IT IS NOT THE ONLY WAITER IN THIS PLUGIN AND THIS FILE SAID IT WAS. The
+/// summary read "the only thing in this plugin that lets real time pass" and a
+/// second one was already in the tree when that was written:
+/// <see cref="Seam.WantHandover"/> bounds how long a handover waits for the
+/// siblings it offered a want to, and that bound is served by the runtime's own
+/// timer. It is a deadline on somebody else's work rather than a pace of this
+/// plugin's own requests, so the two are different shapes, and moving it behind
+/// this interface is a change to the seam that #96 and #97 own rather than
+/// something #78 may take. What is corrected here is the claim, not the seam.
 /// </para>
 /// <para>
 /// NOTHING REFUSES A SECOND <c>Task.Delay</c> IN THIS PLUGIN. <c>no-sleep-in-a-test</c>
-/// refuses one in the test project and reaches no further, so the sentence
-/// above is a convention rather than a guard. What would make it one is a rule
-/// in <c>tools/invariants/rules/</c> excepting <see cref="SystemPause"/> by
-/// file, exactly as <c>no-wall-clock</c> excepts <c>SystemClock.cs</c>, and
-/// that directory is outside this issue's declared scope. It is named here so a
-/// reader meeting this interface is not left taking it for enforced.
+/// refuses one in the test project and reaches no further, so where the waiting
+/// lives is a convention rather than a guard. What would make it one is a rule
+/// in <c>tools/invariants/rules/</c> naming the files that may wait, which is
+/// two files rather than one, and that directory is outside this issue's
+/// declared scope. It is named here so a reader meeting this interface is not
+/// left taking it for enforced.
 /// </para>
 /// </remarks>
 public interface IPause
