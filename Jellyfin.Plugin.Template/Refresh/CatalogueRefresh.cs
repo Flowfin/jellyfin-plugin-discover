@@ -349,7 +349,7 @@ public sealed class CatalogueRefresh
     /// Takes whatever the documents no shelf in this run named hold past the
     /// retention.
     /// </summary>
-    /// <param name="results">What this run did, one entry per shelf it was handed.</param>
+    /// <param name="perShelf">What this run did, one entry for each shelf it was handed.</param>
     /// <remarks>
     /// <para>
     /// #68's second condition, in the half the per-shelf sweep cannot reach. A
@@ -387,11 +387,11 @@ public sealed class CatalogueRefresh
     /// value rather than a constant, which is not a structured log line.
     /// </para>
     /// </remarks>
-    private void SweepWhatNoShelfNamed(IReadOnlyList<ShelfRefreshResult> results)
+    private void SweepWhatNoShelfNamed(IReadOnlyList<ShelfRefreshResult> perShelf)
     {
         var named = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var result in results)
+        foreach (var result in perShelf)
         {
             named.Add(result.DocumentName);
         }
