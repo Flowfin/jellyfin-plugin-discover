@@ -56,6 +56,7 @@ public sealed class CatalogueRefresh
     private readonly CatalogueDocumentStore _store;
     private readonly IServerLibrary? _library;
     private readonly IClock _clock;
+    private readonly IPause _pause;
     private readonly ILogger<CatalogueRefresh> _logger;
     private readonly Dictionary<string, int> _failuresInARow = new Dictionary<string, int>(StringComparer.Ordinal);
 
@@ -70,6 +71,18 @@ public sealed class CatalogueRefresh
     // happens rather than once per shelf that then goes unasked.
     private readonly SourceRest _rest = new SourceRest();
 
+    // #78's second condition. Built here for the same reason the rest above is:
+    // everything it needs is a declared constant and a clock this class already
+    // holds, and a run that could be handed a pace with no budget in it would be
+    // a run in which the guard is optional.
+    //
+    // It is separate from the rest rather than folded into it because the two
+    // answer different questions. The rest says whether a source that already
+    // refused may be asked at all; the pace says how long to hold off before
+    // asking a source that is answering perfectly well, so that a refusal is
+    // not provoked in the first place.
+    private readonly SourcePace _pace = new SourcePace();
+
     private readonly CatalogueRetention _retention;
 
     private int _running;
@@ -83,6 +96,7 @@ public sealed class CatalogueRefresh
     /// What this server already holds, or null where nothing can answer that.
     /// </param>
     /// <param name="clock">The clock a run is timed by.</param>
+    /// <param name="pause">How a run holds off between requests to one source.</param>
     /// <param name="logger">Where a run says what it did.</param>
     /// <exception cref="ArgumentNullException">
     /// Thrown when any argument but <paramref name="library"/> is null, or when
@@ -109,17 +123,27 @@ public sealed class CatalogueRefresh
     /// library says so in its own log line instead of looking like a run that
     /// asked and found nothing.
     /// </para>
+    /// <para>
+    /// THE PAUSE IS REQUIRED FOR THE SAME REASON THE CLOCK IS. It is the one
+    /// thing in a run that lets real time pass, so a run built without it would
+    /// be a run that either paced nothing or paced by sleeping where a test
+    /// could not see it. Every caller therefore states what its waiting is
+    /// served by, and the one a server builds is in
+    /// <see cref="DiscoverRefreshTask"/>.
+    /// </para>
     /// </remarks>
     public CatalogueRefresh(
         IReadOnlyCollection<IMetadataSource> sources,
         CatalogueDocumentStore store,
         IServerLibrary? library,
         IClock clock,
+        IPause pause,
         ILogger<CatalogueRefresh> logger)
     {
         ArgumentNullException.ThrowIfNull(sources);
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(pause);
         ArgumentNullException.ThrowIfNull(logger);
 
         var taken = new List<IMetadataSource>(sources.Count);
@@ -134,6 +158,7 @@ public sealed class CatalogueRefresh
         _store = store;
         _library = library;
         _clock = clock;
+        _pause = pause;
         _logger = logger;
 
         // Built here rather than taken as an argument, because both halves of
@@ -447,6 +472,17 @@ public sealed class CatalogueRefresh
     /// in the adapter, which reports a refusal and decides nothing about when
     /// to ask again.
     /// </para>
+    /// <para>
+    /// A request that would put this run over the source's budget waits until
+    /// it would not, which is #78's second condition and is
+    /// <see cref="SourcePace"/>'s. The order of the two is the whole of what is
+    /// decided here: the rest is read first, because a resting source is one
+    /// this run does not ask at all and paying a wait for a request nobody is
+    /// going to make would be a run slowed down by a source it has given up on.
+    /// The pace is then read for the request that is actually about to happen,
+    /// and the request is recorded before it is made rather than after, because
+    /// a budget counts requests and a request that fails has spent one.
+    /// </para>
     /// </remarks>
     private async Task<ShelfRefreshResult> OneShelfAsync(
         Shelf shelf,
@@ -474,6 +510,23 @@ public sealed class CatalogueRefresh
 
             return Kept(shelf, documentName, standing);
         }
+
+        var waiting = _pace.Waiting(shelf.Source, _clock.UtcNow);
+
+        if (waiting > TimeSpan.Zero)
+        {
+            _logger.LogDebug(
+                "The shelf {Shelf} waited {WaitMilliseconds} milliseconds before its request, because {Source} has already been asked {Requests} times in the last {WindowSeconds} seconds.",
+                shelf.DisplayName,
+                waiting.TotalMilliseconds,
+                shelf.Source,
+                SourcePace.RequestsPerWindow,
+                SourcePace.Window.TotalSeconds);
+
+            await _pause.ForAsync(waiting, cancellationToken).ConfigureAwait(false);
+        }
+
+        _pace.Asked(shelf.Source, _clock.UtcNow);
 
         var answer = await source.FetchAsync(shelf.Ask(), cancellationToken).ConfigureAwait(false);
 

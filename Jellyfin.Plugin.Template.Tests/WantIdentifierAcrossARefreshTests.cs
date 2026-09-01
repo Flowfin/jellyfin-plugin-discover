@@ -196,6 +196,7 @@ public class WantIdentifierAcrossARefreshTests
             store,
             null,
             new ClockATestAdvances(_fetchedAt),
+            new PauseATestWatches(),
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
     }
 

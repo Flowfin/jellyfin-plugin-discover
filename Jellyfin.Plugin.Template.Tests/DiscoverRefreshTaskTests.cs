@@ -162,6 +162,7 @@ public class DiscoverRefreshTaskTests
                         new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>()),
                     null,
                     new ClockATestAdvances(_now),
+                    new PauseATestWatches(),
                     new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>()),
                 shelves,
                 new LoggerThatRecordsWhatIsWritten<DiscoverRefreshTask>())
@@ -208,6 +209,7 @@ public class DiscoverRefreshTaskTests
                         new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>()),
                     null,
                     new ClockATestAdvances(_now),
+                    new PauseATestWatches(),
                     new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>()),
                 ShippedShelves.Bounded(CatalogueBounds.DefaultTitlesPerShelf),
                 new LoggerThatRecordsWhatIsWritten<DiscoverRefreshTask>());
@@ -237,6 +239,7 @@ public class DiscoverRefreshTaskTests
                 new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>()),
             null,
             new ClockATestAdvances(_now),
+            new PauseATestWatches(),
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
 
         Assert.Throws<ArgumentNullException>(() => DiscoverRefreshTask.Over(null!, shelves, log));

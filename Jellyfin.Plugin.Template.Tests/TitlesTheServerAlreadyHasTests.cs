@@ -272,6 +272,7 @@ public class TitlesTheServerAlreadyHasTests
             Store(folder),
             library,
             new ClockATestAdvances(_fetchedAt),
+            new PauseATestWatches(),
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
             .RunAsync(new[] { shelf }, progress: null, CancellationToken.None)
             .ConfigureAwait(true);

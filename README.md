@@ -131,9 +131,9 @@ run asks nobody:
     Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:131:        // What it will ask is whatever implements IMetadataSource in this
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:45:/// A source that throws is a fault rather than an answer. <see cref="IMetadataSource"/>
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:55:    private readonly IMetadataSource[] _sources;
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:114:        IReadOnlyCollection<IMetadataSource> sources,
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:125:        var taken = new List<IMetadataSource>(sources.Count);
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:689:    private IMetadataSource? SourceFor(MetadataSource source)
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:136:        IReadOnlyCollection<IMetadataSource> sources,
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:149:        var taken = new List<IMetadataSource>(sources.Count);
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:742:    private IMetadataSource? SourceFor(MetadataSource source)
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:67:    private readonly IReadOnlyList<IMetadataSource> _sources;
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:101:        IEnumerable<IMetadataSource> sources,
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:115:        var taken = new List<IMetadataSource>();
@@ -156,6 +156,7 @@ builds one:
 
     git grep -rln 'new CatalogueDirectory\|new CatalogueDocumentStore' -- '*.cs'
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs
+    Jellyfin.Plugin.Template.Tests/ARefreshHoldsToTheSourcesBudgetTests.cs
     Jellyfin.Plugin.Template.Tests/ARefusedSourceIsLeftAloneTests.cs
     Jellyfin.Plugin.Template.Tests/AddingASourceTouchesNoShelfCodeTests.cs
     Jellyfin.Plugin.Template.Tests/CatalogueDirectoryTests.cs

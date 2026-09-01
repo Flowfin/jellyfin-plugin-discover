@@ -496,6 +496,7 @@ public class CatalogueRetentionSweepTests
             store,
             null,
             clock,
+            new PauseATestWatches(),
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
 
     private static CatalogueDocumentStore Store(string folder) =>
