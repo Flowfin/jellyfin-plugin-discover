@@ -322,6 +322,11 @@ public sealed class CatalogueRefresh
             progress?.Report((index + 1) * 100d / shelves.Count);
         }
 
+        if (!cancelled)
+        {
+            SweepWhatNoShelfNamed(results);
+        }
+
         progress?.Report(100);
 
         var run = RefreshRun.Of(startedAt, _clock.UtcNow, cancelled, results);
@@ -338,6 +343,138 @@ public sealed class CatalogueRefresh
             run.Shelves.Count(result => result.ConsecutiveFailures > 1));
 
         return run;
+    }
+
+    /// <summary>
+    /// Takes whatever the documents no shelf in this run named hold past the
+    /// retention.
+    /// </summary>
+    /// <param name="results">What this run did, one entry per shelf it was handed.</param>
+    /// <remarks>
+    /// <para>
+    /// #68's second condition, in the half the per-shelf sweep cannot reach. A
+    /// document's name comes from a shelf's question and kind and from nothing
+    /// else, so a version that ships a different set, and a downgrade, leave the
+    /// document written under the old pair standing. Nothing reads it, nothing
+    /// dates it and nothing removes it, which makes the records a server keeps
+    /// longest exactly the ones nobody is looking at. The ceiling under the
+    /// retention is a source's terms rather than this plugin's housekeeping,
+    /// and terms do not stop applying because the shelf that fetched the records
+    /// no longer exists.
+    /// </para>
+    /// <para>
+    /// IT IS SAFE FOR A RUN HANDED A SUBSET, which is the reading to do before
+    /// taking "no shelf named it" for "nobody owns it". This never removes a
+    /// document that holds anything: the only removal is of one whose every
+    /// record is past the retention, and that is true of those records whoever
+    /// owns them. So a run given one shelf sweeps the other five's documents by
+    /// the same rule it would apply to them itself, and takes nothing a later
+    /// run wanted.
+    /// </para>
+    /// <para>
+    /// Not after a cancellation, for the same reason the per-shelf sweep is not:
+    /// doing work after a cancellation is the thing a cancellation asked to
+    /// stop, and a listing of the directory plus a read per document is more
+    /// work than the sweep it skips.
+    /// </para>
+    /// <para>
+    /// It is a second method rather than the per-shelf sweep widened. What
+    /// differs is not the decision, which is
+    /// <see cref="CatalogueRetention.StillHeld"/>'s in both, but what an
+    /// operator is told: one names a shelf that keeps what it holds until a
+    /// source answers again, and the other names a document no shelf will ever
+    /// write to. Assembling one message from the other would make the template a
+    /// value rather than a constant, which is not a structured log line.
+    /// </para>
+    /// </remarks>
+    private void SweepWhatNoShelfNamed(IReadOnlyList<ShelfRefreshResult> results)
+    {
+        var named = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var result in results)
+        {
+            named.Add(result.DocumentName);
+        }
+
+        foreach (var documentName in _store.DocumentNames())
+        {
+            if (!named.Contains(documentName))
+            {
+                SweepOneNoShelfNamed(documentName);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Takes whatever one document no shelf named holds past the retention.
+    /// </summary>
+    /// <param name="documentName">The document.</param>
+    /// <remarks>
+    /// Every failure leaves the document alone, which is the rule the per-shelf
+    /// sweep states: a document that is absent, that the store refused, or whose
+    /// bytes are not a body this build reads is not one whose records can be
+    /// dated, so removing it would be a sweep deleting what it could not judge.
+    /// That matters more here than there, because a document nothing names is
+    /// also a document nothing will rewrite.
+    /// </remarks>
+    private void SweepOneNoShelfNamed(string documentName)
+    {
+        var payload = _store.Read(documentName);
+
+        if (payload is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<DiscoverTitle> stored;
+
+        try
+        {
+            stored = CatalogueDocumentBody.Read(payload);
+        }
+        catch (InvalidDataException reason)
+        {
+            _logger.LogWarning(
+                reason,
+                "The document {Document} is named by no shelf in this run and could not be read as a catalogue body, so nothing in it was dated and it was left where it is.",
+                documentName);
+
+            return;
+        }
+
+        var held = _retention.StillHeld(stored, _clock.UtcNow);
+
+        if (held.Count == stored.Count)
+        {
+            return;
+        }
+
+        if (held.Count == 0)
+        {
+            _store.Remove(documentName);
+
+            _logger.LogInformation(
+                "The document {Document} is named by no shelf in this run, held {Dropped} records and every one of them was older than the {RetentionDays}-day retention, so the document was removed. Nothing will write to it again.",
+                documentName,
+                stored.Count,
+                _retention.Duration.TotalDays);
+
+            return;
+        }
+
+        using var payloadToKeep = new MemoryStream();
+
+        CatalogueDocumentBody.Write(payloadToKeep, held);
+        payloadToKeep.Position = 0;
+
+        _store.Write(documentName, payloadToKeep);
+
+        _logger.LogInformation(
+            "The document {Document} is named by no shelf in this run, held {Dropped} records older than the {RetentionDays}-day retention, which were removed, and {Kept} that are still held and were written back. Nothing will write to it again.",
+            documentName,
+            stored.Count - held.Count,
+            _retention.Duration.TotalDays,
+            held.Count);
     }
 
     /// <summary>
