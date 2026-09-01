@@ -100,7 +100,11 @@ internal class ServerLibraryAdapterStandIn : DispatchProxy
 
         var library = DispatchProxy.Create<ILibraryManager, ServerLibraryAdapterStandIn>();
 
-        recorder = (ServerLibraryAdapterStandIn)(object)library;
+        // The cast is direct rather than through object, which the compiler
+        // allows because the type this file leaves unsealed above is one an
+        // interface reference may be cast to. A step through object would be
+        // needed for a sealed target and buys nothing here.
+        recorder = (ServerLibraryAdapterStandIn)library;
         recorder._count = count;
         recorder._identifiers = identifiers;
 
