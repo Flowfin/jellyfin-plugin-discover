@@ -60,7 +60,7 @@ at the same moment contend for one document under the other layout and do not
 under this one.
 
     git grep -n 'public const string TemporaryNameSuffix' origin/master -- Jellyfin.Plugin.Template/Catalogue/CatalogueDocumentStore.cs
-    origin/master:Jellyfin.Plugin.Template/Catalogue/CatalogueDocumentStore.cs:85:    public const string TemporaryNameSuffix = ".writing";
+    origin/master:Jellyfin.Plugin.Template/Catalogue/CatalogueDocumentStore.cs:88:    public const string TemporaryNameSuffix = ".writing";
 
 None of the three is the refresh, and none of them is taste. A decision waiting
 on an issue that is itself waiting on a decision nobody holds is a queue rather

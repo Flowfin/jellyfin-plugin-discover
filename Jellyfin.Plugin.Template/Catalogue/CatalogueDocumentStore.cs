@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
@@ -80,7 +81,9 @@ public sealed class CatalogueDocumentStore
     /// It is public because a listing of the directory sees this file while a
     /// write is in flight, and a caller that lists documents has to be able to
     /// tell one from a document. <see cref="CatalogueDirectory.ListDocuments"/>
-    /// does not filter it today.
+    /// does not filter it, because its subject is the directory; the listing
+    /// this store offers does, because its subject is what <see cref="Read"/>
+    /// would answer for.
     /// </remarks>
     public const string TemporaryNameSuffix = ".writing";
 
@@ -295,6 +298,56 @@ public sealed class CatalogueDocumentStore
     private static byte[] HeaderBytes(string checksum)
     {
         return Encoding.ASCII.GetBytes(Header(checksum));
+    }
+
+    /// <summary>
+    /// Lists the documents this store holds, by name.
+    /// </summary>
+    /// <returns>
+    /// The names <see cref="Read"/> would answer for, in a stable order, and
+    /// nothing at all where nothing has been written yet.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// What it is for is the case a caller cannot derive: a document whose name
+    /// no shelf produces any more. Every other reader of this store arrives with
+    /// a name in hand, from <see cref="CatalogueLayout"/> and a shelf, so a
+    /// document written under a pair the shipped set no longer holds is one
+    /// nothing asks about and nothing dates. #68's retention is a ceiling a
+    /// source's terms impose on the records rather than housekeeping over the
+    /// shelves, so those records are exactly the ones a server would keep
+    /// longest.
+    /// </para>
+    /// <para>
+    /// A half-written document is not one of them. <see cref="Write"/> lands a
+    /// temporary beside the document it will replace, and
+    /// <see cref="CatalogueDirectory.ListDocuments"/> is a listing of the
+    /// directory and sees it. Handing it out here would give a caller a name
+    /// that <see cref="Read"/> refuses as unreadable a moment later, so the
+    /// suffix is filtered here rather than at every caller.
+    /// </para>
+    /// <para>
+    /// It is a reading of the directory at the moment it is called and not a
+    /// set anybody holds. A document written after it answers is not in it, and
+    /// a caller that acts on a name from it acts on a name that may already be
+    /// gone; both are ordinary and both are why <see cref="Read"/> and
+    /// <see cref="Remove"/> treat absence as an answer rather than as a fault.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<string> DocumentNames()
+    {
+        var listed = _directory.ListDocuments();
+        var names = new List<string>(listed.Count);
+
+        foreach (var name in listed)
+        {
+            if (!name.EndsWith(TemporaryNameSuffix, StringComparison.Ordinal))
+            {
+                names.Add(name);
+            }
+        }
+
+        return names;
     }
 
     /// <summary>

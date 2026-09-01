@@ -133,7 +133,7 @@ run asks nobody:
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:55:    private readonly IMetadataSource[] _sources;
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:136:        IReadOnlyCollection<IMetadataSource> sources,
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:149:        var taken = new List<IMetadataSource>(sources.Count);
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:742:    private IMetadataSource? SourceFor(MetadataSource source)
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:879:    private IMetadataSource? SourceFor(MetadataSource source)
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:67:    private readonly IReadOnlyList<IMetadataSource> _sources;
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:101:        IEnumerable<IMetadataSource> sources,
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:115:        var taken = new List<IMetadataSource>();
@@ -155,6 +155,7 @@ store exist, and the scheduled refresh is the first thing outside the suite that
 builds one:
 
     git grep -rln 'new CatalogueDirectory\|new CatalogueDocumentStore' -- '*.cs'
+    Jellyfin.Plugin.Template.Tests/ADocumentNoShelfNamesIsStillSweptTests.cs
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs
     Jellyfin.Plugin.Template.Tests/ARefreshHoldsToTheSourcesBudgetTests.cs
     Jellyfin.Plugin.Template.Tests/ARefusedSourceIsLeftAloneTests.cs
