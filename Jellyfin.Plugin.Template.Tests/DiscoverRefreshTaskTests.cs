@@ -245,6 +245,7 @@ public class DiscoverRefreshTaskTests
 
         Assert.Throws<ArgumentNullException>(() => new DiscoverRefreshTask(
             null!,
+            new LibraryThatHoldsWhatATestGaveIt(),
             new ClockATestAdvances(_now),
             log,
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>(),
@@ -252,6 +253,19 @@ public class DiscoverRefreshTaskTests
 
         Assert.Throws<ArgumentNullException>(() => new DiscoverRefreshTask(
             new IMetadataSource[] { null! },
+            new LibraryThatHoldsWhatATestGaveIt(),
+            new ClockATestAdvances(_now),
+            log,
+            new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>(),
+            new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>()));
+
+        // #89. The library is not optional on a task the server built: a null
+        // one would be a refresh that filtered nothing and that looked, in
+        // every log line and every document, exactly like one with nothing to
+        // filter.
+        Assert.Throws<ArgumentNullException>(() => new DiscoverRefreshTask(
+            Array.Empty<IMetadataSource>(),
+            null!,
             new ClockATestAdvances(_now),
             log,
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>(),
@@ -260,6 +274,7 @@ public class DiscoverRefreshTaskTests
 
     private static DiscoverRefreshTask Composed() => new DiscoverRefreshTask(
         Array.Empty<IMetadataSource>(),
+        new LibraryThatHoldsWhatATestGaveIt(),
         new ClockATestAdvances(_now),
         new LoggerThatRecordsWhatIsWritten<DiscoverRefreshTask>(),
         new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>(),

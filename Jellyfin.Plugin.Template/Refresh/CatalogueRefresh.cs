@@ -98,14 +98,16 @@ public sealed class CatalogueRefresh
     /// operator be able to see.
     /// </para>
     /// <para>
-    /// THE LIBRARY IS NULLABLE AND THAT IS A STATE OF THE TREE RATHER THAN AN
-    /// OPTION. #89 asks that titles the server already has be left out of a
-    /// shelf, and nothing in this repository implements
-    /// <see cref="IServerLibrary"/> yet, so a run today has nobody to ask and
-    /// keeps every title a source offered. The parameter is required rather
-    /// than defaulted so that every caller states which of the two it is in,
-    /// and a run with no library says so in its own log line instead of looking
-    /// like a run that asked and found nothing.
+    /// THE LIBRARY IS NULLABLE AND WHAT THAT ADMITS IS NARROWER THAN IT WAS.
+    /// #89 asks that titles the server already has be left out of a shelf, and
+    /// <see cref="Server.ServerLibraryAdapter"/> is what answers that on a
+    /// server, so a run the task composed has somebody to ask. Null is a run
+    /// composed with nobody to ask, which is what a test drives and what a
+    /// caller written before that adapter existed had. Such a run keeps every
+    /// title a source offered. The parameter is required rather than defaulted
+    /// so that every caller states which of the two it is in, and a run with no
+    /// library says so in its own log line instead of looking like a run that
+    /// asked and found nothing.
     /// </para>
     /// </remarks>
     public CatalogueRefresh(
@@ -545,8 +547,8 @@ public sealed class CatalogueRefresh
     /// </para>
     /// <para>
     /// With no library to ask, every title is kept and the run says so. That is
-    /// the state of this tree rather than a mode: nothing implements the seam,
-    /// which the constructor's remark carries.
+    /// a run composed with nobody to ask rather than a mode an operator can be
+    /// in, which the constructor's remark carries.
     /// </para>
     /// </remarks>
     private IReadOnlyList<DiscoverTitle> WithoutWhatThisServerHas(Shelf shelf, IReadOnlyList<DiscoverTitle> offered)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Template.Catalogue;
+using Jellyfin.Plugin.Template.Server;
 using Jellyfin.Plugin.Template.Shelves;
 using Jellyfin.Plugin.Template.Sources;
 using Jellyfin.Plugin.Template.Time;
@@ -64,6 +65,7 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     public const string TaskKey = "DiscoverCatalogueRefresh";
 
     private readonly IReadOnlyList<IMetadataSource> _sources;
+    private readonly IServerLibrary? _library;
     private readonly IClock _clock;
     private readonly ILogger<DiscoverRefreshTask> _logger;
     private readonly ILogger<CatalogueRefresh>? _refreshLogger;
@@ -79,6 +81,7 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     /// composing its refresh out of the plugin's own data folder when it first runs.
     /// </summary>
     /// <param name="sources">Every source this server is set up to ask, which is what the container holds.</param>
+    /// <param name="library">What this server already holds, which is what #89's filter asks.</param>
     /// <param name="clock">The clock a run is timed by.</param>
     /// <param name="logger">Where this task says what it did.</param>
     /// <param name="refreshLogger">The logger the refresh writes through.</param>
@@ -96,12 +99,14 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     /// </remarks>
     public DiscoverRefreshTask(
         IEnumerable<IMetadataSource> sources,
+        IServerLibrary library,
         IClock clock,
         ILogger<DiscoverRefreshTask> logger,
         ILogger<CatalogueRefresh> refreshLogger,
         ILogger<CatalogueDocumentStore> storeLogger)
     {
         ArgumentNullException.ThrowIfNull(sources);
+        ArgumentNullException.ThrowIfNull(library);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(refreshLogger);
@@ -116,6 +121,7 @@ public sealed class DiscoverRefreshTask : IScheduledTask
         }
 
         _sources = taken;
+        _library = library;
         _clock = clock;
         _logger = logger;
         _refreshLogger = refreshLogger;
@@ -125,6 +131,7 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     private DiscoverRefreshTask(CatalogueRefresh refresh, IReadOnlyList<Shelf> shelves, ILogger<DiscoverRefreshTask> logger)
     {
         _sources = Array.Empty<IMetadataSource>();
+        _library = null;
         _clock = new NeverAskedClock();
         _logger = logger;
         _refresh = refresh;
@@ -322,17 +329,15 @@ public sealed class DiscoverRefreshTask : IScheduledTask
                 return null;
             }
 
-            // No library to ask. #89's filter is in the refresh and the seam it
-            // asks through is IServerLibrary; what is missing is an
-            // implementation of that seam over the server's own library, which
-            // is a second adapter beside the surface's and is named on that
-            // issue with what it costs. Until one exists, a run keeps every
-            // title its source offered, and the refresh writes that rather than
-            // leaving it to be inferred from a shelf that filtered nothing.
+            // The library the container gave this task, which is #89's filter
+            // having somebody to ask. It is null only on the composition below
+            // that a test drives, where the refresh is handed over already
+            // built and this field is never read; a task the server built holds
+            // the adapter the registrator put in the container.
             _refresh = new CatalogueRefresh(
                 _sources,
                 new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
-                null,
+                _library,
                 _clock,
                 _refreshLogger);
 

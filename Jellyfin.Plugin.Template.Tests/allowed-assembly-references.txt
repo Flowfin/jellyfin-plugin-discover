@@ -20,6 +20,12 @@
 # The server's own assemblies. They arrive from the server at load time and are
 # excluded from the package for that reason, so a reference to one of them is
 # not something this plugin ships.
+#
+# Jellyfin.Data is here for one type and it is #89's. The question the library
+# adapter asks the server is an item query, and the kind of item it asks about
+# is BaseItemKind, which lives in that assembly rather than in the three below
+# it. It arrives from the server exactly as they do and is not packaged.
+Jellyfin.Data
 MediaBrowser.Common
 MediaBrowser.Controller
 MediaBrowser.Model

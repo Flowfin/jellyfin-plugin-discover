@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Jellyfin.Plugin.Template.Seam;
+using Jellyfin.Plugin.Template.Server;
 using Jellyfin.Plugin.Template.Surface;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,6 +66,12 @@ public class PluginServiceRegistratorTests
         // than about the plugin.
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
+        // The server's own library, for the same reason and since #89. It
+        // refuses every member, so what is asserted below is that every
+        // registration can be constructed and that none of them asks the
+        // server anything while doing it.
+        services.AddSingleton(ServerLibraryAdapterStandIn.RefusingEveryCall());
+
         new PluginServiceRegistrator().RegisterServices(services, new ServerApplicationHostThatRefusesEveryCall());
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -113,6 +120,44 @@ public class PluginServiceRegistratorTests
         Assert.Single(offered);
         Assert.Equal(typeof(DiscoverSurfaceAdapter), offered[0].ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, offered[0].Lifetime);
+    }
+
+    /// <summary>
+    /// The refresh is offered one library to ask, and it is the adapter over the server's own.
+    /// </summary>
+    /// <remarks>
+    /// #89's first condition where it meets a running server. The filter and
+    /// the seam it asks through are held by their own tests; what those cannot
+    /// say is that anything on a real install ever answers the seam. Without
+    /// this registration a refresh is composed with nobody to ask, keeps every
+    /// title its source offered, and says so in a log line nobody reads - which
+    /// looks exactly like a server that already holds none of them.
+    ///
+    /// Singleton for the same reason the surface is: the adapter holds the
+    /// library the container gave it and answers the same way for every caller.
+    /// </remarks>
+    [Fact]
+    public void OneLibraryIsOfferedForTheRefreshToAsk()
+    {
+        var services = new ServiceCollection();
+
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddSingleton(ServerLibraryAdapterStandIn.RefusingEveryCall());
+
+        new PluginServiceRegistrator().RegisterServices(services, new ServerApplicationHostThatRefusesEveryCall());
+
+        var offered = services.Where(descriptor => descriptor.ServiceType == typeof(IServerLibrary)).ToArray();
+
+        Assert.Single(offered);
+        Assert.Equal(ServiceLifetime.Singleton, offered[0].Lifetime);
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+
+        Assert.IsType<ServerLibraryAdapter>(provider.GetRequiredService<IServerLibrary>());
     }
 
     /// <summary>

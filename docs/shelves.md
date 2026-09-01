@@ -158,10 +158,22 @@ that number is on a library large enough to matter has not been measured, and
 [#89](https://github.com/Flowfin/jellyfin-plugin-discover/issues/89) is where it
 belongs.
 
-**Nothing on a server answers that question yet.** The rule and the seam it asks
-through are in the build, and no implementation of the seam over the server's
-own library exists, so a refresh today keeps every title its source offered and
-says so in its log. That issue carries what the missing half costs.
+A server answers that question now, through an adapter over its own library
+beside the one the discover page itself is drawn through. What it asks about a
+film is the film; what it asks about a series is the series first, by
+identifier, and then how many episodes the server holds under it. Rows the
+server carries for something it does not have — the missing episodes an operator
+can have shown — are left out of both counts, because a row nobody can play is
+not a part.
+
+**Nothing here has been measured on a real library.** The comparison is one
+library question per title per refresh by construction, and what that is in
+seconds on a library large enough to matter is unmeasured.
+[#89](https://github.com/Flowfin/jellyfin-plugin-discover/issues/89) is where
+that measurement belongs, and it is also where whether a user who cannot see an
+item the server does have should be shown it anyway is still undecided: today
+the question is asked of the server rather than of a user, so the answer is the
+same for everybody.
 
 ## What this page does not decide
 
@@ -171,8 +183,8 @@ says so in its log. That issue carries what the missing half costs.
   [#91](https://github.com/Flowfin/jellyfin-plugin-discover/issues/91), and it is
   this plugin's rather than the source's.
 - What a refresh costs on a library large enough for the owned-title comparison
-  above to be worth timing, and what implements the seam that comparison asks
-  through. Both are
+  above to be worth timing, and whether a title is hidden from a user who could
+  not have seen the server's own copy of it. Both are
   [#89](https://github.com/Flowfin/jellyfin-plugin-discover/issues/89).
 - How often a refresh runs. That is
   [#87](https://github.com/Flowfin/jellyfin-plugin-discover/issues/87).
