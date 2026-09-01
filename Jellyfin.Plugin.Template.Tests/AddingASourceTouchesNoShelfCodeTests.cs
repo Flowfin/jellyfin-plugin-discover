@@ -74,6 +74,7 @@ public class AddingASourceTouchesNoShelfCodeTests
                 store,
                 null,
                 new ClockATestAdvances(_fetchedAt),
+                new PauseATestWatches(),
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { ours, theirs }, progress: null, CancellationToken.None);
 

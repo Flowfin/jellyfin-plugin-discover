@@ -158,7 +158,7 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     /// </remarks>
     public string Description =>
         "Asks each shelf's metadata source for its titles and stores them in this plugin's own catalogue. "
-        + "One request per shelf, against the source's budget rather than the server's. "
+        + "One request per shelf, against the source's budget rather than the server's, paced so that a run cannot exceed it. "
         + "A shelf whose source cannot answer keeps what it already had.";
 
     /// <inheritdoc />
@@ -334,11 +334,19 @@ public sealed class DiscoverRefreshTask : IScheduledTask
             // that a test drives, where the refresh is handed over already
             // built and this field is never read; a task the server built holds
             // the adapter the registrator put in the container.
+            // The pause is built here rather than resolved, for the same reason
+            // the store on the line above it is: this class is where the
+            // refresh's collaborators are constructed, and a factory reached
+            // out of the container at run time would be the container reached
+            // into after it was built. SystemPause is the one implementation a
+            // server has, it holds nothing, and what a test drives is a refresh
+            // handed over already built through Over.
             _refresh = new CatalogueRefresh(
                 _sources,
                 new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
                 _library,
                 _clock,
+                new SystemPause(),
                 _refreshLogger);
 
             return _refresh;

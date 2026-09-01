@@ -395,6 +395,7 @@ public class CatalogueRefreshTests
                 store,
                 null,
                 new ClockATestAdvances(_fetchedAt),
+                new PauseATestWatches(),
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
 
@@ -441,6 +442,7 @@ public class CatalogueRefreshTests
                 Store(folder),
                 null,
                 clock,
+                new PauseATestWatches(),
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { shelf }, progress: null, CancellationToken.None);
 
@@ -620,6 +622,7 @@ public class CatalogueRefreshTests
                 Store(folder),
                 null,
                 new ClockATestAdvances(_fetchedAt),
+                new PauseATestWatches(),
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { unconfigured, off }, progress: null, CancellationToken.None);
 
@@ -636,6 +639,7 @@ public class CatalogueRefreshTests
                 Store(folder),
                 null,
                 new ClockATestAdvances(_fetchedAt),
+                new PauseATestWatches(),
                 new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>())
                 .RunAsync(new[] { unconfigured }, progress: null, stopped.Token);
 
@@ -728,12 +732,14 @@ public class CatalogueRefreshTests
             var store = Store(folder);
             var clock = new ClockATestAdvances(_fetchedAt);
             var log = new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>();
+            var pause = new PauseATestWatches();
 
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(null!, store, null, clock, log));
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), null!, null, clock, log));
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, null!, log));
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, clock, null!));
-            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(new IMetadataSource[] { null! }, store, null, clock, log));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(null!, store, null, clock, pause, log));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), null!, null, clock, pause, log));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, null!, pause, log));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, clock, null!, log));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, clock, pause, null!));
+            Assert.Throws<ArgumentNullException>(() => new CatalogueRefresh(new IMetadataSource[] { null! }, store, null, clock, pause, log));
 
             // The library is the one argument a null is an answer to rather
             // than a fault, so it is absent from the five above and asserted
@@ -741,7 +747,7 @@ public class CatalogueRefreshTests
             // test in this file is, and a refresh that refused to be built for
             // it would refuse every run here. What a server hands over instead
             // is ServerLibraryAdapter, which is #89.
-            _ = new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, clock, log);
+            _ = new CatalogueRefresh(Array.Empty<IMetadataSource>(), store, null, clock, pause, log);
 
             var refresh = RefreshOver(new SourceThatAnswersFromWhatATestGaveIt(MetadataSource.Tmdb), store);
 
@@ -814,6 +820,7 @@ public class CatalogueRefreshTests
             store,
             null,
             clock ?? new ClockATestAdvances(_fetchedAt),
+            new PauseATestWatches(),
             new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
 
     private static CatalogueDocumentStore Store(string folder) =>
