@@ -110,7 +110,7 @@ Two shelves refreshed at different moments, because that is what partial success
 means. Each record carries the instant its source answered:
 
     git grep -n 'public required DateTimeOffset FetchedAt' origin/master -- Jellyfin.Plugin.Template/Catalogue/DiscoverTitle.cs
-    origin/master:Jellyfin.Plugin.Template/Catalogue/DiscoverTitle.cs:175:    public required DateTimeOffset FetchedAt
+    origin/master:Jellyfin.Plugin.Template/Catalogue/DiscoverTitle.cs:172:    public required DateTimeOffset FetchedAt
 
 so the mixture is legible rather than hidden, and a shelf that is older than the
 one beside it says so in its own records. A single document would have made the

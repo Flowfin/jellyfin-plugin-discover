@@ -117,28 +117,46 @@ That absence is held by a rule rather than by anybody remembering it:
 
 ## What one request to the source carries
 
-A request is a `GET`, and the whole of what it says is a path, one query
-parameter and three headers.
+A request is a `GET`, and the whole of what it says is a path, up to three query
+parameters and three headers.
 
 The path is one of six literals chosen by a switch, and no value a caller
 supplied reaches it as text:
 
     git grep -n '"trending" =>\|"popular" =>\|"top-rated" =>' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:578:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:579:            "popular" => series ? "tv/popular" : "movie/popular",
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:580:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:617:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:618:            "popular" => series ? "tv/popular" : "movie/popular",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:619:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
 
-The query is a page number and nothing else:
+The query is a page number, and a language and a region where this plugin was
+told them:
 
-    git grep -n 'Query = FormattableString.Invariant' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:591:            Query = FormattableString.Invariant($"page={page}")
+    git grep -n 'parameters +=\|var parameters =' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:628:        var parameters = FormattableString.Invariant($"page={page}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:632:            parameters += FormattableString.Invariant($"&language={language}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:637:            parameters += FormattableString.Invariant($"&region={region}");
+
+Neither of the two is composed here and neither is free text. `SourceLocale`
+admits a language only as two lower-case letters, optionally a hyphen and two
+upper-case letters, and a region only as two upper-case letters, so what reaches
+a query string is a value every character of which this plugin has vouched for.
+Where the pair comes from is
+[#81](https://github.com/Flowfin/jellyfin-plugin-discover/issues/81) and nothing
+on a running server supplies one today, so every request this tree would make
+carries the page number alone.
+
+What the two disclose is what an operator chose, not who is asking. A language
+and a region are a property of the server's settings and are the same on every
+request it makes, so they say nothing about which person is looking at a shelf,
+and nothing about a person could reach them: the section below is what holds
+that.
 
 The headers are three:
 
     git grep -n 'TryAddWithoutValidation' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:662:        request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + accessToken);
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:663:        request.Headers.TryAddWithoutValidation("Accept", "application/json");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:664:        request.Headers.TryAddWithoutValidation("User-Agent", Identity());
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:713:        request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + accessToken);
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:714:        request.Headers.TryAddWithoutValidation("Accept", "application/json");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:715:        request.Headers.TryAddWithoutValidation("User-Agent", Identity());
 
 The first is a credential, and whose it is and where it is stored is
 [#77](https://github.com/Flowfin/jellyfin-plugin-discover/issues/77). The third
@@ -179,10 +197,9 @@ the part of the disclosure a reader is owed rather than reassured about.
 
 The source sees the connection, so it sees the network address the server calls
 from and the time of every call. Over a schedule that is a pattern: which shelves
-an operator has enabled, in which language and region once
-[#81](https://github.com/Flowfin/jellyfin-plugin-discover/issues/81) lands, how
-often the server refreshes, and when it is switched off. The credential ties all
-of that to whoever registered it.
+an operator has enabled, in which language and region where this plugin was told
+them, how often the server refreshes, and when it is switched off. The credential
+ties all of that to whoever registered it.
 
 None of that is avoidable while the plugin is used at all. It is the cost of
 asking somebody else a question.
