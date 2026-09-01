@@ -1,7 +1,7 @@
 Id: no-server-type-in-a-test
 Pattern: ^using (MediaBrowser|Jellyfin\.Data|Jellyfin\.Database)
 Subject: *Tests/*Tests.cs
-Except: :!*SurfaceAdapterTests.cs :!*RefreshTaskTests.cs :!*PluginServiceRegistratorTests.cs :!*PackagedPluginIdentityTests.cs
+Except: :!*SurfaceAdapterTests.cs :!*ServerLibraryAdapterTests.cs :!*RefreshTaskTests.cs :!*PluginServiceRegistratorTests.cs :!*PackagedPluginIdentityTests.cs
 Issue: 49
 
 A test that constructs a server type drags in the server's assembly graph, and a
@@ -21,8 +21,8 @@ reaching into it. `Jellyfin.Data` and `Jellyfin.Database` are beside
 `MediaBrowser` because the server's own types live under all three and a rule
 naming one of them would move the reach rather than refuse it.
 
-THE SUBJECT IS A TEST FILE AND THAT IS THE WHOLE OF WHY THE EXCEPTIONS ARE FOUR
-AND NOT NINE. A fake standing in for a server interface has to name the type it
+THE SUBJECT IS A TEST FILE AND THAT IS THE WHOLE OF WHY THE EXCEPTIONS ARE THE
+FEW BELOW AND NOT ONE PER FAKE. A fake standing in for a server interface has to name the type it
 implements; that is its job, and it is #49's own first condition. A rule
 excepting each fake by name would be a list of today's fakes, and the list grows
 every time the plugin talks to one more of the server, silently, with nothing
@@ -34,13 +34,18 @@ could be written into a file this subject does not reach and the property would
 be silently narrower than its prose.
 
 THE EXCEPTIONS ARE THE SEAMS TO THE SERVER, NOT THE FILES THAT ARE RED TODAY.
-Four files in the plugin speak the server's vocabulary because they are where it
-has to be spoken - the surface adapter, the scheduled task, the plugin class and
-the registrator - and the tests of those four have to speak it to call them at
-all. #49's condition writes that carve-out as "the adapter's own tests", which
-was the whole of the seam on the day it was written and is not any more, and
-this rule is the condition read against the tree rather than against its own
-wording. `no-channel-type-outside-surface` already excepts two of the same four
+The files in the plugin that speak the server's vocabulary do so because that is
+where it has to be spoken - the surface adapter, the library adapter, the
+scheduled task, the plugin class and the registrator - and the tests of those
+have to speak it to call them at all. The library adapter is the one that
+arrived after this paragraph was first written: #89 asks the refresh to leave
+out titles the server already holds, and that question reaches the server's own
+library. #49's condition writes that carve-out as "the adapter's own tests",
+which was the whole of the seam on the day it was written and is not any more,
+and this rule is the condition read against the tree rather than against its own
+wording. The count is deliberately not stated here, because the last time it was
+the tree grew a seam and the sentence did not.
+`no-channel-type-outside-surface` already excepts the same adapters
 for the same reason. A test file outside them that has to be renamed to pass is
 the rule telling its author it is on the wrong side of the boundary, which is the
 sentence that neighbour already carries.

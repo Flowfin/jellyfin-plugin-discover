@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using Jellyfin.Plugin.Template.Randomness;
 using Jellyfin.Plugin.Template.Refresh;
 using Jellyfin.Plugin.Template.Seam;
+using Jellyfin.Plugin.Template.Server;
 using Jellyfin.Plugin.Template.Surface;
 using Jellyfin.Plugin.Template.Time;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Channels;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,8 +65,12 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // Registered as the server's interface rather than as the adapter,
         // because a registration under the concrete type is one the server's
         // own collection never sees. This is the only line in the plugin that
-        // speaks the server's channel vocabulary outside the adapter, and
-        // `no-channel-type-outside-surface` excepts this file for it by name.
+        // names the server's channel vocabulary outside the surface adapter,
+        // and `no-channel-type-outside-surface` excepts this file for it by
+        // name. It excepts the file rather than the line, so the registration
+        // below names a second server type under the same exception, and both
+        // are here because a plugin declares what it offers and what it needs
+        // in one place.
         serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
         // Singleton because it holds the receivers the container gave it, and
@@ -92,6 +98,24 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             provider.GetRequiredService<ILogger<WantHandover>>(),
             WantHandover.DefaultBound,
             () => WhoMayAsk.From(Plugin.Instance?.Configuration)));
+
+        // What the refresh asks about a title before it puts it on a shelf, per
+        // #89. Registered under this plugin's own interface rather than under
+        // the server's, because the server collects nothing by it: it is this
+        // plugin asking a question, not this plugin offering something.
+        //
+        // Singleton because it holds nothing but the library the container gave
+        // it and answers the same way for every caller, so a second instance
+        // would cost an allocation and buy no isolation.
+        //
+        // The library it wraps is the server's own and is resolved by the
+        // container. A server that could not supply one is a server this plugin
+        // could not have loaded into, which is why the resolution is required
+        // rather than optional: a silent null here would be a refresh that
+        // filtered nothing and looked exactly like one that found nothing to
+        // filter.
+        serviceCollection.AddSingleton<IServerLibrary>(provider =>
+            new ServerLibraryAdapter(provider.GetRequiredService<ILibraryManager>()));
 
         // The refresh, under the interface the server's scheduler collects tasks
         // by, so an operator sees it in the dashboard beside every other one.

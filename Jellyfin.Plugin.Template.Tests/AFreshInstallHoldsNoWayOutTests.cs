@@ -59,6 +59,13 @@ public class AFreshInstallHoldsNoWayOutTests
         // added the first registration that takes one.
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
+        // The library is there before a plugin's registrator runs for the same
+        // reason, and it is named here since #89. It refuses every member: what
+        // this asserts is that the graph can be built, and a construction that
+        // asked the server anything while the container was still being built
+        // would be reading a half-built server.
+        services.AddSingleton(ServerLibraryAdapterStandIn.RefusingEveryCall());
+
         new PluginServiceRegistrator().RegisterServices(services, new ServerApplicationHostThatRefusesEveryCall());
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions

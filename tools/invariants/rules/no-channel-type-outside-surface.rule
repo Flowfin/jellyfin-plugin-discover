@@ -1,7 +1,7 @@
 Id: no-channel-type-outside-surface
 Pattern: \b(IChannel|ChannelItemInfo|ChannelItemResult|ChannelItemType|ChannelFolderType|ChannelMediaContentType|ChannelMediaType|ChannelItemSortField|InternalChannelItemQuery|InternalChannelFeatures|ChannelParentalRating|DynamicImageResponse|MetadataProvider|ImageType|ImageFormat|BaseItem|MediaSourceInfo|PersonInfo)\b|MediaBrowser\.(Controller\.(Channels|Entities|Providers|Library|LiveTv|Dto)|Model\.(Channels|Entities|Drawing|Dto|LiveTv))\b
 Subject: *.cs
-Except: :!*SurfaceAdapter.cs :!*SurfaceAdapterTests.cs :!*PluginServiceRegistrator.cs
+Except: :!*SurfaceAdapter.cs :!*SurfaceAdapterTests.cs :!*ServerLibraryAdapter*.cs :!*PluginServiceRegistrator.cs
 Issue: 52
 
 A discover page is a server channel, and the server's channel types are the
@@ -28,15 +28,33 @@ folder kind that does. `MediaBrowser.Model.Plugins`, `MediaBrowser.Common` and
 and its configuration are how a plugin is loaded at all, and they are not the
 surface.
 
-The exception is the surface adapter itself, which is the one place the
-server's vocabulary is allowed to be spoken, and its own tests, which have to
-speak it to call the adapter at all. Every other test goes through the plugin's
-own interface and a fake of it, which is what #49 asks for; a test file that has
-to be renamed to compile is the rule telling its author that it is on the wrong
-side of the boundary.
+THE EXCEPTIONS ARE THE SEAMS TO THE SERVER, NOT THE FILES THAT ARE RED TODAY,
+which is how the neighbouring rule already words the same carve-out. The
+surface adapter was the whole of the seam when this rule was written and is not
+any more: #89 asks the refresh to leave out titles the server already holds,
+that question reaches the server's own library, and the file that asks it is a
+second adapter rather than a hole cut in this boundary for convenience. Both
+are the one place the server's vocabulary is allowed to be spoken, both have
+their own tests, and those tests have to speak it to call an adapter at all.
+Every other test goes through the plugin's own interface and a fake of it,
+which is what #49 asks for; a test file that has to be renamed to compile is
+the rule telling its author that it is on the wrong side of the boundary.
 
-The registrator is the third, added with the registration in #53, and it is the
-same case rather than a hole cut for convenience. The server builds its surfaces
+What holds the second adapter to the same width as the first is the same thing:
+what crosses `IServerLibrary` is an identity and a kind, so nothing above it
+names an item, a query or a provider, and the shelves, the catalogue and the
+handover still name none of it.
+
+The second adapter is excepted by one pathspec rather than by three, and that is
+a rule about a seam rather than a list of today's files. It reaches the adapter,
+its tests, and the stand-in for the server's library those tests drive it with,
+which is one seam in three files. This rule's subject is every C# file, so a
+stand-in cannot be left outside a subject the way `no-server-type-in-a-test`
+leaves its fakes, and a list growing by one entry per stand-in is what that
+neighbour already says goes silently out of date.
+
+The registrator is excepted too, added with the registration in #53, and it is
+the same case rather than a hole cut for convenience. The server builds its surfaces
 by asking its container for every implementation of `IChannel`, so a plugin that
 registers under any other type is one the server never collects and no client
 ever sees. That name cannot be avoided in the place a plugin declares what it
@@ -46,8 +64,10 @@ represented as a channel, both files change, because both are the seam to the
 server rather than code behind it. What is on the other side of that seam, the
 shelves, the catalogue and the handover, still names none of it.
 
-The file is one line of the vocabulary wide today, and nothing here holds it to
-one line. What holds the registrator narrow is the test that exactly one surface
-is offered to the server, which derives the interface from the adapter rather
-than naming it, so it stays silent under this rule while counting what this
-exception makes possible.
+The file is two lines of the vocabulary wide today, one per adapter, and nothing
+here holds it to two. It was one until #89, and the sentence saying so had to be
+edited in the same change as the line arrived, which is why no count of them is
+worth writing here at all. What holds the registrator narrow is the test that
+exactly one surface is offered to the server, which derives the interface from
+the adapter rather than naming it, so it stays silent under this rule while
+counting what this exception makes possible.
