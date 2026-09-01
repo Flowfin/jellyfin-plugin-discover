@@ -461,7 +461,8 @@ public class TmdbSourceAdapterTests
                 return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
             },
             configured: false,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated);
 
         var answer = await adapter
             .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
@@ -493,7 +494,8 @@ public class TmdbSourceAdapterTests
                 return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
             },
             configured: true,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated);
 
         var answer = await adapter
             .FetchAsync(
@@ -531,6 +533,137 @@ public class TmdbSourceAdapterTests
         var asked = await AddressOf(new SourceQuery(name, kind, null, null)).ConfigureAwait(true);
 
         Assert.Equal(new Uri(expected), asked);
+    }
+
+    /// <summary>
+    /// A stated language is asked for at every one of the six addresses.
+    /// </summary>
+    /// <remarks>
+    /// The whole of what a language costs is this parameter, and the whole of
+    /// what its absence costs is silence: the source documents a default of
+    /// <c>en-US</c> on all six, which <c>docs/source-api/tmdb.md</c> records, so
+    /// a server whose metadata language is not English gets English and nothing
+    /// anywhere says a language was not asked for. That is the defect #81 is
+    /// written against and it cannot be seen in an answer.
+    ///
+    /// The near-miss is the parameter added to the address a reader tries first
+    /// and not to the other five. Both trending addresses are in the table for
+    /// that reason: their reference documents `language` and documents no
+    /// paging, so they are the pair somebody treats as the odd ones out.
+    /// </remarks>
+    /// <param name="name">The question, in the shelf vocabulary.</param>
+    /// <param name="kind">Which kind of title is wanted.</param>
+    /// <param name="expected">Where it has to be asked.</param>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Theory]
+    [InlineData("trending", DiscoverTitleKind.Movie, "https://api.themoviedb.org/3/trending/movie/week?page=1&language=de-DE")]
+    [InlineData("trending", DiscoverTitleKind.Series, "https://api.themoviedb.org/3/trending/tv/week?page=1&language=de-DE")]
+    [InlineData("popular", DiscoverTitleKind.Movie, "https://api.themoviedb.org/3/movie/popular?page=1&language=de-DE")]
+    [InlineData("popular", DiscoverTitleKind.Series, "https://api.themoviedb.org/3/tv/popular?page=1&language=de-DE")]
+    [InlineData("top-rated", DiscoverTitleKind.Movie, "https://api.themoviedb.org/3/movie/top_rated?page=1&language=de-DE")]
+    [InlineData("top-rated", DiscoverTitleKind.Series, "https://api.themoviedb.org/3/tv/top_rated?page=1&language=de-DE")]
+    public async Task ALanguageIsAskedForAtEveryAddress(string name, DiscoverTitleKind kind, string expected)
+    {
+        var asked = await AddressOf(
+                new SourceQuery(name, kind, null, null),
+                SourceLocale.Of("de-DE", null))
+            .ConfigureAwait(true);
+
+        Assert.Equal(new Uri(expected), asked);
+    }
+
+    /// <summary>
+    /// A stated region reaches the two addresses whose reference documents one, and no others.
+    /// </summary>
+    /// <remarks>
+    /// <c>region</c> is documented on <c>movie/popular</c> and on
+    /// <c>movie/top_rated</c> and on neither trending address and neither
+    /// television address, which <c>docs/source-api/tmdb.md</c> records from the
+    /// six references. Sending it to the other four would be sending a
+    /// parameter no reference lists, honoured or dropped for reasons no reading
+    /// of those pages settles, and an operator would then have a setting that
+    /// means one thing on two shelves and an unknown thing on four.
+    ///
+    /// The near-miss is the region appended beside the language, which is the
+    /// obvious way to write it and passes on the two addresses somebody checks
+    /// by hand. The four rows expecting no region are the ones that catch it.
+    /// </remarks>
+    /// <param name="name">The question, in the shelf vocabulary.</param>
+    /// <param name="kind">Which kind of title is wanted.</param>
+    /// <param name="expected">Where it has to be asked.</param>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Theory]
+    [InlineData("popular", DiscoverTitleKind.Movie, "https://api.themoviedb.org/3/movie/popular?page=1&language=de-DE&region=AT")]
+    [InlineData("top-rated", DiscoverTitleKind.Movie, "https://api.themoviedb.org/3/movie/top_rated?page=1&language=de-DE&region=AT")]
+    [InlineData("trending", DiscoverTitleKind.Movie, "https://api.themoviedb.org/3/trending/movie/week?page=1&language=de-DE")]
+    [InlineData("trending", DiscoverTitleKind.Series, "https://api.themoviedb.org/3/trending/tv/week?page=1&language=de-DE")]
+    [InlineData("popular", DiscoverTitleKind.Series, "https://api.themoviedb.org/3/tv/popular?page=1&language=de-DE")]
+    [InlineData("top-rated", DiscoverTitleKind.Series, "https://api.themoviedb.org/3/tv/top_rated?page=1&language=de-DE")]
+    public async Task ARegionReachesOnlyTheAddressesThatDocumentOne(string name, DiscoverTitleKind kind, string expected)
+    {
+        var asked = await AddressOf(
+                new SourceQuery(name, kind, null, null),
+                SourceLocale.Of("de-DE", "AT"))
+            .ConfigureAwait(true);
+
+        Assert.Equal(new Uri(expected), asked);
+    }
+
+    /// <summary>
+    /// Every title an answer produces carries the language the request asked for.
+    /// </summary>
+    /// <remarks>
+    /// Per entry rather than per document, because a language change is
+    /// answered by refreshing what was fetched in the old one and a partial
+    /// refresh therefore leaves two languages in one shelf on purpose. A
+    /// catalogue that recorded one value for the whole of itself would be
+    /// recording a value that is wrong for every entry the partial refresh did
+    /// not reach, which is the silent mixture #81's third condition exists
+    /// against.
+    ///
+    /// What is asserted is what was asked for. None of the six addresses states
+    /// in its answer which language it answered in, so nothing here can assert
+    /// that the source obeyed, and the field says so of itself.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task EveryTitleCarriesTheLanguageItWasAskedFor()
+    {
+        var answer = await AskedIn(SourceLocale.Of("de-DE", null))
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.NotEmpty(answer.Titles);
+        Assert.All(answer.Titles, title => Assert.Equal("de-DE", title.Language));
+    }
+
+    /// <summary>
+    /// With no language stated nothing is asked for and no title claims one.
+    /// </summary>
+    /// <remarks>
+    /// The absence has to travel as an absence. A record stamped with whatever
+    /// this plugin believes the source's default to be would be a record
+    /// claiming a language was chosen, and a later refresh in a language an
+    /// operator did choose could not be told from it.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task WithNoLanguageStatedNothingIsAskedForAndNoTitleClaimsOne()
+    {
+        var asked = await AddressOf(
+                new SourceQuery("popular", DiscoverTitleKind.Movie, null, null),
+                SourceLocale.Unstated)
+            .ConfigureAwait(true);
+
+        Assert.Equal(new Uri("https://api.themoviedb.org/3/movie/popular?page=1"), asked);
+
+        var answer = await Asked(TmdbFixtures.MoviePage)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.NotEmpty(answer.Titles);
+        Assert.All(answer.Titles, title => Assert.Null(title.Language));
     }
 
     /// <summary>
@@ -617,7 +750,8 @@ public class TmdbSourceAdapterTests
         var answer = await new TmdbSourceAdapter(
                 (address, cancellationToken) => Task.FromResult(new SourceTransportReply(200, body, null)),
                 configured: true,
-                new ClockATestAdvances(_fetched))
+                new ClockATestAdvances(_fetched),
+                SourceLocale.Unstated)
             .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
             .ConfigureAwait(true);
 
@@ -647,7 +781,8 @@ public class TmdbSourceAdapterTests
                 return Task.FromResult(new SourceTransportReply(200, null, null));
             },
             configured: true,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => adapter.FetchAsync(
@@ -698,7 +833,8 @@ public class TmdbSourceAdapterTests
                     new AuthenticationException("The remote certificate is invalid according to the validation procedure."));
             },
             configured: true,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated);
 
         var answer = await adapter
             .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
@@ -819,7 +955,8 @@ public class TmdbSourceAdapterTests
                 return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.MoviePage), null));
             },
             configured: true,
-            clock);
+            clock,
+            SourceLocale.Unstated);
 
         var answer = await adapter
             .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
@@ -900,7 +1037,8 @@ public class TmdbSourceAdapterTests
             (address, cancellationToken) =>
                 Task.FromResult(new SourceTransportReply(200, PageOf(cap * 10), null)),
             configured: true,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated);
 
         var answer = await adapter.FetchAsync(shelf.Ask(), CancellationToken.None).ConfigureAwait(true);
 
@@ -957,14 +1095,36 @@ public class TmdbSourceAdapterTests
             (address, cancellationToken) =>
                 Task.FromResult(new SourceTransportReply(status, TmdbFixtures.Body(fixture), retryAfter)),
             configured: true,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated);
+
+    /// <summary>
+    /// An adapter that answers one page of films and was told which language to ask in.
+    /// </summary>
+    /// <param name="locale">Which language to ask in and which region to ask about.</param>
+    /// <returns>The adapter.</returns>
+    private static TmdbSourceAdapter AskedIn(SourceLocale locale) =>
+        new(
+            (address, cancellationToken) =>
+                Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.MoviePage), null)),
+            configured: true,
+            new ClockATestAdvances(_fetched),
+            locale);
 
     /// <summary>
     /// The address an adapter asks a question at.
     /// </summary>
     /// <param name="query">The question.</param>
     /// <returns>Where it was asked.</returns>
-    private static async Task<Uri> AddressOf(SourceQuery query)
+    private static Task<Uri> AddressOf(SourceQuery query) => AddressOf(query, SourceLocale.Unstated);
+
+    /// <summary>
+    /// The address an adapter asks a question at, having been told a language and a region.
+    /// </summary>
+    /// <param name="query">The question.</param>
+    /// <param name="locale">Which language to ask in and which region to ask about.</param>
+    /// <returns>Where it was asked.</returns>
+    private static async Task<Uri> AddressOf(SourceQuery query, SourceLocale locale)
     {
         Uri? asked = null;
 
@@ -975,7 +1135,8 @@ public class TmdbSourceAdapterTests
                 return Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
             },
             configured: true,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            locale);
 
         await adapter.FetchAsync(query, CancellationToken.None).ConfigureAwait(false);
 

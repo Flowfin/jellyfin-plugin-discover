@@ -340,5 +340,6 @@ public class ShelfTests
             (address, cancellationToken) =>
                 Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null)),
             configured: true,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated);
 }

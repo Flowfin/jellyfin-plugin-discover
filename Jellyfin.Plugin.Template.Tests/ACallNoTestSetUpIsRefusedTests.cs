@@ -159,5 +159,5 @@ public class ACallNoTestSetUpIsRefusedTests
     /// <param name="transport">What it asks through.</param>
     /// <returns>An adapter that reaches nothing.</returns>
     private static TmdbSourceAdapter Adapter(ATransportThatRefusesWhatNoTestSetUp transport) =>
-        new(transport.SendAsync, configured: true, new ClockATestAdvances(_fetched));
+        new(transport.SendAsync, configured: true, new ClockATestAdvances(_fetched), SourceLocale.Unstated);
 }

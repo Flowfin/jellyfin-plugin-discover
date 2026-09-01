@@ -297,7 +297,8 @@ public class SourceResponseFuzzTests
         var adapter = new TmdbSourceAdapter(
             (_, _) => Task.FromResult(new SourceTransportReply(status, body, null)),
             configured: true,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated);
 
         SourceAnswer? given = null;
 

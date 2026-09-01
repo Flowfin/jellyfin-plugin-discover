@@ -108,14 +108,11 @@ public sealed record DiscoverTitle
     /// Gets the title as the source spells it. Never absent.
     /// </summary>
     /// <remarks>
-    /// Comes from the source, in whatever language it answers with when it is
-    /// asked for none. Nothing in this plugin asks for one: the query type
-    /// carries neither a language nor a region and says so, and the request the
-    /// one adapter builds puts a page number on it and nothing else. Which
-    /// language a title should arrive in is #81 and is undecided, and this
-    /// record does not carry which language it did arrive in, so a catalogue
-    /// filled from two answers in two languages holds both with nothing on
-    /// either saying which.
+    /// Comes from the source, in the language <see cref="Language"/> names, or
+    /// in whatever the source answers with where that is absent. Which language
+    /// an adapter asks in is not the shelf's to choose: the query type carries
+    /// neither a language nor a region and says so, and where the value comes
+    /// from instead is #81.
     ///
     /// It is what a client shows and it is not part of identity: asking one
     /// source twice in two languages returns two names for one title, and both
@@ -196,6 +193,33 @@ public sealed record DiscoverTitle
             _fetchedAt = value;
         }
     }
+
+    /// <summary>
+    /// Gets the language this record was fetched in, or null where the source was asked for none.
+    /// </summary>
+    /// <remarks>
+    /// WHAT WAS ASKED FOR RATHER THAN WHAT CAME BACK, and the difference is the
+    /// whole of what this field can honestly claim. None of the six addresses
+    /// <c>docs/source-api/tmdb.md</c> records states in its answer which
+    /// language it answered in, so a record saying it holds German is a record
+    /// saying German was requested. A source that had no translation and fell
+    /// back to its own default is indistinguishable from one that answered as
+    /// asked, and #81's second condition is where that fallback is stated.
+    ///
+    /// Per entry rather than per document, and that is the point of it. A
+    /// language change is answered by refreshing what was fetched in the old
+    /// one, so a partial refresh leaves two languages in one shelf by design;
+    /// one value for the whole catalogue would be a value that is wrong for
+    /// every entry the partial refresh did not reach. That is the silent
+    /// mixture #81's third condition exists against.
+    ///
+    /// May be absent, and every record written before this field existed is.
+    /// Absent means the source was asked for no language and answered in
+    /// whatever its own default is, which is a different statement from a
+    /// language nobody recorded, and no catalogue holds the second: nothing has
+    /// been published, so no stored record predates this field.
+    /// </remarks>
+    public string? Language { get; init; }
 
     /// <summary>
     /// Gets the title in the source's own original language, or null where the source gave none.

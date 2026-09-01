@@ -48,7 +48,8 @@ public class CatalogueRetentionTests
         var tmdb = new TmdbSourceAdapter(
             (address, cancellationToken) => throw new InvalidOperationException("Nothing here asks this source anything."),
             configured: true,
-            new ClockATestAdvances(_fetched));
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated);
 
         Assert.True(CatalogueRetention.Default < tmdb.RetentionCeiling);
         Assert.Equal(

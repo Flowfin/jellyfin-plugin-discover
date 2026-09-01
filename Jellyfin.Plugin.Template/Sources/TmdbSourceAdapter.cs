@@ -75,6 +75,8 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
     private readonly bool _configured;
 
+    private readonly SourceLocale _locale;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TmdbSourceAdapter"/> class, speaking to the source.
     /// </summary>
@@ -85,13 +87,20 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// business; all it does with the absence is decline to ask.
     /// </param>
     /// <param name="clock">What the instant on each record is read from.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/> or <paramref name="clock"/> is null.</exception>
-    public TmdbSourceAdapter(IHttpClientFactory httpClientFactory, string? accessToken, IClock clock)
+    /// <param name="locale">
+    /// Which language to ask in and which region to ask about. Where it comes
+    /// from is #81 and is not this type's business either, in the same way and
+    /// for the same reason as the credential above.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
+    public TmdbSourceAdapter(IHttpClientFactory httpClientFactory, string? accessToken, IClock clock, SourceLocale locale)
     {
         ArgumentNullException.ThrowIfNull(httpClientFactory);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(locale);
 
         _clock = clock;
+        _locale = locale;
         _configured = !string.IsNullOrWhiteSpace(accessToken);
         _transport = (address, cancellationToken) => SendAsync(httpClientFactory, accessToken, address, cancellationToken);
     }
@@ -102,6 +111,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// <param name="transport">What carries a request and brings a reply back.</param>
     /// <param name="configured">Whether a credential has been supplied.</param>
     /// <param name="clock">What the instant on each record is read from.</param>
+    /// <param name="locale">Which language to ask in and which region to ask about.</param>
     /// <remarks>
     /// This is the constructor a test uses, and the reason it exists is on
     /// <see cref="SourceTransportReply"/>. It is public rather than hidden
@@ -109,14 +119,16 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// constructor's transport without breaking the rule that keeps outbound
     /// calls in adapters.
     /// </remarks>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="transport"/> or <paramref name="clock"/> is null.</exception>
-    public TmdbSourceAdapter(Func<Uri, CancellationToken, Task<SourceTransportReply>> transport, bool configured, IClock clock)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="transport"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
+    public TmdbSourceAdapter(Func<Uri, CancellationToken, Task<SourceTransportReply>> transport, bool configured, IClock clock, SourceLocale locale)
     {
         ArgumentNullException.ThrowIfNull(transport);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(locale);
 
         _transport = transport;
         _clock = clock;
+        _locale = locale;
         _configured = configured;
     }
 
@@ -150,7 +162,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
         }
 
         var page = Page(asked.StartIndex);
-        var address = Address(asked, page);
+        var address = Address(asked, page, _locale);
 
         if (address is null)
         {
@@ -172,7 +184,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
             return SourceAnswer.TemporarilyFailed(null);
         }
 
-        return Read(reply, asked, page, _clock.UtcNow);
+        return Read(reply, asked, page, _clock.UtcNow, _locale.Language);
     }
 
     /// <summary>
@@ -182,6 +194,10 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// <param name="query">What was asked, for the kind and how much of the page to keep.</param>
     /// <param name="page">Which page was asked for, so the start index inside it can be dropped.</param>
     /// <param name="fetchedAt">When the source answered, read once for the whole reply.</param>
+    /// <param name="language">
+    /// The language the request asked for, carried onto every record this reply
+    /// produces, or null where it asked for none.
+    /// </param>
     /// <returns>The answer, never an exception.</returns>
     /// <remarks>
     /// A credential the source rejected is <see cref="SourceOutcome.NotConfigured"/>
@@ -194,7 +210,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// absent, wrong or revoked its key is. #92 is where an operator is shown
     /// the state of a shelf, and this is the case it will find thinnest.
     /// </remarks>
-    private static SourceAnswer Read(SourceTransportReply reply, SourceQuery query, int page, DateTimeOffset fetchedAt)
+    private static SourceAnswer Read(SourceTransportReply reply, SourceQuery query, int page, DateTimeOffset fetchedAt, string? language)
     {
         var status = (HttpStatusCode)reply.StatusCode;
 
@@ -231,7 +247,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
         using (document)
         {
-            return Titles(document.RootElement, query, page, fetchedAt);
+            return Titles(document.RootElement, query, page, fetchedAt, language);
         }
     }
 
@@ -242,6 +258,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// <param name="query">What was asked, for the kind and the limit.</param>
     /// <param name="page">Which page this is, so the start index inside it can be dropped.</param>
     /// <param name="fetchedAt">When the source answered, carried onto every record this page produces.</param>
+    /// <param name="language">The language the request asked for, carried onto every record this page produces.</param>
     /// <returns>What the page held, with everything unmappable left out.</returns>
     /// <remarks>
     /// An entry this plugin cannot map is dropped rather than carried, and the
@@ -256,7 +273,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// contradiction on would throw out of the adapter, and #73 asks that this
     /// method not throw to report anything about a source.
     /// </remarks>
-    private static SourceAnswer Titles(JsonElement root, SourceQuery query, int page, DateTimeOffset fetchedAt)
+    private static SourceAnswer Titles(JsonElement root, SourceQuery query, int page, DateTimeOffset fetchedAt, string? language)
     {
         if (root.ValueKind != JsonValueKind.Object
             || !root.TryGetProperty("results", out var results)
@@ -288,7 +305,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
                 break;
             }
 
-            var title = Title(entry, query.Kind, fetchedAt);
+            var title = Title(entry, query.Kind, fetchedAt, language);
 
             if (title is not null)
             {
@@ -350,14 +367,20 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// <param name="entry">One title as the source spells it.</param>
     /// <param name="kind">Which kind was asked for, which is what decides the field names.</param>
     /// <param name="fetchedAt">When the source answered.</param>
+    /// <param name="language">The language the request asked for, or null where it asked for none.</param>
     /// <returns>The record, or null where the entry carries too little to be one.</returns>
     /// <remarks>
     /// The kind comes from the question rather than from the entry. The source
     /// answers a question about films with films and a question about series
     /// with series, and its entries carry no type of their own on these routes,
     /// so reading one back out would be reading a field that is not there.
+    ///
+    /// The language comes from the question as well, and for a harder reason:
+    /// none of the six addresses this adapter builds states in its answer which
+    /// language it answered in. So what a record can carry is what was asked
+    /// for, which is what <see cref="DiscoverTitle.Language"/> says of itself.
     /// </remarks>
-    private static DiscoverTitle? Title(JsonElement entry, DiscoverTitleKind kind, DateTimeOffset fetchedAt)
+    private static DiscoverTitle? Title(JsonElement entry, DiscoverTitleKind kind, DateTimeOffset fetchedAt, string? language)
     {
         if (entry.ValueKind != JsonValueKind.Object)
         {
@@ -387,6 +410,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
             Kind = kind,
             Name = name,
             FetchedAt = fetchedAt,
+            Language = language,
             OriginalName = string.Equals(original, name, StringComparison.Ordinal) ? null : original,
             ReleaseYear = Year(Text(entry, isSeries ? "first_air_date" : "release_date")),
             Summary = Text(entry, "overview"),
@@ -554,12 +578,15 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// </summary>
     /// <param name="query">What is being asked for.</param>
     /// <param name="page">Which page of it.</param>
+    /// <param name="locale">Which language to ask in and which region to ask about.</param>
     /// <returns>The address, or null where this source has no question for that name.</returns>
     /// <remarks>
-    /// Nothing a caller supplied reaches the address as text. The path is one
-    /// of six literals chosen by a switch, and the only value interpolated is a
-    /// page number that is already an integer, so the fifth condition on #74 is
-    /// a property of the shape here rather than of an escaping call somebody
+    /// Nothing a caller supplied reaches the address as text unvouched for. The
+    /// path is one of six literals chosen by a switch, the page number is
+    /// already an integer, and the language and the region are two values
+    /// <see cref="SourceLocale"/> refuses unless every character of them is a
+    /// letter or the one hyphen its shape allows, so the fifth condition on #74
+    /// is a property of the shape here rather than of an escaping call somebody
     /// has to remember. That is also the spelling `source-terms` can see: it
     /// reads hostnames out of the text of a tracked adapter, and a base address
     /// assembled at run time from parts would be invisible to it.
@@ -568,8 +595,20 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// are legitimate is the shelf set in #86, which is not decided, so the
     /// three here are the questions this source answers directly rather than a
     /// shelf list this adapter has taken upon itself.
+    ///
+    /// THE REGION REACHES TWO OF THE SIX AND THE LANGUAGE REACHES ALL SIX, and
+    /// that asymmetry is the source's rather than a simplification. The
+    /// references read on `docs/source-api/tmdb.md` document `language` on
+    /// every one of the six and `region` on `movie/popular` and
+    /// `movie/top_rated` alone, so a region sent to the other four would be a
+    /// parameter no reference lists, honoured or dropped for reasons no reading
+    /// of those pages settles. Sending it anyway would make the setting an
+    /// operator sets mean one thing on two shelves and an unknown thing on
+    /// four, which is what #81 records as the reason the answer is per address.
+    /// The addresses that take one are named here rather than carried as a flag
+    /// beside the switch, so the two lists cannot drift apart.
     /// </remarks>
-    private static Uri? Address(SourceQuery query, int page)
+    private static Uri? Address(SourceQuery query, int page, SourceLocale locale)
     {
         var series = query.Kind == DiscoverTitleKind.Series;
 
@@ -586,9 +625,21 @@ public sealed class TmdbSourceAdapter : IMetadataSource
             return null;
         }
 
+        var parameters = FormattableString.Invariant($"page={page}");
+
+        if (locale.Language is { } language)
+        {
+            parameters += FormattableString.Invariant($"&language={language}");
+        }
+
+        if (locale.Region is { } region && path is "movie/popular" or "movie/top_rated")
+        {
+            parameters += FormattableString.Invariant($"&region={region}");
+        }
+
         return new UriBuilder(new Uri(_baseAddress, path))
         {
-            Query = FormattableString.Invariant($"page={page}")
+            Query = parameters
         }.Uri;
     }
 
