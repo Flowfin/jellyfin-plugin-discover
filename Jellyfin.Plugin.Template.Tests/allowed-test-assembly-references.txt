@@ -26,6 +26,11 @@ Jellyfin.Plugin.Template
 # The server's own assemblies. The tests reference them with their runtime
 # assets kept, because a test host has no server to supply them, which the test
 # project file says beside the two package references.
+#
+# Jellyfin.Data is here for one type and it is #89's, the same one the plugin's
+# own list names: the item kind a library query asks about, which the adapter's
+# tests read back off the query it built.
+Jellyfin.Data
 MediaBrowser.Common
 MediaBrowser.Controller
 MediaBrowser.Model
@@ -91,3 +96,11 @@ System.Threading
 System.Threading.Thread
 System.Xml.ReaderWriter
 System.Xml.XmlSerializer
+
+# How the stand-in for the server's own library is written. That interface has
+# eighty-one members and this suite needs two of them, so the stand-in is a
+# runtime proxy refusing everything it was not arranged for rather than eighty-
+# one hand-written members that throw. It is the runtime the server already runs
+# on rather than a mocking package, which is the argument
+# ServerLibraryAdapterStandIn.cs makes at itself, and it is #89's.
+System.Reflection.DispatchProxy
