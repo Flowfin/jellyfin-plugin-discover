@@ -177,7 +177,8 @@ builds one:
 It builds one on its first run rather than when the plugin is registered, so
 installing this plugin still puts no catalogue on a server's disk, which
 `AFreshInstallWritesNothingTests` holds by reading the disk after a start. What
-a run then writes is nothing, because there is no source to answer a shelf.
+a run then writes is nothing, because there is no source to answer a shelf, and
+the same file holds that too by reading the disk after a run.
 
 Read every sentence above this section as a plan and not as behaviour you can
 install. That covers what a television shows and what this plugin does not do,

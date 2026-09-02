@@ -1,6 +1,13 @@
+using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Jellyfin.Plugin.Template.Catalogue;
+using Jellyfin.Plugin.Template.Configuration;
+using Jellyfin.Plugin.Template.Refresh;
+using Jellyfin.Plugin.Template.Shelves;
+using Jellyfin.Plugin.Template.Sources;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,6 +26,14 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// because a registration that writes does it when something asks for it rather
 /// than when it is added. What a real server does after that is not claimed; no
 /// server is started here.
+///
+/// A start is no longer the whole of what an unconfigured install does. #87
+/// registered a scheduled task, so the server runs something of this plugin's
+/// once a day whether or not anybody configured it, and a run is the one route
+/// in this plugin that reaches a write at all. The second assertion below is
+/// that route, driven through the same seam <see cref="DiscoverRefreshTaskTests"/>
+/// uses rather than through the plugin instance, because that instance is a
+/// static every test in this suite shares.
 ///
 /// The property is about the disk rather than about the calls. What the plugin
 /// asks the server for is already counted in CallsTheServerSeesTests, and a
@@ -66,6 +81,11 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// </remarks>
 public class AFreshInstallWritesNothingTests
 {
+    private const string TestFolders = "jellyfin-plugin-discover-tests";
+
+    private static readonly DateTimeOffset _now =
+        new DateTimeOffset(2026, 9, 2, 9, 0, 0, TimeSpan.Zero);
+
     /// <summary>
     /// Starting with nothing configured leaves the catalogue directory absent
     /// and the plugin's own folder empty.
@@ -134,5 +154,81 @@ public class AFreshInstallWritesNothingTests
             !Directory.Exists(plugin.DataFolderPath)
                 || !Directory.EnumerateFileSystemEntries(plugin.DataFolderPath).Any(),
             $"A start with nothing configured left something in {plugin.DataFolderPath}.");
+    }
+
+    /// <summary>
+    /// The scheduled run a fresh install gets for free writes nothing either.
+    /// </summary>
+    /// <remarks>
+    /// The other half of the same property, on the route that arrived after the
+    /// assertion above was written. A server collects this plugin's task and
+    /// runs it on its own schedule with nothing configured, so "an install
+    /// nobody touched" now includes a run rather than only a start, and a run is
+    /// where every write in this plugin is reached from.
+    ///
+    /// What holds it green is that the catalogue directory is created by a write
+    /// and by nothing else, and that a run with no source registered asks
+    /// nobody, writes no document and reads a listing from a directory that is
+    /// not there. The shelves are the shipped set at the default bound, which is
+    /// what a server with no configuration would hand the task.
+    ///
+    /// The near-miss is the constructor named in the remark above, one route
+    /// later: a store that created its directory when it was built so a later
+    /// write would not have to. The assertion above cannot see it, because a
+    /// start builds no store; this one reddens.
+    ///
+    /// The run is driven through <see cref="DiscoverRefreshTask.Over"/> rather
+    /// than through a task the container built, for the reason
+    /// <see cref="DiscoverRefreshTaskTests"/> already gives: a run composed from
+    /// the plugin instance reads a static this whole suite shares, so it would
+    /// pass or fail on which test was running beside it.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ARunWithNothingConfiguredWritesNothing()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), TestFolders, "fresh-install-run");
+
+        Remove(folder);
+
+        try
+        {
+            await DiscoverRefreshTask.Over(
+                new CatalogueRefresh(
+                    Array.Empty<IMetadataSource>(),
+                    new CatalogueDocumentStore(
+                        new CatalogueDirectory(folder),
+                        new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>()),
+                    null,
+                    new ClockATestAdvances(_now),
+                    new PauseATestWatches(),
+                    new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>()),
+                ShippedShelves.Bounded(CatalogueBounds.DefaultTitlesPerShelf),
+                new LoggerThatRecordsWhatIsWritten<DiscoverRefreshTask>())
+                .ExecuteAsync(new Progress<double>(), CancellationToken.None)
+                .ConfigureAwait(true);
+
+            var catalogue = new CatalogueDirectory(folder);
+
+            Assert.False(
+                Directory.Exists(catalogue.FullPath),
+                $"A run with nothing configured created {catalogue.FullPath}.");
+
+            Assert.True(
+                !Directory.Exists(folder) || !Directory.EnumerateFileSystemEntries(folder).Any(),
+                $"A run with nothing configured left something in {folder}.");
+        }
+        finally
+        {
+            Remove(folder);
+        }
+    }
+
+    private static void Remove(string folder)
+    {
+        if (Directory.Exists(folder))
+        {
+            Directory.Delete(folder, true);
+        }
     }
 }
