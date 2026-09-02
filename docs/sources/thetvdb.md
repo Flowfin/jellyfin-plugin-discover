@@ -55,10 +55,22 @@ and the first row is the one this project would be in:
 | $250k to $1M per year   | $10,000 / year             |
 | $1M+ or custom terms    | Contact Us                 |
 
-The attribution the free row requires is stated on the same page:
+The attribution the free row requires is stated on the same page, in a paragraph
+of two sentences, of which this page quoted only the first until 2026-09-02:
 
     Unless approved by TheTVDB, attribution with a direct link to TheTVDB.com
-    must be displayed to end users viewing metadata from our API.
+    must be displayed to end users viewing metadata from our API.  Command line
+    products or development libraries may display attribution on your about or
+    readme pages.
+
+The second sentence is a carve-out and it is the half that decides where an
+attribution has to appear rather than whether one does. It names two kinds of
+project that may attribute somewhere other than in front of the person looking
+at the metadata, and a plugin for a media server is neither of them on any
+reading this page is willing to make. So quoting the first sentence alone
+understated nothing about the obligation and hid the one clause somebody would
+reach for to argue the obligation is met by a readme. Both sentences are here
+now, and the two spaces between them are the page's own.
 
 ### User-supported
 
