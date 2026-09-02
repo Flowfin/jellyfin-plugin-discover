@@ -5,8 +5,11 @@
 # clause read as a wait until now, naming #47 as what would land the thing to
 # read a clock through. #47 landed it and closed, so it is a rule with one
 # exception rather than something still coming, and the exception is written at
-# the rule: tools/invariants/rules/no-wall-clock.rule excepts *SystemClock.cs
-# and nothing else.
+# the rule rather than restated here: tools/invariants/rules/no-wall-clock.rule
+# carries it. This comment did restate it, as the suffix *SystemClock.cs, and
+# #387 rewrote every exception in that directory from a filename suffix into the
+# path it means - so the copy went stale in the same act, which is the whole
+# argument for not keeping one.
 #
 # The workflow does one thing, which is run the script. Everything else lives in
 # tools/invariants: the rules, the fixtures that prove each one fires, and the

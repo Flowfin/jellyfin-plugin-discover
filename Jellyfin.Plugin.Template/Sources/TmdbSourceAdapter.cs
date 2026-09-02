@@ -42,12 +42,12 @@ namespace Jellyfin.Plugin.Template.Sources;
 /// is a location at the source rather than a copy, which is #62, so nothing
 /// here fetches an image.
 ///
-/// The file's name is load-bearing twice over. `no-network-outside-source-adapter`
-/// excepts the `*SourceAdapter.cs` suffix, and `source-terms` lowercases what
-/// precedes it and demands `docs/sources/tmdb.md` declaring itself. A name that
-/// meant the same thing to a person, `TheMovieDbSourceAdapter.cs`, takes the
-/// first exception and fails the second, so the two checks do not fail
-/// together.
+/// The file's name is load-bearing once, and it was twice until #387 wrote the
+/// lint's exception as this file's path. `source-terms` still reads the name: it
+/// lowercases what precedes SourceAdapter.cs and demands a `docs/sources/tmdb.md`
+/// that declares itself. A rename now fails that check and loses the exception
+/// outright, where before it kept the exception on the strength of the suffix and
+/// failed only the second, so the two checks no longer come apart.
 /// </remarks>
 public sealed class TmdbSourceAdapter : IMetadataSource
 {

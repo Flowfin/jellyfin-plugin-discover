@@ -1,7 +1,7 @@
 Id: no-wall-clock
 Pattern: \b(DateTime\.(Now|UtcNow|Today)|DateTimeOffset\.(Now|UtcNow)|Environment\.TickCount|Stopwatch|TimeProvider\.System)
 Subject: *.cs
-Except: :!*SystemClock.cs
+Except: :!Jellyfin.Plugin.Template/Time/SystemClock.cs
 Issue: 47
 
 Half of what this plugin does is time: a cache that expires, a retention limit,
@@ -10,9 +10,19 @@ stands makes every one of those testable only by sleeping, and a test that
 sleeps is a test that gets deleted.
 
 The exception is the one implementation of IClock that reads the machine, which
-#47 added. It is written as a file suffix rather than as a full path because the
-project directory still carries the template's name and #14 renames it; a full
-path would turn that rename into a silently disabled invariant.
+#47 added, and it is written as that file's path.
+
+IT WAS A FILENAME SUFFIX UNTIL #387, AND THE REASON WRITTEN HERE FOR THE SUFFIX
+WAS WRONG IN THE DIRECTION THAT DECIDED IT. It said a full path would turn #14's
+rename of the project directory into a silently disabled invariant. The rename is
+loud rather than silent, and it is loud twice. An exception naming a path that no
+longer exists excludes nothing, so the file it was written for is back inside the
+subject and leg 3 refuses it, and leg 6 refuses the exception itself for naming
+no tracked file. Both were watched by pointing this exception at the path the
+rename would produce and running the lint. What the suffix bought instead is what
+#387 is about: any file anywhere in the tree whose name ended SystemClock.cs was
+outside this invariant, whatever it did, and the person adding that file chose
+the name.
 
 The exception is one file and widening it is how this rule stops meaning
 anything. A second reader of the machine's clock belongs behind IClock, not

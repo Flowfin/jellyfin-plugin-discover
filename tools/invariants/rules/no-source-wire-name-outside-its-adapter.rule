@@ -1,7 +1,7 @@
 Id: no-source-wire-name-outside-its-adapter
 Pattern: "(first_air_date|original_name|original_title|poster_path|release_date|status_message|total_results|overview|results|vote_average|vote_count)"
 Subject: *.cs
-Except: :!*SourceAdapter.cs :!*SourceAdapterTests.cs :!*TitleRoundTripTests.cs
+Except: :!Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs :!Jellyfin.Plugin.Template.Tests/TmdbSourceAdapterTests.cs :!Jellyfin.Plugin.Template.Tests/TitleRoundTripTests.cs
 Issue: 73
 
 A source's field names are that source's, and they stop at its adapter. The
@@ -36,15 +36,22 @@ client library is a deliberate edit to that file rather than something that
 arrives quietly. A pattern here could name nothing today, and a rule matching
 nothing is one a reader counts.
 
-Three exceptions, and two of them are the file suffixes this tree already uses
-for the seam to a source. The adapter is where the vocabulary belongs, and its
-own tests have to speak it to assert what it maps.
+Three exceptions, three paths, and the first two are the seam to a source. The
+adapter is where the vocabulary belongs, and its own tests have to speak it to
+assert what it maps.
 
 The third is `TitleRoundTripTests.cs`, which is not an adapter's file and reads
 the wire on purpose. It follows a title from a source's bytes out to a client
 and back to the identifier it started with, so it reads the field a value came
 from and compares it with the value that arrived; that is #55's assertion and it
-cannot be made without naming both ends. It is excepted by name rather than by a
-suffix because it is one file and there is no convention to derive it from, and
-naming it here is what stops the exception growing into a list nobody can
-re-derive.
+cannot be made without naming both ends. It is one file with no convention to
+derive it from, and naming it here is what stops the exception growing into a
+list nobody can re-derive.
+
+ALL THREE WERE FILENAME SUFFIXES UNTIL #387, AND THIS PARAGRAPH SEPARATED THE
+THIRD FROM THE OTHER TWO ON EXACTLY THAT GROUND. The separation was not there to
+be drawn. `*SourceAdapter.cs`, `*SourceAdapterTests.cs` and
+`*TitleRoundTripTests.cs` are all names a later file is free to take, so a caller
+reading the wire was one rename away from being outside this rule whatever it
+read. The three differ in what they are for and never in their shape, and each of
+them is now the path it meant.

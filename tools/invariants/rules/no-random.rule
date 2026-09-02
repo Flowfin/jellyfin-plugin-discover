@@ -1,7 +1,7 @@
 Id: no-random
 Pattern: (\bnew[[:space:]]+Random\(|\bRandom\.Shared|\bGuid\.NewGuid\(|\bGuid\.CreateVersion7\(|\bPath\.GetRandomFileName\()
 Subject: *.cs
-Except: :!*SystemRandomSource.cs
+Except: :!Jellyfin.Plugin.Template/Randomness/SystemRandomSource.cs
 Issue: 47
 
 The same argument as the clock, for the other source of an answer a test cannot
@@ -10,7 +10,9 @@ things a test has to be able to fix, and it can only fix them if they come from
 somewhere it can supply.
 
 The exception is the one implementation of IRandomSource, which #47 added, and
-it is written as a file suffix for the reason on no-wall-clock. Nothing behind
+it is written as that file's path. It was a filename suffix, for the reason
+no-wall-clock gave and #387 refuted, and that neighbour carries the correction
+rather than this file repeating it. Nothing behind
 it is cryptographic: a key or a token needs a generator chosen for that job and
 this rule does not stand in for that choice.
 

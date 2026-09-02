@@ -1,7 +1,7 @@
 Id: no-network-outside-source-adapter
 Pattern: (\bnew[[:space:]]+HttpClient\(|\bIHttpClientFactory\b|\bHttpRequestMessage\b|\bHttpWebRequest\b|\bWebRequest\.|\bnew[[:space:]]+Socket\(|\bDns\.)
 Subject: *.cs
-Except: :!*SourceAdapter.cs
+Except: :!Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
 Issue: 73
 
 Everything that leaves this server for a third party leaves through a source
@@ -12,3 +12,11 @@ happened to need a page of titles.
 It is also what makes the test rule in #45 possible: a call that goes through
 the adapter goes through the injected handler a test supplies, and a call made
 anywhere else does not.
+
+THE EXCEPTION IS THE ADAPTER'S PATH, AND IT WAS THE ADAPTER'S NAME UNTIL #387.
+`*SourceAdapter.cs` matched any file in the tree whose name ended that way, so a
+second place calling out of this server needed a name rather than a reason. There
+is one adapter and it sits in one place, so the exception is that place. A second
+source is a second adapter and a second entry here, written deliberately, and an
+adapter that moves is refused by leg 6 for leaving its exception naming nothing
+rather than carried along by a name that still matches.
