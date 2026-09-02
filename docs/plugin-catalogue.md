@@ -234,7 +234,7 @@ catalogue's own tooling cites a commit this checkout does not carry, and nothing
 here fetches it, so each is refused by name:
 
     git grep -n 'names an object this repository does not carry' -- tools/documented-commands/run.sh
-    tools/documented-commands/run.sh:173:    echo "names an object this repository does not carry"
+    tools/documented-commands/run.sh:263:    echo "names an object this repository does not carry"
 
 So those go stale silently against a repository that moves on its own schedule,
 exactly as this paragraph said, and what catches them is still somebody running
@@ -242,12 +242,14 @@ them against a checkout of that repository.
 
 The blocks that do read this repository are the end of the comparison that moves
 when a change here edits the packaging metadata or the publish route. They quote
-`origin/master`, so they are compared on the mainline and on the push that merges
-to it, and on a pull request the reader reports that it judged none of them rather
-than saying they passed:
+`origin/master`, and each is now read against that commit and against the tree
+being pushed, so a change moving a line one of them cites is refused on its own
+pull request rather than on the run after the merge. Where the mainline already
+disagrees, the block is reported and passed over instead, because a branch cut
+behind a red mainline did not make it red:
 
-    git grep -n 'reads origin/master and this checkout is not standing on it' -- tools/documented-commands/run.sh
-    tools/documented-commands/run.sh:156:        echo "reads origin/master and this checkout is not standing on it"
+    git grep -n 'already disagrees with this block, so this change' -- tools/documented-commands/run.sh
+    tools/documented-commands/run.sh:415:  say "skip  $file:$line: the mainline already disagrees with this block, so this change is not what makes it wrong."
 
 Nothing reads the prose on either half. What a block holds is that the command
 still prints what is pasted under it, never that the sentence over it is the right
