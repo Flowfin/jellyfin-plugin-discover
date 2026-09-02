@@ -61,7 +61,7 @@ The rule runs on one route, and that route is the save:
 
     git grep -n 'ThrowIfUnknown' -- 'Jellyfin.Plugin.Template/*.cs'
     Jellyfin.Plugin.Template/Configuration/ConfigurationSchema.cs:27:    public static void ThrowIfUnknown(PluginConfiguration configuration)
-    Jellyfin.Plugin.Template/Plugin.cs:77:            ConfigurationSchema.ThrowIfUnknown(pluginConfiguration);
+    Jellyfin.Plugin.Template/Plugin.cs:78:            ConfigurationSchema.ThrowIfUnknown(pluginConfiguration);
     Jellyfin.Plugin.Template/Seam/WhoMayAsk.cs:148:    /// The same shape <see cref="ConfigurationSchema.ThrowIfUnknown"/> takes and
 
 Three lines and two of them are the route: the declaration and the one call. The

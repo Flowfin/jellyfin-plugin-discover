@@ -4,6 +4,7 @@ using System.Globalization;
 using Jellyfin.Plugin.Template.Configuration;
 using Jellyfin.Plugin.Template.Seam;
 using Jellyfin.Plugin.Template.Shelves;
+using Jellyfin.Plugin.Template.Storage;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
@@ -85,6 +86,54 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         }
 
         base.UpdateConfiguration(configuration);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// The server invites a plugin to clean up before it removes it, and #108's
+    /// first condition established that from the server's own source on both
+    /// targeted lines rather than from an assumption. This override is that
+    /// invitation accepted, and it accepts it by calling the one operation
+    /// #72 built rather than by removing anything itself: everything under the
+    /// folder the server derived for this plugin belongs to this plugin, so a
+    /// store added tomorrow goes with it and nobody has to remember to extend a
+    /// list here.
+    /// </para>
+    /// <para>
+    /// WITHOUT THIS THE SERVER TAKES A DIFFERENT DIRECTORY AND LEAVES THE DATA
+    /// STANDING. The uninstall deletes the folder it unpacked the package into,
+    /// which is named from the manifest name with the version appended, and the
+    /// data folder is named from the loaded assembly's file name. They sit side
+    /// by side under the plugins path and neither is inside the other, which
+    /// <c>docs/installing.md</c> reads out of the server's source. So the
+    /// catalogue and the want list survived a removal entirely, and this hook is
+    /// the only thing on that route that takes them.
+    /// </para>
+    /// <para>
+    /// IT IS ONE ROUTE RATHER THAN A GUARANTEE, and the reading on #108 says
+    /// which one. An operator who deletes the plugin folder by hand runs none of
+    /// this, and this hook cannot be the place a promise about removal is made.
+    /// Two other things it does not reach are named on that issue rather than
+    /// silently absent: the configuration document, which the base class writes
+    /// under the server's plugin configurations path and which
+    /// <c>no-other-plugin-storage</c> refuses this plugin to compose a path
+    /// into, and the rows this plugin puts in the library database, which the
+    /// server removes on its own schedule and nothing here touches.
+    /// </para>
+    /// <para>
+    /// A failure is not swallowed here. The purge treats an absent folder as
+    /// done in both directions, which is the case a fresh install and a second
+    /// removal both are, so what is left to throw is a folder that is there and
+    /// cannot be taken. The server calls this before it removes anything, so an
+    /// exception reaching it is the operator learning that data was left behind,
+    /// which is the honest outcome and the one <see cref="PluginDataPurge"/>'s
+    /// own remark argues for.
+    /// </para>
+    /// </remarks>
+    public override void OnUninstalling()
+    {
+        new PluginDataPurge(DataFolderPath).RemoveEverything();
     }
 
     /// <inheritdoc />
