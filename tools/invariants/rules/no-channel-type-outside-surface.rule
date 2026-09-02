@@ -1,7 +1,7 @@
 Id: no-channel-type-outside-surface
 Pattern: \b(IChannel|ChannelItemInfo|ChannelItemResult|ChannelItemType|ChannelFolderType|ChannelMediaContentType|ChannelMediaType|ChannelItemSortField|InternalChannelItemQuery|InternalChannelFeatures|ChannelParentalRating|DynamicImageResponse|MetadataProvider|ImageType|ImageFormat|BaseItem|MediaSourceInfo|PersonInfo)\b|MediaBrowser\.(Controller\.(Channels|Entities|Providers|Library|LiveTv|Dto)|Model\.(Channels|Entities|Drawing|Dto|LiveTv))\b
 Subject: *.cs
-Except: :!*SurfaceAdapter.cs :!*SurfaceAdapterTests.cs :!*ServerLibraryAdapter*.cs :!*PluginServiceRegistrator.cs
+Except: :!Jellyfin.Plugin.Template/Surface/DiscoverSurfaceAdapter.cs :!Jellyfin.Plugin.Template.Tests/DiscoverSurfaceAdapterTests.cs :!Jellyfin.Plugin.Template/Server/ServerLibraryAdapter.cs :!Jellyfin.Plugin.Template.Tests/ServerLibraryAdapterStandIn.cs :!Jellyfin.Plugin.Template.Tests/ServerLibraryAdapterTests.cs :!Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
 Issue: 52
 
 A discover page is a server channel, and the server's channel types are the
@@ -45,13 +45,20 @@ what crosses `IServerLibrary` is an identity and a kind, so nothing above it
 names an item, a query or a provider, and the shelves, the catalogue and the
 handover still name none of it.
 
-The second adapter is excepted by one pathspec rather than by three, and that is
-a rule about a seam rather than a list of today's files. It reaches the adapter,
-its tests, and the stand-in for the server's library those tests drive it with,
-which is one seam in three files. This rule's subject is every C# file, so a
-stand-in cannot be left outside a subject the way `no-server-type-in-a-test`
-leaves its fakes, and a list growing by one entry per stand-in is what that
-neighbour already says goes silently out of date.
+The second adapter is three paths, and it was one pathspec ending in a name until
+#387. The three are the adapter, its tests, and the stand-in for the server's
+library those tests drive it with, which is one seam in three files. This rule's
+subject is every C# file, so a stand-in cannot be left outside a subject the way
+`no-server-type-in-a-test` leaves its fakes.
+
+WHAT THE ONE PATHSPEC COST IS WHAT #387 IS ABOUT. `*ServerLibraryAdapter*.cs`
+reached any file anywhere in the tree carrying that string in its name, so a file
+outside this seam was outside this boundary on the strength of what it was
+called. The objection to a list was that it goes silently out of date, and it no
+longer goes silently in either direction: a stand-in added without its entry is
+refused by leg 3, and an entry a rename left behind is refused by leg 6 for
+naming no tracked file. The list is longer to read and it is the shape a reader
+can check against the tree.
 
 The registrator is excepted too, added with the registration in #53, and it is
 the same case rather than a hole cut for convenience. The server builds its surfaces

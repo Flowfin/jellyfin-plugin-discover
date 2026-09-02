@@ -113,7 +113,7 @@ That absence is held by a rule rather than by anybody remembering it:
     git grep -n '^Id:\|^Subject:\|^Except:' origin/master -- tools/invariants/rules/no-network-outside-source-adapter.rule
     origin/master:tools/invariants/rules/no-network-outside-source-adapter.rule:1:Id: no-network-outside-source-adapter
     origin/master:tools/invariants/rules/no-network-outside-source-adapter.rule:3:Subject: *.cs
-    origin/master:tools/invariants/rules/no-network-outside-source-adapter.rule:4:Except: :!*SourceAdapter.cs
+    origin/master:tools/invariants/rules/no-network-outside-source-adapter.rule:4:Except: :!Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
 
 ## What one request to the source carries
 

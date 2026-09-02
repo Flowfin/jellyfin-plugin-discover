@@ -6,6 +6,9 @@
 #   2. a rule that fires on another rule's fixture that its own Subject reaches
 #   3. a rule that fires on the tracked tree
 #   4. a rule with no fixture, or a fixture with no rule
+#   5. an exception that is a filename rather than a path, unless the rule
+#      declares that glob on purpose
+#   6. an exception that names no tracked file
 #
 # Nothing is downloaded and nothing is installed. git and the shell are all it
 # uses, which are what a checkout already needs.
@@ -68,6 +71,7 @@ while IFS= read -r rule; do
   pattern=$(field "$rule" Pattern)
   subject=$(field "$rule" Subject)
   except=$(field "$rule" Except)
+  except_glob=$(field "$rule" Except-Glob)
   issue=$(field "$rule" Issue)
 
   if [ -z "$pattern" ] || [ -z "$subject" ] || [ -z "$except" ] || [ -z "$issue" ]; then
@@ -170,6 +174,86 @@ while IFS= read -r rule; do
   else
     echo "ok    $id: leg 3: silent on the tracked tree."
   fi
+
+  # Leg 5: an exception is a path rather than a name (#387). Every exception in
+  # this directory once began with a wildcard, which makes it a filename suffix
+  # rather than a place: a file anywhere in the tree whose name ends the same
+  # way is outside the invariant, whatever it does and wherever it sits, and the
+  # person adding that file chooses the name. A path is not something a later
+  # file may choose, so an exception written as one cannot be taken that way.
+  #
+  # A glob is still the right shape where the exception is a convention rather
+  # than a seam - a set nobody can enumerate today, whose membership is itself
+  # what the rule is about. Such a glob is declared in Except-Glob, and the
+  # declaration is what makes keeping it a decision somebody took rather than
+  # one nobody looked at. The field carries no reason; the rule's prose does,
+  # and this leg cannot read that.
+  named=""
+  undeclared_glob=""
+  set -f
+  if [ "$except" != "none" ]; then
+    for spec in $except; do
+      case ${spec#:!} in
+        \**)
+          case " $except_glob " in
+            *" $spec "*) ;;
+            *) named="$named $spec" ;;
+          esac
+          ;;
+      esac
+    done
+  fi
+  # The other direction: a declared glob that is no longer an exception. A
+  # register that only fails one way rots into a list of permissions nobody
+  # granted.
+  for spec in $except_glob; do
+    case " $except " in
+      *" $spec "*) ;;
+      *) undeclared_glob="$undeclared_glob $spec" ;;
+    esac
+  done
+  set +f
+  if [ -n "$named" ] || [ -n "$undeclared_glob" ]; then
+    if [ -n "$named" ]; then
+      echo "FAIL  $id: leg 5: an exception is a filename suffix rather than a path, so a later file can name its way out of this invariant:$named"
+      echo "        Write it as the path it means, or declare it in Except-Glob and say in this rule why the glob is the right shape."
+    fi
+    if [ -n "$undeclared_glob" ]; then
+      echo "FAIL  $id: leg 5: Except-Glob declares a pathspec that Except does not carry:$undeclared_glob"
+    fi
+    fail=1
+  elif [ "$except" = "none" ]; then
+    echo "ok    $id: leg 5: nothing is excepted."
+  else
+    echo "ok    $id: leg 5: every exception is a path or a declared glob."
+  fi
+
+  # Leg 6: an exception names something (#387). A carve-out that matches no
+  # tracked file is either a rename that left its rule behind or a seam that
+  # never arrived, and in both cases the rule is narrower or wider than its own
+  # prose while every other leg stays green. It is also what makes a path safe
+  # to write here: a project directory renamed under an anchored exception is
+  # refused on this line, by name, rather than being diagnosed through leg 3
+  # reporting that the tree breaks an invariant nobody broke.
+  dangling=""
+  if [ "$except" != "none" ]; then
+    set -f
+    for spec in $except; do
+      # shellcheck disable=SC2086
+      if [ -z "$(git ls-files -- ${spec#:!})" ]; then
+        dangling="$dangling $spec"
+      fi
+    done
+    set +f
+  fi
+  if [ -n "$dangling" ]; then
+    echo "FAIL  $id: leg 6: an exception names no tracked file, so this rule carves out nothing and says it does:$dangling"
+    fail=1
+  elif [ "$except" = "none" ]; then
+    echo "ok    $id: leg 6: nothing is excepted."
+  else
+    echo "ok    $id: leg 6: every exception names a tracked file."
+  fi
 done <<< "$rule_files"
 
 # Leg 4b: a fixture with no rule. A fixture that outlives its rule is a file
@@ -188,4 +272,4 @@ if [ "$fail" -ne 0 ]; then
   exit 1
 fi
 
-echo "Every invariant fires on its own fixture, on no other, and on nothing in the tree:$ids"
+echo "Every invariant fires on its own fixture, on no other, and on nothing in the tree, and excepts only paths that exist:$ids"

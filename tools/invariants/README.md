@@ -16,14 +16,27 @@ runner.
     rules/<id>.rule
     fixtures/<id>/<anything>.cs
 
-The rule file carries five fields, each at the start of a line, and then prose
-saying what failure the rule prevents.
+The rule file carries five required fields, each at the start of a line, then one
+that is written only where it is needed, and then prose saying what failure the
+rule prevents.
 
     Id: no-wall-clock
     Pattern: <extended regular expression, as git grep -E reads it>
     Subject: <git pathspecs the pattern is run against>
     Except: <git pathspecs excluded from the subject, or the word none>
     Issue: <the issue this invariant comes from>
+    Except-Glob: <the entries of Except that stay wildcards on purpose>
+
+An exception is a path, not a name. A pathspec beginning with a wildcard matches
+a filename suffix, so a file anywhere in the tree whose name ends the same way
+sits outside the invariant, whatever it does and wherever it is, and the person
+adding that file chooses the name. Every exception here was that shape until
+#387. Where the exception is a seam, which is a place, it is written as the path
+of that place. Where it is a convention over a set nobody can enumerate, the
+wildcard stays and is repeated in `Except-Glob`, and the rule's prose says what
+stops a later file taking the name. The field carries no reason and the prose
+carries no enforcement; what the field does is make keeping a wildcard a decision
+somebody took rather than one nobody looked at.
 
 The fixture is a file that breaks the rule, and it is not compiled: `tools/` is
 outside every project in the solution, so a fixture is text the build never
@@ -31,7 +44,7 @@ reads.
 
 ## What the runner refuses
 
-Four legs, and every one of them runs on every invocation.
+Six legs, and every one of them runs on every invocation.
 
 1. A rule that does not fire on its own fixture. A rule nobody has watched
    refuse anything is a claim rather than a control, so the proof is not a run
@@ -74,6 +87,22 @@ Four legs, and every one of them runs on every invocation.
 4. A rule with no fixture, or a fixture with no rule. Both directions fail, so a
    rule cannot be added without its proof and a fixture cannot outlive the rule
    it proves.
+5. An exception that is a filename rather than a path, unless the rule repeats
+   it in `Except-Glob`. This is the leg that refuses the shape described above,
+   and the declaration is refused in both directions: a wildcard `Except-Glob`
+   does not carry is refused, and an `Except-Glob` entry `Except` no longer
+   carries is refused too, so the declaration cannot rot into a permission
+   nobody granted.
+6. An exception that names no tracked file. A carve-out matching nothing is
+   either a rename that left its rule behind or a seam that never arrived, and
+   in both cases the rule is not the shape its own prose describes while every
+   other leg stays green. It is also what makes a path safe to write here. The
+   argument for the suffix was that a full path would go quiet when #14 renames
+   the project directory; it does the opposite, and both halves were watched by
+   pointing an exception at the path that rename would produce. Leg 3 reddens,
+   because a carve-out that excludes nothing puts the file back inside the
+   subject, and this leg reddens beside it and says which exception is the
+   reason.
 
 ## What the runner cannot do
 

@@ -1,7 +1,7 @@
 Id: no-server-type-in-a-test
 Pattern: ^using (MediaBrowser|Jellyfin\.Data|Jellyfin\.Database)
 Subject: *Tests/*Tests.cs
-Except: :!*SurfaceAdapterTests.cs :!*ServerLibraryAdapterTests.cs :!*RefreshTaskTests.cs :!*PluginServiceRegistratorTests.cs :!*PackagedPluginIdentityTests.cs
+Except: :!Jellyfin.Plugin.Template.Tests/DiscoverSurfaceAdapterTests.cs :!Jellyfin.Plugin.Template.Tests/ServerLibraryAdapterTests.cs :!Jellyfin.Plugin.Template.Tests/DiscoverRefreshTaskTests.cs :!Jellyfin.Plugin.Template.Tests/PluginServiceRegistratorTests.cs :!Jellyfin.Plugin.Template.Tests/PackagedPluginIdentityTests.cs
 Issue: 49
 
 A test that constructs a server type drags in the server's assembly graph, and a
@@ -49,6 +49,16 @@ the tree grew a seam and the sentence did not.
 for the same reason. A test file outside them that has to be renamed to pass is
 the rule telling its author it is on the wrong side of the boundary, which is the
 sentence that neighbour already carries.
+
+THE FIVE ARE PATHS AND THEY WERE FILENAME SUFFIXES UNTIL #387, WHICH IS THE ONE
+SHAPE THAT SENTENCE COULD NOT SURVIVE. A test told by this rule that it is on the
+wrong side of the boundary was one rename away from being on neither side of it:
+a file called something ending in SurfaceAdapterTests.cs left the subject
+wherever it sat and whatever it imported, and the author of that file chose the
+name. The seams the paragraphs above argue for are places, so they are written as
+places. A sixth seam is an edit to this line rather than a name somebody picks,
+and a seam that moves is refused by leg 6 rather than carried along by a suffix
+that still matches something.
 
 Its bound is the one every rule here has, and one more. A line at a time: a
 server type reached through a fully qualified name written inside a method body

@@ -1,7 +1,7 @@
 Id: no-other-plugin-storage
 Pattern: (\.PluginsPath\b|\.PluginConfigurationsPath\b|Assembly\.Load[A-Za-z]*\(|AppDomain\.CurrentDomain|\bType\.GetType\()
 Subject: *.cs
-Except: :!*ApplicationPathsThatRefuseEveryCallButThePluginDirectories.cs :!*CallsTheServerSeesTests.cs
+Except: :!Jellyfin.Plugin.Template.Tests/ApplicationPathsThatRefuseEveryCallButThePluginDirectories.cs :!Jellyfin.Plugin.Template.Tests/CallsTheServerSeesTests.cs
 Issue: 69
 
 Neither this plugin nor a requests plugin reads the other's storage. That is
@@ -36,9 +36,14 @@ names. The other is the test asserting which of those members the plugin
 actually reaches while it is constructed, which is the assertion that says the
 plugin reads one directory and no more. Excepting the fake and keeping the
 assertion would leave the assertion refused for naming the members it exists to
-count. Both are named by file suffix rather than by path, so the rename in #14
-does not silence them: a file that moves keeps its exception and a file that is
-renamed loses it and reddens.
+count. BOTH ARE NAMED BY PATH, AND THIS PARAGRAPH SAID THEY WERE NAMED BY FILE SUFFIX
+SO THAT THE RENAME IN #14 WOULD NOT SILENCE THEM. The half about a rename holds
+under either shape and was never the half that mattered: a path that stops
+existing excludes nothing, so the file returns to the subject and leg 3 reddens,
+and leg 6 reddens as well for an exception naming no tracked file. What the
+suffix also did is #387: any file anywhere ending in either of those two names
+was outside this invariant, whatever it reached, and the person adding it chose
+the name. The two seams are two places, so they are written as places.
 
 What it cannot do. It reads tracked text one line at a time, so a path built
 across two lines, a member reached through a local variable assigned earlier, or
