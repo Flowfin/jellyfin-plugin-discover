@@ -8,10 +8,19 @@ Host: image.tmdb.org
 
 Terms read: 2026-08-06
 
-The terms are at <https://www.themoviedb.org/api-terms-of-use>. The page states
-`Last Updated: October 20, 2023`, and every clause quoted below was read there
-on the date above. Nothing on this page is legal advice; the reasoning behind
-that sentence is in [the directory's README](README.md).
+The terms are at <https://www.themoviedb.org/api-terms-of-use>. The page closes
+with `This Agreement was last updated on: October 20, 2023.`, and every clause
+quoted below was read there on the date above. Nothing on this page is legal
+advice; the reasoning behind that sentence is in
+[the directory's README](README.md).
+
+That sentence was read again on 2026-09-02 and is the same one, so the clauses
+below are readings of the agreement as it stands rather than of a version that
+has moved since. The date is the agreement's, not the reading's, and the two are
+different things: the terms reserve the right to change at any time by posting,
+so an unchanged date is what a reader has and not a promise that nothing will
+move before the next reading. `Terms read:` above stays at the day every clause
+was read, because checking one sentence is not re-reading the agreement.
 
 An adapter for this source exists, and nothing in this plugin reaches it. It
 landed under [#74](https://github.com/Flowfin/jellyfin-plugin-discover/issues/74):
