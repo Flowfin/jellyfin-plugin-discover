@@ -146,19 +146,38 @@ other. Which two, and why, is
 [#108](https://github.com/Flowfin/jellyfin-plugin-discover/issues/108) and
 [0003](decisions/0003-the-catalogue-lives-in-the-plugins-own-data-folder.md).
 
+Before any of that the server invites the plugin to clean up after itself, and
+this plugin takes the invitation: the data folder and everything under it goes at
+that moment, on the plugin's own account rather than the server's.
+
+    git grep -n 'plugin.Instance?.OnUninstalling();' v10.11.11 v12.0-rc4 -- Emby.Server.Implementations/Updates/InstallationManager.cs
+    v10.11.11:Emby.Server.Implementations/Updates/InstallationManager.cs:395:            plugin.Instance?.OnUninstalling();
+    v12.0-rc4:Emby.Server.Implementations/Updates/InstallationManager.cs:398:            plugin.Instance?.OnUninstalling();
+
+That invitation is on the dashboard's route and the API's, and it is the only
+route on which anything of this plugin runs. An operator who removes the plugin
+by deleting its folder runs none of it, so the steps below are what to do after
+a removal made that way, and what to check for after any removal.
+
 ### The manual steps
 
-Two paths survive the uninstall, both under the server's plugins directory. That
-directory is `%LOCALAPPDATA%\jellyfin\plugins\` on Windows and
+One path survives an uninstall taken from the dashboard and two survive a removal
+made by hand. Both are under the server's plugins directory, which is
+`%LOCALAPPDATA%\jellyfin\plugins\` on Windows and
 `~/.local/share/jellyfin/plugins/` on Linux, unless the server was told to keep
 its data somewhere else.
 
-With the server stopped, delete both:
+With the server stopped, delete whichever of these is still there:
 
 | What              | Path, relative to the plugins directory       | What is in it                         |
 | ----------------- | --------------------------------------------- | ------------------------------------- |
 | The data folder   | `Jellyfin.Plugin.Template`                    | Everything this plugin ever wrote     |
 | The configuration | `configurations/Jellyfin.Plugin.Template.xml` | The settings the dashboard page saved |
+
+The data folder is in the table because a removal by hand leaves it, not because
+an uninstall from the dashboard does. The configuration is the one that survives
+either way: it sits in a directory this plugin may not compose a path into at
+all, so nothing it can do reaches the file.
 
 Both names are derived from the assembly rather than chosen, so both move on the
 day [#14](https://github.com/Flowfin/jellyfin-plugin-discover/issues/14) renames
