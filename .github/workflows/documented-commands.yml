@@ -8,10 +8,12 @@
 # a page had drifted and been caught by hand.
 #
 # The workflow does one thing, which is run the script. Everything else lives in
-# tools/documented-commands: the reader, the two fixtures, and a header saying
-# what it refuses to run and what it cannot see. `--prove` runs its three legs,
-# so the run that judges the tracked pages is the same run that shows the check
-# fires on a block that is wrong and stays silent on one that is right.
+# tools/documented-commands: the reader, its fixtures, and a header saying what
+# it refuses to run and what it cannot see. `--prove` runs its legs, so the run
+# that judges the tracked pages is the same run that shows the check fires on a
+# block that is wrong and stays silent on one that is right. How many legs there
+# are is not written here, because the number has moved twice and a count in a
+# comment is one more thing to keep true.
 #
 # Nothing is downloaded and nothing is installed. The reader uses git and the
 # shell, which is what the checkout already needs.
@@ -51,10 +53,11 @@ jobs:
           persist-credentials: false
 
       - name: Make origin/master resolvable
-        # A page quoting origin/master is judged only where this checkout stands
-        # on the mainline, which the reader decides for itself. Without the ref
-        # it cannot decide at all and skips those blocks, so this step exists to
-        # let the mainline run judge them. It is not fatal: a run that could not
+        # A page quoting origin/master is read against the mainline and against
+        # the tree being pushed, and off the mainline it needs both. Without the
+        # ref the reader has nothing to compare against and skips those blocks,
+        # so this step is what lets every run judge them rather than only the
+        # one standing on the mainline. It is not fatal: a run that could not
         # fetch judges less and says so, rather than failing for a reason that
         # has nothing to do with the pages.
         run: |

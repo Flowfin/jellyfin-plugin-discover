@@ -245,4 +245,6 @@ arithmetic, and for the paragraph saying the total is stated and not defended.
 The commands on this page are re-run by `tools/documented-commands/run.sh`, so a
 quotation that stops printing what is pasted under it is refused. Which blocks
 that reaches is printed by the run rather than counted here, and the blocks
-reading `origin/master` are compared on the mainline only.
+reading `origin/master` are compared against the mainline and against the tree
+being pushed, so a change moving a line one of them cites is refused on its own
+pull request.

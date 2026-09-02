@@ -458,18 +458,21 @@ the answer against the output pasted under it, on every push and every pull
 request, so every quotation above is one of its subjects.
 
 When that comparison is made is narrower than the fact that it runs, and taking
-the second for the first is the mistake to avoid here. All but one quotation above
-quotes `origin/master`, and the reader judges such a block only where the checkout
-stands on the mainline, printing it as refused with the reason otherwise:
+the second for the first is the mistake to avoid here. All but one quotation
+above quotes `origin/master`, and such a block used to be judged only where the
+checkout stood on the mainline, which put the only reading of it after the only
+moment anybody would act on it. It is read against both commits now: the
+mainline the block describes, and the tree being pushed. A paste that still
+agrees with the mainline and no longer agrees with the tree is a line this
+change moved, and it is refused on the pull request:
 
-    git grep -n 'reads origin/master and this checkout is not standing on it' -- tools/documented-commands/run.sh
-    tools/documented-commands/run.sh:156:        echo "reads origin/master and this checkout is not standing on it"
+    git grep -n 'FAIL  %s:%s: this change moves a line the page quotes' -- tools/documented-commands/run.sh
+    tools/documented-commands/run.sh:398:    printf 'FAIL  %s:%s: this change moves a line the page quotes.\n' "$file" "$line"
 
-So they are compared on the mainline and on the push that merges to it, and on a
-pull request the same run says it judged none of them rather than saying they
-passed. That is the reader's own design rather than a gap in it: a page changed
-together with the file it quotes describes the tree it is about to land in, and
-comparing it against `origin/master` would refuse it for being right.
+The reason such a block reads `origin/master` at all survives that, which is
+what the second run buys: a page changed together with the file it quotes agrees
+with the tree it is about to land in, so it is read as a repair rather than
+refused for being right.
 
 The one exception is the retention block under "What is held about a person",
 which reads a checkout of the server at two tags. That is not this repository, so

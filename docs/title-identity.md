@@ -333,7 +333,7 @@ compares every command a tracked page pastes against the output pasted under it,
 and it refuses a block it cannot run here rather than passing it:
 
     git grep -n 'reads a Jellyfin checkout at a tag, which is not this repository' -- tools/documented-commands/run.sh
-    tools/documented-commands/run.sh:126:      echo "reads a Jellyfin checkout at a tag, which is not this repository"
+    tools/documented-commands/run.sh:210:      echo "reads a Jellyfin checkout at a tag, which is not this repository"
 
 So the blocks above are read by nobody but a person with such a checkout, and
 three of them said something the tag does not hold until this paragraph was
