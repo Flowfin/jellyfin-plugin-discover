@@ -142,9 +142,15 @@ public class ShelfTests
     /// </summary>
     /// <remarks>
     /// The flag #86's fourth condition asks for, and no more than the flag.
-    /// Nothing in this tree reads it, so what is asserted is the default a
-    /// shelf is built with and not that an off shelf is skipped, which is
-    /// #85's fourth condition and has nothing to count calls on.
+    /// This said nothing in this tree reads it. The refresh has read it since
+    /// #87 landed on 2026-08-30, and an off shelf being skipped is asserted
+    /// against that reader in
+    /// <c>CatalogueRefreshTests.AShelfThatIsTurnedOffIsNotAskedAndNotStored</c>.
+    /// What is asserted here is still the default a shelf is built with rather
+    /// than the skipping, because the skipping is a property of what reads the
+    /// flag and this suite is about the record that carries it. #85's fourth
+    /// condition is where the three behaviours are collected, and the class
+    /// remark above says which of them have a reader.
     /// </remarks>
     [Fact]
     public void AShelfIsOnUnlessItSaysOtherwise()
