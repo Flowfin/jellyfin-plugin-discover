@@ -75,8 +75,14 @@ by tests rather than by there being nothing that could break them:
     git grep -n 'public void AStartWithNothingConfiguredOffersNoSource' -- Jellyfin.Plugin.Template.Tests/AFreshInstallHoldsNoWayOutTests.cs
     Jellyfin.Plugin.Template.Tests/AFreshInstallHoldsNoWayOutTests.cs:52:    public void AStartWithNothingConfiguredOffersNoSource()
 
-    git grep -n 'public void AStartWithNothingConfiguredWritesNothing' -- Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs
-    Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs:93:    public void AStartWithNothingConfiguredWritesNothing()
+The disk half is held twice, because installing is not the only thing that
+happens to an install nobody configured. The server also runs this plugin's
+scheduled refresh once a day, and that is the one route here that reaches a
+write:
+
+    git grep -n "public void AStartWithNothingConfiguredWritesNothing\|public async Task ARunWithNothingConfiguredWritesNothing" -- Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs
+    Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs:113:    public void AStartWithNothingConfiguredWritesNothing()
+    Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs:188:    public async Task ARunWithNothingConfiguredWritesNothing()
 
 The configuration page carries no controls. The configuration itself now has
 three properties, and the two beside the schema version are the bounds on how
