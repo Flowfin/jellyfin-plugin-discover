@@ -14,6 +14,51 @@ anybody's memory of it. Read from a clone of
     cd jellyfin-meta-plugins && git rev-parse HEAD
     eb99033a7ff644881b014bc0b4169916c854a68b
 
+That block is a record of a fetch rather than a claim about today. Its second
+command prints the head of a branch, that branch has moved since, and the pin is
+deliberately not moved with it: moving it would say this page had been re-read
+against newer tooling, which is a claim rather than an edit. The re-reading is
+recorded here instead, made 2026-09-02 against
+`2d1d8651c878e11ce83de5ecdbedb31e70ebc6f0`, the head at that moment. Both
+commits are named in every comparison, so each one goes on printing what is
+pasted under it after the branch moves again:
+
+    git rev-list --count eb99033a7ff644881b014bc0b4169916c854a68b..2d1d8651c878e11ce83de5ecdbedb31e70ebc6f0
+    12
+
+    git diff --name-only eb99033a7ff644881b014bc0b4169916c854a68b..2d1d8651c878e11ce83de5ecdbedb31e70ebc6f0
+    .github/workflows/publish.yaml
+    .github/workflows/scan-codeql.yaml
+    .gitmodules
+    jellyfin-plugin-anidb
+    jellyfin-plugin-bookshelf
+    jellyfin-plugin-dlna
+    jellyfin-plugin-folio
+    jellyfin-plugin-lrclib
+    jellyfin-plugin-trakt
+
+Neither file this page reads a rule out of is in that list. `update_submodules.py`,
+which decides the enumeration, and `build_plugin.sh`, which decides the version
+string, are byte for byte what they were. Six of the nine entries are submodule
+pointers and one is `.gitmodules`, which is that enumeration's output rather than
+the rule quoted here.
+
+The publish workflow moved by one line, and it is the pinned digest of a third
+party action it uses to attach a release asset. One line replaced by one line, so
+no line number in it moves either:
+
+    git diff eb99033a7ff644881b014bc0b4169916c854a68b..2d1d8651c878e11ce83de5ecdbedb31e70ebc6f0 -- .github/workflows/publish.yaml | grep '^[-+] '
+    -        uses: shogo82148/actions-upload-release-asset@394b3c11c3cfc038b5396ad265c074065cf875c3 # v1.10.2
+    +        uses: shogo82148/actions-upload-release-asset@aaba0f56bdbc1071f4af234d5cb16055e8a400de # v1.10.4
+
+Every reading below that comes out of the clone was re-derived at that head and
+prints there what is pasted under it, at the same line numbers, so no row on this
+page moves. Nothing in this repository does that checking. The reader that
+re-runs pasted commands judges none of the three blocks above, one for its verb
+and two for naming an object this repository does not carry, and it judges none
+of the readings from the clone below either. The next head is unread until
+somebody clones again.
+
 Two of the paths quoted below exist in that clone and in this repository, under
 the same name and with different contents: `.github/workflows/publish.yaml` and
 `build.yaml`. A bare path is therefore not enough to say which file a reading is
