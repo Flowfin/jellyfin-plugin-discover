@@ -21,11 +21,19 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// its own fields, and that the shapes which cannot be asked for anything are
 /// refused rather than stored.
 ///
-/// Two of #85's conditions have no subject here and are not pretended at.
-/// Nothing in this tree fetches, so a shelf that is off being neither fetched
-/// nor stored nor shown is a property with nothing to count calls on, and the
-/// save path an unknown pair would be refused at is #105 and does not exist.
-/// Both are recorded on the issue.
+/// Two of #85's conditions have no subject here and are not pretended at, and
+/// the reason given for the first of them has stopped being true. It said
+/// nothing in this tree fetches, so a shelf that is off being neither fetched
+/// nor stored nor shown is a property with nothing to count calls on. The
+/// refresh landed under #87 on 2026-08-30 and counts those calls, in
+/// <c>CatalogueRefreshTests.AShelfThatIsTurnedOffIsNotAskedAndNotStored</c>.
+/// The property is still not asserted here, for a reason that outlives the
+/// one that was withdrawn: it is a property of what reads the flag rather than
+/// of the record that carries it, and what this suite holds is that the flag
+/// is data a shelf can be built with. Not shown is the third of the three and
+/// has no reader anywhere yet. The other condition is the save path an unknown
+/// pair would be refused at, which is #105 and does not exist. Both are
+/// recorded on the issue.
 /// </remarks>
 public class ShelfTests
 {

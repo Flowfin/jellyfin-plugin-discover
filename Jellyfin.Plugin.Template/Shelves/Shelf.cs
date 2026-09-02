@@ -147,10 +147,18 @@ public sealed record Shelf
     /// #86's fourth condition asks for rather than the state a fresh install
     /// starts in.
     ///
-    /// What reads it is not here. A shelf that is off is not fetched, not
-    /// stored and not shown, which is #85's fourth condition, and there is
-    /// nothing in this tree that fetches, so this field is the flag those three
-    /// will read rather than a behaviour this record implements.
+    /// What reads it is not here, and this paragraph said nothing in this tree
+    /// read it at all. A shelf that is off is not fetched, not stored and not
+    /// shown, which is #85's fourth condition, and the reason given for the
+    /// field being a flag three future readers would take was that nothing in
+    /// this tree fetches. Something does: the refresh landed under #87 on
+    /// 2026-08-30 and reads this field per shelf, answering an off shelf with
+    /// <see cref="Refresh.ShelfRefreshOutcome.TurnedOff"/>, asking its source
+    /// nothing and writing its document nowhere. So two of the three have a
+    /// reader now and it is not this record. Not shown is the one that still
+    /// has none, because the surface takes no shelf set and so consults no
+    /// flag. The record implements none of the three either way, which is the
+    /// half of the sentence that was never about the refresh.
     /// </remarks>
     public bool Enabled { get; init; } = true;
 

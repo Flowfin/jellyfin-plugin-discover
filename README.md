@@ -138,9 +138,9 @@ run asks nobody:
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:101:        IEnumerable<IMetadataSource> sources,
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:115:        var taken = new List<IMetadataSource>();
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:133:        _sources = Array.Empty<IMetadataSource>();
-    Jellyfin.Plugin.Template/Shelves/Shelf.cs:194:    /// <see cref="IMetadataSource"/> asks that, and finding out means issuing a
-    Jellyfin.Plugin.Template/Shelves/Shelf.cs:256:    /// holds, and nothing registers an <see cref="IMetadataSource"/> there to be
-    Jellyfin.Plugin.Template/Shelves/Shelf.cs:264:    public Shelf ValidatedAgainst(IReadOnlyCollection<IMetadataSource> activeSources)
+    Jellyfin.Plugin.Template/Shelves/Shelf.cs:202:    /// <see cref="IMetadataSource"/> asks that, and finding out means issuing a
+    Jellyfin.Plugin.Template/Shelves/Shelf.cs:264:    /// holds, and nothing registers an <see cref="IMetadataSource"/> there to be
+    Jellyfin.Plugin.Template/Shelves/Shelf.cs:272:    public Shelf ValidatedAgainst(IReadOnlyCollection<IMetadataSource> activeSources)
 
 The only callers that build the adapter are still in the test project:
 

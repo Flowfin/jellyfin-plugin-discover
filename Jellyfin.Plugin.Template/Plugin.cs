@@ -59,8 +59,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// the shipped shelves do not fit inside, is refused at the moment it is
     /// saved rather than truncated later at a refresh nobody is watching. The
     /// count it is checked against is the shipped set's own, because every shelf
-    /// that ships is on and nothing reads <c>Shelf.Enabled</c> yet, which is
-    /// #86's fourth condition.
+    /// that ships is on and no setting moves <c>Shelf.Enabled</c>, which is
+    /// #86's fourth condition. This said nothing read that field yet, and the
+    /// refresh has read it since #87 landed on 2026-08-30. The count is
+    /// unmoved, because what it rests on is the other half: no configured
+    /// value turns a shipped shelf off, so the set a save can be asked to fit
+    /// inside the bounds is the whole of it.
     /// </para>
     /// <para>
     /// What a dashboard does with the refusal has not been observed. Nothing
