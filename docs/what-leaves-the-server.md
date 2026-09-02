@@ -164,12 +164,12 @@ names this plugin and its version and nothing about the server or the operator,
 which the source's terms require and which is derived rather than typed:
 
     git grep -n -A 5 'private static string Identity()' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:685:    private static string Identity()
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-686-    {
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-687-        var assembly = typeof(TmdbSourceAdapter).Assembly.GetName();
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-688-
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-689-        return FormattableString.Invariant($"{assembly.Name}/{assembly.Version}");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-690-    }
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:736:    private static string Identity()
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-737-    {
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-738-        var assembly = typeof(TmdbSourceAdapter).Assembly.GetName();
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-739-
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-740-        return FormattableString.Invariant($"{assembly.Name}/{assembly.Version}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-741-    }
 
 ## What a request does not carry
 
@@ -210,7 +210,7 @@ The plugin never fetches an image. What it stores is a location at the source's
 image host, turned from the path the source gave:
 
     git grep -n 'return new Uri(_artworkBase' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:541:        return new Uri(_artworkBase, path.AsSpan(1).ToString());
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:565:        return new Uri(_artworkBase, path.AsSpan(1).ToString());
 
 and it hands that location to the server as the item's picture:
 
