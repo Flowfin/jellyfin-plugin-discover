@@ -325,7 +325,17 @@ moment:
     origin/master:Jellyfin.Plugin.Template/Wants/WantListDocument.cs:141:        writer.WriteString(AskingUserField, want.AskingUser);
 
 So what an operator would have to weigh is a file on their disk naming who asked
-for what, and this page is where that belongs. Nothing on the server carries one
+for what, and this page is where that belongs.
+
+WHY THE FEATURE CANNOT DROP THE ACCOUNT. A want is per user by construction: the
+gesture means that a particular person asked for a particular title, a sibling
+plugin is being told exactly that, and the same title wanted by two people is two
+wants rather than one. A list without the account would be a list of titles
+somebody wanted, with no way to tell one request from a second, no way to withdraw
+one, and nothing to answer a user asking what was recorded about them. It is the
+server's own identifier rather than a name, which is what makes removing one
+person's rows possible at all - a list keyed on a user name leaves rows behind
+after a rename and takes somebody else's after a reuse. Nothing on the server carries one
 today, and the reason is the one the block above gives rather than the sentence
 this replaces: no register is constructed at all, with or without a store.
 
