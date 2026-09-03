@@ -890,6 +890,175 @@ public class TmdbSourceAdapterTests
     }
 
     /// <summary>
+    /// A request that has not answered inside the deadline is given up on rather than waited out.
+    /// </summary>
+    /// <remarks>
+    /// #45's fourth condition, the half nothing in this plugin had a subject
+    /// for. A transport that never answers is what a connection that opened and
+    /// then stopped looks like from inside this adapter, and what is asserted is
+    /// that the fetch ends: the outcome a shelf keeps its previous contents on,
+    /// no titles, and no message, because nothing was said.
+    ///
+    /// The deadline is named as <see cref="TimeSpan.Zero"/> rather than waited
+    /// for. A test that reached this boundary by waiting would spend the real
+    /// bound of thirty seconds, be given a longer one the first time a loaded
+    /// runner missed it, and end up proving nothing, which is the argument
+    /// <c>HEADLESS.md</c> already makes for the clock and which
+    /// <see cref="Jellyfin.Plugin.Template.Seam.WantHandover"/> already answers
+    /// the same way for its own bound.
+    ///
+    /// What it does not reach. Whether thirty seconds is the right number is a
+    /// judgement and no test makes it; the argument is written at
+    /// <see cref="TmdbSourceAdapter.DefaultDeadline"/>. And a request the
+    /// server's own client bounds at some other number is that client's
+    /// behaviour rather than this one's, so what is proven here is that this
+    /// adapter stops waiting and not that anything stops carrying the request.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ARequestThatDoesNotAnswerInsideTheDeadlineIsGivenUpOn()
+    {
+        var asked = 0;
+        var never = new TaskCompletionSource<SourceTransportReply>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) =>
+            {
+                asked++;
+                return never.Task;
+            },
+            configured: true,
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated,
+            TimeSpan.Zero);
+
+        var answer = await adapter
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.TemporarilyFailed, answer.Outcome);
+        Assert.Empty(answer.Titles);
+        Assert.Null(answer.SourceMessage);
+        Assert.Equal(1, asked);
+
+        never.SetResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
+    }
+
+    /// <summary>
+    /// The request the deadline gave up on is cancelled rather than left running.
+    /// </summary>
+    /// <remarks>
+    /// The other half of the condition above, and the one a reader would
+    /// otherwise have to take on trust. A deadline that returns an answer while
+    /// the request it abandoned goes on holding a connection has moved the
+    /// failure rather than bounded it: the shelves of one refresh would each
+    /// leave one behind, and a source paced at four requests a second would go
+    /// on being asked by a run that is already finished.
+    ///
+    /// What is read is the token this adapter handed the transport, which is
+    /// linked to the caller's rather than being it. That is the distinction the
+    /// two assertions below are about: the caller never cancelled anything, and
+    /// the request was cancelled anyway.
+    ///
+    /// Its bound is the same one <see cref="Jellyfin.Plugin.Template.Seam.WantHandover"/>
+    /// carries for a receiver still running. A transport that ignores its token
+    /// is not stopped by this and cannot be; what is asserted is that it was
+    /// told.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task TheRequestTheDeadlineGaveUpOnIsCancelled()
+    {
+        var never = new TaskCompletionSource<SourceTransportReply>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handed = CancellationToken.None;
+
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) =>
+            {
+                handed = cancellationToken;
+                return never.Task;
+            },
+            configured: true,
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated,
+            TimeSpan.Zero);
+
+        using var caller = new CancellationTokenSource();
+
+        var answer = await adapter
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), caller.Token)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.TemporarilyFailed, answer.Outcome);
+        Assert.True(handed.IsCancellationRequested);
+        Assert.False(caller.Token.IsCancellationRequested);
+
+        never.SetResult(new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.EmptyPage), null));
+    }
+
+    /// <summary>
+    /// A source that answered is read as an answer even where the deadline had already passed.
+    /// </summary>
+    /// <remarks>
+    /// The near-miss the two tests above cannot see, and it is the mistake
+    /// somebody writing this bound makes first: reading which of the two tasks
+    /// finished first rather than whether the request finished at all. Under
+    /// that spelling a source that answered in the same instant the deadline
+    /// expired is reported as a failure, and the shelf it belongs to keeps
+    /// yesterday's titles while the source is answering perfectly.
+    ///
+    /// The deadline here is <see cref="TimeSpan.Zero"/>, so it has passed
+    /// before the transport is asked anything, and the transport answers
+    /// without ever having been incomplete. Which task a race returns is then
+    /// not something this test depends on, which is the point: the answer is
+    /// read because it is there.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AnAnswerThatWasAlreadyThereIsReadRatherThanTimedOut()
+    {
+        var adapter = new TmdbSourceAdapter(
+            (address, cancellationToken) => Task.FromResult(
+                new SourceTransportReply(200, TmdbFixtures.Body(TmdbFixtures.MoviePage), null)),
+            configured: true,
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated,
+            TimeSpan.Zero);
+
+        var answer = await adapter
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.NotEmpty(answer.Titles);
+    }
+
+    /// <summary>
+    /// A negative deadline is refused rather than stored.
+    /// </summary>
+    /// <remarks>
+    /// The same refusal <see cref="Jellyfin.Plugin.Template.Seam.WantHandover"/>
+    /// makes of its own bound, for the same reason: a negative span reads as a
+    /// stricter deadline and is one no source could ever meet, so a caller that
+    /// computed one has made an arithmetic mistake rather than a choice.
+    /// <see cref="TimeSpan.Zero"/> is deliberately not refused, because a
+    /// deadline of nothing is the case the tests above are written on.
+    /// </remarks>
+    [Fact]
+    public void ANegativeDeadlineIsRefused()
+    {
+        var refused = Assert.Throws<ArgumentOutOfRangeException>(
+            () => new TmdbSourceAdapter(
+                (address, cancellationToken) => Task.FromResult(new SourceTransportReply(200, null, null)),
+                configured: true,
+                new ClockATestAdvances(_fetched),
+                SourceLocale.Unstated,
+                TimeSpan.FromSeconds(-1)));
+
+        Assert.Equal("deadline", refused.ParamName);
+    }
+
+    /// <summary>
     /// Nothing else in the plugin names this adapter.
     /// </summary>
     /// <remarks>
