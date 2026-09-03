@@ -139,8 +139,10 @@ public class CatalogueDocumentStoreTests
     /// does with it.
     ///
     /// The listing is asserted as it is rather than as it should be: the
-    /// leftover is in it. Nothing reads that listing yet, and a filter added
-    /// here would be a second place that knows what a temporary file is called.
+    /// leftover is in it. It is the directory's own listing rather than the
+    /// store's answer: <see cref="CatalogueDocumentStore.DocumentNames"/> is
+    /// what reads it, and it drops the suffix there, so a filter added here
+    /// would be a second place that knows what a temporary file is called.
     /// What matters for this issue is that a reader asking for the document
     /// gets the previous one whole.
     /// </remarks>
