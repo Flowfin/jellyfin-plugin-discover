@@ -165,11 +165,11 @@ which the source's terms require and which is derived rather than typed:
 
     git grep -n -A 5 'private static string Identity()' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
     origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:925:    private static string Identity()
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-757-    {
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-758-        var assembly = typeof(TmdbSourceAdapter).Assembly.GetName();
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-759-
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-760-        return FormattableString.Invariant($"{assembly.Name}/{assembly.Version}");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-761-    }
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-926-    {
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-927-        var assembly = typeof(TmdbSourceAdapter).Assembly.GetName();
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-928-
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-929-        return FormattableString.Invariant($"{assembly.Name}/{assembly.Version}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-930-    }
 
 ## What a request does not carry
 
