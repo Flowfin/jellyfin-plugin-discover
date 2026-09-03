@@ -31,9 +31,11 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// one that was withdrawn: it is a property of what reads the flag rather than
 /// of the record that carries it, and what this suite holds is that the flag
 /// is data a shelf can be built with. Not shown is the third of the three and
-/// has no reader anywhere yet. The other condition is the save path an unknown
-/// pair would be refused at, which is #105 and does not exist. Both are
-/// recorded on the issue.
+/// has no reader anywhere yet. The other condition is the refusal of an unknown
+/// pair at the save. The save path exists, under #105; what the refusal still
+/// lacks is a configured source to judge a pair against, which
+/// <see cref="Shelf.ValidatedAgainst"/> says at the rule. Both are recorded on
+/// the issue.
 /// </remarks>
 public class ShelfTests
 {
@@ -77,9 +79,13 @@ public class ShelfTests
     /// anything in <c>Jellyfin.Plugin.Template</c> having been told about it.
     ///
     /// The bound on what that proves is worth stating rather than leaving to be
-    /// discovered. Nothing consumes a shelf yet, so what is shown is that the
-    /// record admits a new instance, not that a surface and a refresh draw one
-    /// without a case being added for it. That half arrives with #87 and #86.
+    /// discovered. What is shown is that the record admits a new instance. A
+    /// refresh draws one without a case being added for it, since #87 landed
+    /// <see cref="Jellyfin.Plugin.Template.Refresh.CatalogueRefresh"/>, which
+    /// takes the shelves it is handed as a list and asks each through
+    /// <see cref="Shelf.Ask"/>. A surface reading one is not shown here and has
+    /// no subject yet, because nothing in the surface reads a catalogue
+    /// document, which is recorded on #85.
     /// </remarks>
     [Fact]
     public void AShelfNobodyWroteCodeForIsStillAShelf()

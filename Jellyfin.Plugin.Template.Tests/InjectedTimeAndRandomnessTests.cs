@@ -84,9 +84,12 @@ public class InjectedTimeAndRandomnessTests
     /// <remarks>
     /// This is the boundary case the suite is built to be able to state: one
     /// tick before a deadline and one tick after it, with nothing in between
-    /// that depends on how long anything took. There is no expiry, no backoff
-    /// and no retention in the tree yet, so what is asserted here is the
-    /// apparatus rather than a decision made with it.
+    /// that depends on how long anything took. The decisions made with this
+    /// apparatus live elsewhere and are asserted there: the retention is
+    /// <see cref="Jellyfin.Plugin.Template.Catalogue.CatalogueRetention"/>, the
+    /// backoff is <see cref="Jellyfin.Plugin.Template.Refresh.SourceRest"/>, and
+    /// the deadline on a source request is the adapter's. What is asserted here
+    /// is the apparatus rather than any of them.
     /// </remarks>
     [Fact]
     public void AdvancingTheClockIsTheOnlyWayTimePasses()
