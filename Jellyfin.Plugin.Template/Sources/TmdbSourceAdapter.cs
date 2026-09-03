@@ -42,14 +42,12 @@ namespace Jellyfin.Plugin.Template.Sources;
 /// is a location at the source rather than a copy, which is #62, so nothing
 /// here fetches an image.
 ///
-/// The file's name is load-bearing nowhere, and it was twice until #387 wrote the
-/// lint's exception as this file's path and #394 took the last reader of the name
-/// out of `source-terms`. That check finds this file by the interface it
-/// implements and reads which body it speaks for out of the `Source` property
-/// below, so a rename fails it by leaving `no-network-outside-source-adapter`'s
-/// exception naming nothing rather than by changing what page is owed. What
-/// decides that a terms page is owed at all is the interface, which no rename
-/// touches.
+/// The file's name is load-bearing nowhere, and it was twice until #387 wrote
+/// the lint's exception as this file's path and #394 took the last reader of the
+/// name out of `source-terms`. That check finds this file by the interface it
+/// implements and reads which body it speaks for from the `Source` property
+/// below, so what decides that a terms page is owed here is the interface, which
+/// no rename touches.
 /// </remarks>
 public sealed class TmdbSourceAdapter : IMetadataSource
 {

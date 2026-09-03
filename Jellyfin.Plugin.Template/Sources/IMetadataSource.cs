@@ -23,13 +23,11 @@ namespace Jellyfin.Plugin.Template.Sources;
 /// assembly reds the suite the day it is added, which is the day a wire type
 /// starts spreading.
 ///
-/// Implementing this interface is what makes a type a source, and nothing about
-/// it turns on what the file is called. That was not true until #387 and #394:
-/// `no-network-outside-source-adapter` excepted the suffix <c>*SourceAdapter.cs</c>
-/// and `source-terms` read the same suffix to decide which terms page was owed,
-/// so an implementation landing under another name widened one rule and walked
-/// out of the other. Both read a path or this interface now. The first
-/// implementation is #74.
+/// Implementing this interface is what makes a type a source, and nothing turns
+/// on what its file is called. That was not so until #387 wrote
+/// `no-network-outside-source-adapter`'s exception as a path and #394 made
+/// `source-terms` read this interface; until then a name widened the one rule
+/// while walking out of the other. The first implementation is #74.
 ///
 /// Each adapter carries the constraints its own source imposes, which is #75.
 /// The key it uses is #77 and never the server's, refused by
