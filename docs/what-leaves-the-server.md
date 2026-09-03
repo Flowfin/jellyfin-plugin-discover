@@ -227,8 +227,29 @@ question is open rather than that the answer is the comfortable one.
 
 ## What is held about a person
 
-Nothing, and the reason moved with the refresh in #87. The one thing in this
-plugin that writes to disk is now reached, by the scheduled task:
+NOTHING UNTIL AN OPERATOR LISTS SOMEBODY, AND THIS SECTION SAID NOTHING FULL
+STOP. One field on the configuration record holds the server's own identifier for
+a person, one entry per account an operator has restricted from asking, and it
+arrived on 2026-08-31:
+
+    git grep -n 'public Collection<string> UsersRefusedTheAsk' origin/master -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:96:    public Collection<string> UsersRefusedTheAsk { get; } = new Collection<string>();
+
+It is empty on a fresh install, so the answer for an operator who has set nothing
+is unchanged; it is not empty on one where they have, and that is a record about
+named people written to this plugin's own configuration document. What the field
+is and who can read it is under **What a user can turn off for themselves**
+below, where the reading was taken, rather than a second copy here.
+
+WHAT MADE THIS SECTION MISS IT WAS ITS OWN SUBJECT. Every reading below is about
+the store, because that is where a record about a person was expected to arrive,
+and the field landed on the configuration instead. The section below found it by
+widening a search for how properties are typed; this one would not have found it
+at all, because it never asked.
+
+The rest of this section is about the store, and there the answer is still
+nothing. The one thing in this plugin that writes to disk is reached, by the
+scheduled task:
 
     git grep -n 'new CatalogueDocumentStore(' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
     origin/master:Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:346:                new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
@@ -286,8 +307,11 @@ argument is on its own page rather than summarised here:
 
 Everything above is what is true today. This page states both halves everywhere
 else, because a sentence that is true now and stops being true later is the one a
-reader keeps, and the section above owes the same second half. What arrives is
-not a stored record. It is a log line.
+reader keeps, and the section above owes the same second half. THIS SAID WHAT
+ARRIVES IS NOT A STORED RECORD BUT A LOG LINE, and it is both. The stored record
+is the want list below, which is in the tree and reaches no server yet; the log
+line is the handover's, and it is the half that survives after the record is
+removed.
 
 The gesture that means a user wants a title is
 [#96](https://github.com/Flowfin/jellyfin-plugin-discover/issues/96) and is not
@@ -301,9 +325,76 @@ The list a want would be written to is in the tree and is constructed by nothing
     git grep -n 'new LocalWantRegister(' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
     exit=1
 
-That list is held in memory and says so about itself, so it is not what an
-operator has to weigh. The handover beside it writes five lines into the server's
-log, and each of them names the want it is talking about:
+THAT LIST IS NOT ONLY HELD IN MEMORY, AND THIS PARAGRAPH SAID IT WAS AND THAT
+THE TYPE SAID SO ABOUT ITSELF. The type says the opposite, in its own words and
+in capitals, naming the change:
+
+    git grep -n 'THIS SAID IT DOES NOT SURVIVE A RESTART' origin/master -- Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs
+    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:31:/// THIS SAID IT DOES NOT SURVIVE A RESTART, and it does where it is given a
+
+A register given a store writes its rows through to a file of its own, beside the
+catalogue's directory rather than inside it:
+
+    git grep -n 'const string DirectoryName\|const string FileName' origin/master -- Jellyfin.Plugin.Template/Wants/WantListStore.cs
+    origin/master:Jellyfin.Plugin.Template/Wants/WantListStore.cs:58:    public const string DirectoryName = "wants";
+    origin/master:Jellyfin.Plugin.Template/Wants/WantListStore.cs:63:    public const string FileName = "wants.json";
+
+and the row it writes carries the account that asked, beside the title and the
+moment:
+
+    git grep -n 'writer.WriteString(AskingUserField' origin/master -- Jellyfin.Plugin.Template/Wants/WantListDocument.cs
+    origin/master:Jellyfin.Plugin.Template/Wants/WantListDocument.cs:141:        writer.WriteString(AskingUserField, want.AskingUser);
+
+So what an operator would have to weigh is a file on their disk naming who asked
+for what, and this page is where that belongs.
+
+WHY THE FEATURE CANNOT DROP THE ACCOUNT. A want is per user by construction: the
+gesture means that a particular person asked for a particular title, a sibling
+plugin is being told exactly that, and the same title wanted by two people is two
+wants rather than one. A list without the account would be a list of titles
+somebody wanted, with no way to tell one request from a second, no way to withdraw
+one, and nothing to answer a user asking what was recorded about them. It is the
+server's own identifier rather than a name, which is what makes removing one
+person's rows possible at all - a list keyed on a user name leaves rows behind
+after a rename and takes somebody else's after a reuse. Nothing on the server carries one
+today, and the reason is the one the block above gives rather than the sentence
+this replaces: no register is constructed at all, with or without a store.
+
+    git grep -n 'new WantListStore(' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
+    exit=1
+
+HOW LONG SUCH A FILE WOULD BE KEPT IS NOT DECIDED ANYWHERE. Nothing in the want
+code expires a row, ages one out, or caps how old the list may be:
+
+    git grep -nE 'Retention|Expire|MaxAge' origin/master -- Jellyfin.Plugin.Template/Wants/ ; echo "exit=$?"
+    exit=1
+
+The ninety-day catalogue retention does not reach it: that cap exists because a
+source's terms impose one on fetched records, and nothing a user asked for is a
+fetched record. What removes the file is the operator's purge and the uninstall,
+both of which take this plugin's whole data folder rather than one person's rows:
+
+    git grep -n 'public void RemoveEverything' origin/master -- Jellyfin.Plugin.Template/Storage/PluginDataPurge.cs
+    origin/master:Jellyfin.Plugin.Template/Storage/PluginDataPurge.cs:106:    public void RemoveEverything()
+
+An unbounded retention on a list an operator acts on is defensible and is not
+defensible while it is unstated, which is why it is stated here. Choosing a bound
+is [#70](https://github.com/Flowfin/jellyfin-plugin-discover/issues/70)'s and is
+not taken on this page.
+
+THE SENTENCE THIS REPLACES WAS TRUE ON THE DAY IT WAS WRITTEN AND WAS FALSE THE
+NEXT DAY. It landed on 2026-08-29 under this page's own issue, and the store
+landed on 2026-08-30 under #97, in the commit that flipped the type's remark:
+
+    git log --format='%h %aI %s' --diff-filter=A origin/master -- Jellyfin.Plugin.Template/Wants/WantListStore.cs
+    4561ab4 2026-08-30T14:12:08+02:00 Keep the want list where a restart does not take it #97
+
+Nothing in this tree reads a page for a claim about behaviour, so a disclosure
+one commit out of date stays on the page until somebody runs its commands, and
+that is how this one was found rather than by any route.
+
+The handover beside the list writes five lines into the server's log, and each of
+them names the want it is talking about:
 
     git grep -c 'The want {WantIdentifier}' origin/master -- Jellyfin.Plugin.Template/Seam/WantHandover.cs
     origin/master:Jellyfin.Plugin.Template/Seam/WantHandover.cs:5
@@ -353,13 +444,25 @@ count or a redirected sink is a different answer that no reading of this tree ca
 see. And anything in front of the server that copies the console stream - a
 container runtime, a service manager, a log shipper - keeps it on its own schedule.
 
-Nothing this plugin has reaches any of that. The register's own removal takes rows
-out of the list in memory and nothing else:
+Nothing this plugin has reaches any of that. The register's own removal takes a
+person's rows out of the list and, where the register was given a store, rewrites
+the file without them:
 
     git grep -n 'public int Forget' origin/master -- Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs
     origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:324:    public int Forget(Guid user)
 
-and what an uninstall does and does not take is
+    git grep -n -A 2 'private void Keep()' origin/master -- Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs
+    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:399:    private void Keep() => _store?.Write(InOrder());
+    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs-400-}
+
+THIS PARAGRAPH SAID THE REMOVAL REACHED MEMORY AND NOTHING ELSE, which is the
+same staleness as the one repaired above and arrived in the same commit. What it
+still does not reach is a log line, which is what the sentence was about and what
+stays true: nothing removes a rendered message from a file the server rolls. And
+nothing calls the removal at all, which is #70's third condition rather than this
+page's.
+
+What an uninstall does and does not take is
 [`installing.md`](installing.md) rather than a second answer here.
 
 Which way out is taken is not decided on this page. Logging an opaque per-run
