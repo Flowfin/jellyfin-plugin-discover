@@ -5,8 +5,8 @@ page turns that source's terms of use into obligations on this plugin's
 behaviour, one row per clause, and says for each one where the behaviour lives
 and how a reader checks that it is met.
 
-A source cannot be added without its page. `source-terms` refuses an adapter
-whose page is missing, refuses a hostname written in the tracked C# that no page
+A source cannot be added without its page. `source-terms` refuses a source whose
+page is missing, refuses a hostname written in the tracked C# that no page
 declares, and refuses a page that does not say when its terms were read. What
 that check cannot do is in
 [the workflow](../../.github/workflows/source-terms.yml), next to what it does.
@@ -19,12 +19,16 @@ Three lines are read by the check and have to appear at the start of a line.
     Host: <hostname>
     Terms read: <YYYY-MM-DD>
 
-`Source` is the token in the page's file name, and it is the same token an
-adapter carries: a file `FooSourceAdapter.cs` anywhere in the tree needs
-`docs/sources/foo.md`. `Host` is repeated once per hostname the source is
-reached at, and the check refuses a hostname written in the tracked C# that no
-page declares. `Terms read` is the day somebody opened the terms and wrote the
-page against what they said on that day.
+`Source` is the token in the page's file name, and it is the lowercased
+`MetadataSource` member the source names in its own `Source` property: a type
+implementing `IMetadataSource` and answering `MetadataSource.Foo` needs
+`docs/sources/foo.md`. Which page is owed therefore follows the interface and
+not the file name, which is what [#394](https://github.com/Flowfin/jellyfin-plugin-discover/issues/394)
+changed, because a name is chosen by whoever adds the file and a source that
+picks its own name picks whether its terms are read. `Host` is repeated once per
+hostname the source is reached at, and the check refuses a hostname written in
+the tracked C# that no page declares. `Terms read` is the day somebody opened the
+terms and wrote the page against what they said on that day.
 
 The rest of the page is prose and a table, and no route reads it.
 
