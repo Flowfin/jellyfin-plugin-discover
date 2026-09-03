@@ -227,8 +227,29 @@ question is open rather than that the answer is the comfortable one.
 
 ## What is held about a person
 
-Nothing, and the reason moved with the refresh in #87. The one thing in this
-plugin that writes to disk is now reached, by the scheduled task:
+NOTHING UNTIL AN OPERATOR LISTS SOMEBODY, AND THIS SECTION SAID NOTHING FULL
+STOP. One field on the configuration record holds the server's own identifier for
+a person, one entry per account an operator has restricted from asking, and it
+arrived on 2026-08-31:
+
+    git grep -n 'public Collection<string> UsersRefusedTheAsk' origin/master -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:96:    public Collection<string> UsersRefusedTheAsk { get; } = new Collection<string>();
+
+It is empty on a fresh install, so the answer for an operator who has set nothing
+is unchanged; it is not empty on one where they have, and that is a record about
+named people written to this plugin's own configuration document. What the field
+is and who can read it is under **What a user can turn off for themselves**
+below, where the reading was taken, rather than a second copy here.
+
+WHAT MADE THIS SECTION MISS IT WAS ITS OWN SUBJECT. Every reading below is about
+the store, because that is where a record about a person was expected to arrive,
+and the field landed on the configuration instead. The section below found it by
+widening a search for how properties are typed; this one would not have found it
+at all, because it never asked.
+
+The rest of this section is about the store, and there the answer is still
+nothing. The one thing in this plugin that writes to disk is reached, by the
+scheduled task:
 
     git grep -n 'new CatalogueDocumentStore(' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
     origin/master:Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:346:                new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
