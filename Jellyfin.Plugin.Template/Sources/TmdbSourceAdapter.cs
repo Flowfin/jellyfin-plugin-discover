@@ -77,6 +77,8 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
     private readonly SourceLocale _locale;
 
+    private readonly TimeSpan _deadline;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TmdbSourceAdapter"/> class, speaking to the source.
     /// </summary>
@@ -102,6 +104,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
         _clock = clock;
         _locale = locale;
         _configured = !string.IsNullOrWhiteSpace(accessToken);
+        _deadline = DefaultDeadline;
         _transport = (address, cancellationToken) => SendAsync(httpClientFactory, accessToken, address, cancellationToken);
     }
 
@@ -121,16 +124,109 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="transport"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
     public TmdbSourceAdapter(Func<Uri, CancellationToken, Task<SourceTransportReply>> transport, bool configured, IClock clock, SourceLocale locale)
+        : this(transport, configured, clock, locale, DefaultDeadline)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TmdbSourceAdapter"/> class with a chosen deadline.
+    /// </summary>
+    /// <param name="transport">What carries a request and brings a reply back.</param>
+    /// <param name="configured">Whether a credential has been supplied.</param>
+    /// <param name="clock">What the instant on each record is read from.</param>
+    /// <param name="locale">Which language to ask in and which region to ask about.</param>
+    /// <param name="deadline">How long one request may take before it is given up on.</param>
+    /// <remarks>
+    /// The second constructor exists so a test can name the deadline rather
+    /// than wait for it, which is the shape <see cref="Seam.WantHandover"/>
+    /// already uses for its own bound and for the same reason: a test that
+    /// reached the boundary by waiting is a test that gets a longer wait put on
+    /// it until it proves nothing. A deadline of <see cref="TimeSpan.Zero"/>
+    /// makes the case this bound exists for - a request that has not answered -
+    /// reachable without a second of the runner's time being spent.
+    /// <para>
+    /// It is a bound rather than a pace, so it is not served through
+    /// <see cref="Refresh.IPause"/>. A pause is time this plugin chooses to
+    /// spend and a double that advances a clock is right for it; a deadline is
+    /// time this plugin refuses to spend, and on the ordinary request - the one
+    /// that answers - none of it passes at all. Handing it to a clock-advancing
+    /// pause would move the instant on every record by the whole deadline for
+    /// requests that took a millisecond.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="transport"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="deadline"/> is negative.</exception>
+    public TmdbSourceAdapter(
+        Func<Uri, CancellationToken, Task<SourceTransportReply>> transport,
+        bool configured,
+        IClock clock,
+        SourceLocale locale,
+        TimeSpan deadline)
     {
         ArgumentNullException.ThrowIfNull(transport);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(locale);
 
+        if (deadline < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(deadline),
+                deadline,
+                "A negative deadline is not a shorter wait, it is one no source could ever meet.");
+        }
+
         _transport = transport;
         _clock = clock;
         _locale = locale;
         _configured = configured;
+        _deadline = deadline;
     }
+
+    /// <summary>
+    /// Gets how long one request to this source may take before it is given up on.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// #45's fourth condition, and the number is this plugin's own. No page of
+    /// the source's reference states a deadline, an expected latency or a
+    /// slowest answer, which <c>docs/source-api/tmdb.md</c> already records for
+    /// the neighbouring absence of a page size, so there is nothing to check a
+    /// number against and this one is chosen and argued rather than derived.
+    /// </para>
+    /// <para>
+    /// WHAT IT REPLACES IS NOT NOTHING, AND THAT IS THE PART TO READ FIRST. A
+    /// request made through the other constructor is carried by a client this
+    /// plugin asked the server for, so whatever bound that client carries is
+    /// the server's setting rather than this plugin's, and nothing here reads
+    /// it or can. The runtime documents a default of a hundred seconds for a
+    /// client nobody configured, which is a claim about the runtime rather than
+    /// something measured here and is the only figure available for a client
+    /// this plugin did not build. So the deadline this states is the one meant
+    /// to govern a client somebody else configured, and it is under that
+    /// documented default on purpose: a bound above it would never be the one
+    /// that fired.
+    /// </para>
+    /// <para>
+    /// Thirty seconds, and both directions of the cost are cheap, which is why
+    /// the number is not agonised over. A refresh is a scheduled task on a daily
+    /// cadence with nobody waiting on it, a shelf whose source did not answer
+    /// keeps every byte it had by #79, and the retry is the next run, so a
+    /// deadline that fired on a source having a slow minute costs one shelf one
+    /// day of freshness. What it buys is that the six shipped shelves cannot
+    /// hold the server's scheduler open on a connection that will never answer,
+    /// which is bounded here at three minutes for the six rows
+    /// <see cref="Shelves.ShippedShelves"/> carries rather than at whatever the
+    /// client was configured with.
+    /// </para>
+    /// <para>
+    /// It bounds THIS PLUGIN'S WAIT and not the source's work, in the same way
+    /// and with the same limit as <see cref="Seam.WantHandover"/>'s bound on a
+    /// receiver. A request that has passed the deadline is cancelled and
+    /// abandoned; whether the server's client stops carrying it is that client's
+    /// business, and an answer arriving afterwards is dropped rather than read.
+    /// </para>
+    /// </remarks>
+    public static TimeSpan DefaultDeadline => TimeSpan.FromSeconds(30);
 
     /// <inheritdoc/>
     public MetadataSource Source => MetadataSource.Tmdb;
@@ -171,9 +267,49 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
         SourceTransportReply reply;
 
+        // Linked to the caller's token so cancelling a run still cancels the
+        // request, and cancelled again below on every path so a request that
+        // answered in a millisecond does not leave a thirty-second timer behind
+        // it on a server refreshing six shelves.
+        using var expiry = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
         try
         {
-            reply = await _transport(address, cancellationToken).ConfigureAwait(false);
+            var carried = _transport(address, expiry.Token);
+
+            // Task.Delay rather than CancelAfter, because the two differ in
+            // exactly what a test can reach: a timer started inside the runtime
+            // can only be observed by waiting for it, and a raced task can be
+            // named as TimeSpan.Zero by the constructor above. Which of the two
+            // fires is then a decision this file makes rather than a duration
+            // the runner has to spend.
+            var passed = Task.Delay(_deadline, expiry.Token);
+
+            await Task.WhenAny(carried, passed).ConfigureAwait(false);
+
+            // The timer is cancelled by the finally below on every path, and a
+            // cancelled Task.Delay faults. Nothing awaits it after this line,
+            // so it is dropped here rather than left to become an unobserved
+            // exception on the request that succeeded.
+            Dropped(passed);
+
+            if (!carried.IsCompleted)
+            {
+                // Left running on purpose, with its token cancelled by the
+                // finally below. Nothing here observes it again, so an answer
+                // or a fault arriving after the deadline is dropped rather than
+                // becoming an unobserved exception.
+                Dropped(carried);
+
+                // No message, because nothing was said. A deadline is this
+                // plugin's own decision to stop waiting, and the source has not
+                // refused, answered or been rated: TemporarilyFailed is the
+                // outcome whose own words name a timeout as its usual case, and
+                // a shelf on it keeps what it had.
+                return SourceAnswer.TemporarilyFailed(null);
+            }
+
+            reply = await carried.ConfigureAwait(false);
         }
         catch (HttpRequestException failure)
         {
@@ -183,8 +319,41 @@ public sealed class TmdbSourceAdapter : IMetadataSource
         {
             return SourceAnswer.TemporarilyFailed(null);
         }
+        finally
+        {
+            await expiry.CancelAsync().ConfigureAwait(false);
+        }
 
         return Read(reply, asked, page, _clock.UtcNow, _locale.Language);
+    }
+
+    /// <summary>
+    /// Stops a task nobody will await again from becoming an unobserved exception.
+    /// </summary>
+    /// <param name="task">The task being left behind.</param>
+    /// <remarks>
+    /// Two tasks reach here and neither is a mistake. One is the timer on a
+    /// request that answered, cancelled a line later. The other is a request
+    /// that passed its deadline, whose token is cancelled and whose answer,
+    /// whenever it arrives, is no longer wanted. Reading the fault is the whole
+    /// of what this does: the value is discarded, and a task that has already
+    /// finished is read at once rather than given a continuation that would
+    /// outlive the call.
+    /// </remarks>
+    private static void Dropped(Task task)
+    {
+        if (task.IsCompleted)
+        {
+            _ = task.Exception;
+
+            return;
+        }
+
+        _ = task.ContinueWith(
+            static finished => _ = finished.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     /// <summary>

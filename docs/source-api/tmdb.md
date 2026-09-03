@@ -124,10 +124,10 @@ Everything above is the discover endpoint, and the adapter in this tree asks it
 for nothing. The six paths it builds are literals chosen by a switch:
 
     git grep -nE '"(trending|tv|movie)' -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:637:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:638:            "popular" => series ? "tv/popular" : "movie/popular",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:639:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:655:        if (locale.Region is { } region && path is "movie/popular" or "movie/top_rated")
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:806:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:807:            "popular" => series ? "tv/popular" : "movie/popular",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:808:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:824:        if (locale.Region is { } region && path is "movie/popular" or "movie/top_rated")
 
 The fourth match is not a path. It is the test in the same method that decides
 which of the six a region reaches, and it names two of them by the same
@@ -329,8 +329,8 @@ of them under a command exiting 1. Two of the three are mapped now:
 
     git grep -inE 'popularity|vote_average|vote_count' -- Jellyfin.Plugin.Template/ ; echo "exit=$?"
     Jellyfin.Plugin.Template/Catalogue/DiscoverTitleOrder.cs:55:    /// record. TMDB documents one, <c>popularity</c>, on every address this
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:438:            VoteAverage = Score(entry, "vote_average"),
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:439:            VoteCount = Count(entry, "vote_count")
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:607:            VoteAverage = Score(entry, "vote_average"),
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:608:            VoteCount = Count(entry, "vote_count")
     exit=0
 
 The first of the three matches is a remark rather than a mapping, and it says
