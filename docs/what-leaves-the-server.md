@@ -252,7 +252,7 @@ nothing. The one thing in this plugin that writes to disk is reached, by the
 scheduled task:
 
     git grep -n 'new CatalogueDocumentStore(' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
-    origin/master:Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:346:                new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
+    origin/master:Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:372:                new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
     exit=0
 
 What that store can be handed is a shelf's titles and nothing else, so what a
@@ -479,7 +479,7 @@ An administrator opening the plugin's page sends nothing outside the server, and
 a test refuses the change rather than anybody remembering it:
 
     git grep -n 'ThePageRequestsNothingFromAHostOutsideTheServer' origin/master -- Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs
-    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:200:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
+    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:208:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
 
 ## What a user can turn off for themselves
 
@@ -491,6 +491,7 @@ Everything this plugin can be told is one server-wide record:
     origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:58:    public int MaximumTitlesPerShelf { get; set; }
     origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:69:    public int MaximumTitlesAcrossAllShelves { get; set; }
     origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:96:    public Collection<string> UsersRefusedTheAsk { get; } = new Collection<string>();
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:143:    public bool Enabled { get; set; } = true;
 
 THIS SENTENCE SAID EVERY FIELD ON THAT RECORD WAS SERVER-WIDE, AND THE SEARCH IT
 RESTED ON WOULD HAVE GONE ON AGREEING WITH IT. The pattern was

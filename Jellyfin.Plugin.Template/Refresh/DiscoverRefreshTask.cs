@@ -205,7 +205,10 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     /// The shelves a run takes, at the bound a configuration carries.
     /// </summary>
     /// <param name="configuration">What the operator saved, or null where there is none to read.</param>
-    /// <returns>The shipped set at that bound, or null where there is no configuration.</returns>
+    /// <returns>
+    /// The shipped set at that bound; no shelves at all where the plugin is
+    /// turned off; or null where there is no configuration.
+    /// </returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown by <see cref="Configuration.CatalogueBounds.Of"/> when the pair
     /// the document carries contradicts itself.
@@ -218,11 +221,22 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     /// still. What it must not become is a second copy of either half - the set
     /// is <see cref="ShippedShelves"/>'s and the number is #58's - and that is
     /// what the assertion on it is about.
+    ///
+    /// The off switch is read here and nowhere else, which is #109's first
+    /// condition: a run handed no shelves asks no source and writes no document,
+    /// and the count that proves it is the same count written for a shelf that
+    /// is turned off, one level up. An empty set rather than null, because null
+    /// is the answer for no configuration and the two are different states: one
+    /// is a plugin an operator switched off, the other a run with nothing to
+    /// read a bound from. The run still happens, so what the documents on disk
+    /// hold past the retention is still taken; the reason is at the setting.
     /// </remarks>
     public static IReadOnlyList<Shelf>? ShelvesFor(Configuration.PluginConfiguration? configuration) =>
         configuration is null
             ? null
-            : ShippedShelves.Bounded(configuration.Bounds().TitlesPerShelf);
+            : configuration.Enabled
+                ? ShippedShelves.Bounded(configuration.Bounds().TitlesPerShelf)
+                : Array.Empty<Shelf>();
 
     /// <inheritdoc />
     /// <remarks>
@@ -285,13 +299,25 @@ public sealed class DiscoverRefreshTask : IScheduledTask
             return;
         }
 
-        var shelves = _shelves ?? ShelvesFor(Plugin.Instance?.Configuration);
+        // Read the instance only where the shelves have to come from it. A test
+        // that hands shelves in has an instance whose paths refuse every call,
+        // and reading its configuration would throw for a run that never
+        // needed it.
+        var configuration = _shelves is null ? Plugin.Instance?.Configuration : null;
+        var shelves = _shelves ?? ShelvesFor(configuration);
 
         if (shelves is null)
         {
             _logger.LogWarning("The discover catalogue refresh has no configuration to read a bound from, so it did nothing.");
 
             return;
+        }
+
+        if (_shelves is null && configuration is { Enabled: false })
+        {
+            _logger.LogInformation(
+                "The discover plugin is turned off ({Setting} is false), so this refresh asks no source and writes no shelf. What the catalogue holds stays until the retention takes it.",
+                nameof(Configuration.PluginConfiguration.Enabled));
         }
 
         var run = await refresh.RunAsync(shelves, progress, cancellationToken).ConfigureAwait(false);

@@ -139,6 +139,126 @@ public class DiscoverRefreshTaskTests
     }
 
     /// <summary>
+    /// A configuration with the plugin turned off gives a run no shelves, which
+    /// is not the same answer as no configuration.
+    /// </summary>
+    /// <remarks>
+    /// #109's first condition, at the one place the switch is read. The two
+    /// answers are kept apart on purpose: null is a run with nothing to read a
+    /// bound from, and an empty set is an operator's decision. A switch that
+    /// answered null would make the run log that it had no configuration, which
+    /// is the wrong sentence for an operator who wrote one.
+    /// </remarks>
+    [Fact]
+    public void ATurnedOffPluginGivesARunNoShelves()
+    {
+        var off = new PluginConfiguration { Enabled = false };
+
+        var shelves = DiscoverRefreshTask.ShelvesFor(off);
+
+        Assert.NotNull(shelves);
+        Assert.Empty(shelves);
+        Assert.True(new PluginConfiguration().Enabled, "A fresh configuration has the plugin turned on.");
+    }
+
+    /// <summary>
+    /// A run while the plugin is turned off asks no source and leaves every byte
+    /// the catalogue held where it was.
+    /// </summary>
+    /// <remarks>
+    /// #109's fourth condition in its source half, and its first and third in
+    /// the half about the catalogue: the count is the questions the fake source
+    /// was asked, taken before and after a run under a configuration that is
+    /// off, and the catalogue is compared document by document and byte by byte
+    /// across that run. A run that purged what it would not refresh, or that
+    /// asked and discarded the answer, reddens here.
+    ///
+    /// The item half of that condition has no subject: nothing in this plugin
+    /// writes an item to the server's library, so a count of item writes would
+    /// be a count that cannot move. It is named here rather than asserted.
+    ///
+    /// The run is driven through <see cref="DiscoverRefreshTask.Over"/> with the
+    /// shelves <see cref="DiscoverRefreshTask.ShelvesFor"/> answers for the
+    /// configuration, which is the route the server's own path takes minus the
+    /// plugin instance, for the reason this class already gives.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ARunWhileTurnedOffAsksNoSourceAndKeepsWhatTheCatalogueHolds()
+    {
+        var folder = Folder("task-turned-off");
+        Remove(folder);
+        try
+        {
+            var configuration = new PluginConfiguration();
+            var source = new SourceThatAnswersFromWhatATestGaveIt(MetadataSource.Tmdb);
+            var store = new CatalogueDocumentStore(
+                new CatalogueDirectory(folder),
+                new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>());
+            var refresh = new CatalogueRefresh(
+                new[] { source },
+                store,
+                null,
+                new ClockATestAdvances(_now),
+                new PauseATestWatches(),
+                new LoggerThatRecordsWhatIsWritten<CatalogueRefresh>());
+            var logger = new LoggerThatRecordsWhatIsWritten<DiscoverRefreshTask>();
+
+            var on = DiscoverRefreshTask.ShelvesFor(configuration);
+            Assert.NotNull(on);
+            foreach (var shelf in on)
+            {
+                source.Answer(
+                    shelf.Ask(),
+                    SourceAnswer.Answered(
+                        new[]
+                        {
+                            new DiscoverTitle
+                            {
+                                Kind = shelf.Kind,
+                                Name = "Held while off",
+                                VoteCount = 1,
+                                FetchedAt = _now,
+                                Identity = new DiscoverTitleIdentity(new[]
+                                {
+                                    new ProviderIdentifier(MetadataSource.Tmdb, "1")
+                                })
+                            }
+                        },
+                        totalCount: 1));
+            }
+
+            await DiscoverRefreshTask.Over(refresh, on, logger)
+                .ExecuteAsync(new Progress<double>(), CancellationToken.None)
+                .ConfigureAwait(true);
+
+            var held = store.DocumentNames().ToDictionary(name => name, name => store.Read(name), StringComparer.Ordinal);
+            Assert.NotEmpty(held);
+            var asked = source.Asked.Count;
+            Assert.NotEqual(0, asked);
+
+            configuration.Enabled = false;
+            var off = DiscoverRefreshTask.ShelvesFor(configuration);
+            Assert.NotNull(off);
+
+            await DiscoverRefreshTask.Over(refresh, off, logger)
+                .ExecuteAsync(new Progress<double>(), CancellationToken.None)
+                .ConfigureAwait(true);
+
+            Assert.Equal(asked, source.Asked.Count);
+            Assert.Equal(held.Keys.Order(StringComparer.Ordinal), store.DocumentNames().Order(StringComparer.Ordinal));
+            foreach (var (name, bytes) in held)
+            {
+                Assert.Equal(bytes, store.Read(name));
+            }
+        }
+        finally
+        {
+            Remove(folder);
+        }
+    }
+
+    /// <summary>
     /// Running the task asks every shelf it was given, and reports its way to a
     /// hundred.
     /// </summary>
