@@ -96,6 +96,53 @@ public class PluginConfiguration : BasePluginConfiguration
     public Collection<string> UsersRefusedTheAsk { get; } = new Collection<string>();
 
     /// <summary>
+    /// Gets or sets a value indicating whether this plugin does its work at all.
+    /// </summary>
+    /// <remarks>
+    /// #109's first condition. One setting stops every outbound call and every
+    /// fetch the scheduler starts, and keeps the configuration and the
+    /// catalogue: an operator diagnosing something, or sitting on a source's
+    /// rate limit, or going away for a month, turns this off instead of
+    /// uninstalling, which is what #108 is for and which takes the catalogue
+    /// with it.
+    ///
+    /// What reads it is <see cref="Refresh.DiscoverRefreshTask.ShelvesFor"/>,
+    /// and nothing else: a run under a configuration with this off is handed no
+    /// shelves, so it asks no source and writes no document. The scheduled task
+    /// itself still runs, and that is a reading of "all scheduled work" rather
+    /// than an oversight. What a run does with no shelves is take what the
+    /// documents already on disk hold past the retention, and the retention is
+    /// a source's terms, which do not stop applying because an operator turned
+    /// the plugin off. What stops is what spends: the requests and the writes.
+    ///
+    /// The surface stays, with what the catalogue holds. Off stops what costs a
+    /// source and a database, and a surface reading what is already on disk
+    /// costs neither; an operator who wants users to stop seeing it has #57's
+    /// per-user control or the uninstall. Nothing in the surface reads a
+    /// catalogue document yet, so today the surface answers empty either way,
+    /// and the sentence above is the decision rather than an observation.
+    ///
+    /// Turning it back on resumes the schedule. Nothing is refetched because it
+    /// was off: the documents were never taken, so the next run is the ordinary
+    /// one, and the catalogue is as it was up to what the retention took while
+    /// it was off.
+    ///
+    /// True by default and true for a document written before this property
+    /// existed, because an XML deserialiser leaves an absent element at the
+    /// initialiser's value. It is an initialiser rather than a line in the
+    /// constructor because three pages under docs/ quote the properties above
+    /// by line number, and a line added to the constructor moves every one of
+    /// them. A document with the element spelled wrongly is a
+    /// different case and is #105's third condition.
+    ///
+    /// There is no control for it on the configuration page, which carries no
+    /// controls at all, so until #103 lands it is a hand edit of the document
+    /// on disk like the settings above it. That is the same temporary reason
+    /// the bounds are kept off the page, recorded in the same list.
+    /// </remarks>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>
     /// Reads the two bounds as one value, refusing a pair that contradicts itself.
     /// </summary>
     /// <returns>The bounds this document declares.</returns>

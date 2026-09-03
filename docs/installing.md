@@ -84,19 +84,21 @@ write:
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs:113:    public void AStartWithNothingConfiguredWritesNothing()
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs:188:    public async Task ARunWithNothingConfiguredWritesNothing()
 
-The configuration page carries no controls. The configuration itself now has
-three properties, and the two beside the schema version are the bounds on how
-many titles this plugin may write into the library database:
+The configuration page carries no controls. The configuration itself has four
+properties with a setter: the schema version, the two bounds on how many titles
+this plugin may write into the library database, and the switch that turns the
+plugin off without removing it:
 
     git grep -n 'public .* { get; set; }' -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
     Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:46:    public int SchemaVersion { get; set; }
     Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:58:    public int MaximumTitlesPerShelf { get; set; }
     Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:69:    public int MaximumTitlesAcrossAllShelves { get; set; }
+    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:143:    public bool Enabled { get; set; } = true;
 
 A property is not a control. The page has no script that reads or writes a
-configuration, so the two bounds are reachable today only by editing the
-plugin's configuration document on disk, and their defaults are what an operator
-who does nothing gets. What each one means and what it costs is
+configuration, so the bounds and the switch are reachable today only by editing
+the plugin's configuration document on disk, and their defaults are what an
+operator who does nothing gets. What each one means and what it costs is
 `docs/configuration.md`, and the page that would carry them as controls is
 [#103](https://github.com/Flowfin/jellyfin-plugin-discover/issues/103).
 

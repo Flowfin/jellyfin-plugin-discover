@@ -491,6 +491,7 @@ Everything this plugin can be told is one server-wide record:
     origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:58:    public int MaximumTitlesPerShelf { get; set; }
     origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:69:    public int MaximumTitlesAcrossAllShelves { get; set; }
     origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:96:    public Collection<string> UsersRefusedTheAsk { get; } = new Collection<string>();
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:143:    public bool Enabled { get; set; } = true;
 
 THIS SENTENCE SAID EVERY FIELD ON THAT RECORD WAS SERVER-WIDE, AND THE SEARCH IT
 RESTED ON WOULD HAVE GONE ON AGREEING WITH IT. The pattern was

@@ -22,12 +22,58 @@ the server hands it back rather than when it is typed.
 
 ## The settings
 
-| Setting                         | Type             | Default | Introduced by                                                        |
-| ------------------------------- | ---------------- | ------- | -------------------------------------------------------------------- |
-| `MaximumTitlesAcrossAllShelves` | `int`            | `120`   | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) |
-| `MaximumTitlesPerShelf`         | `int`            | `20`    | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58) |
-| `SchemaVersion`                 | `int`            | `1`     | [#17](https://github.com/Flowfin/jellyfin-plugin-discover/issues/17) |
-| `UsersRefusedTheAsk`            | `list of string` | `empty` | [#98](https://github.com/Flowfin/jellyfin-plugin-discover/issues/98) |
+| Setting                         | Type             | Default | Introduced by                                                          |
+| ------------------------------- | ---------------- | ------- | ---------------------------------------------------------------------- |
+| `Enabled`                       | `bool`           | `true`  | [#109](https://github.com/Flowfin/jellyfin-plugin-discover/issues/109) |
+| `MaximumTitlesAcrossAllShelves` | `int`            | `120`   | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58)   |
+| `MaximumTitlesPerShelf`         | `int`            | `20`    | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58)   |
+| `SchemaVersion`                 | `int`            | `1`     | [#17](https://github.com/Flowfin/jellyfin-plugin-discover/issues/17)   |
+| `UsersRefusedTheAsk`            | `list of string` | `empty` | [#98](https://github.com/Flowfin/jellyfin-plugin-discover/issues/98)   |
+
+### Enabled
+
+Whether this plugin does its work at all. True by default, and true for a
+configuration document written before the setting existed, because an absent
+element reads as the initialiser's value.
+
+Set to false, it stops every request to a source and every fetch the scheduled
+refresh would make, and keeps the configuration and the catalogue. It is for an
+operator diagnosing something, sitting on a source's rate limit, or going away
+for a month, and it is what to use instead of uninstalling, which takes the
+catalogue with it. The one place it is read is where a run is handed its
+shelves:
+
+    git grep -n 'configuration.Enabled' -- Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:237:            : configuration.Enabled
+
+A run while it is off is handed no shelves, so it asks nothing and writes
+nothing, and a test counts the questions a fake source was asked across such a
+run and compares the catalogue byte for byte before and after it.
+
+**The scheduled task still runs while the plugin is off, and that is a decision
+rather than an oversight.** What a run with no shelves does is take what the
+documents on disk hold past the retention, and the retention is a source's
+terms, which do not stop applying because an operator turned the plugin off.
+What stops is what spends: the requests and the writes.
+
+**The surface stays, with what the catalogue holds.** Off stops what costs a
+source and a database, and a surface reading what is already on disk costs
+neither; an operator who wants users to stop seeing it has the per-user control
+of [#57](https://github.com/Flowfin/jellyfin-plugin-discover/issues/57) or the
+uninstall. Nothing in the surface reads a catalogue document yet, so today the
+surface answers empty either way, and the sentence is the decision rather than
+an observation. The configuration page cannot tell an operator this yet, because
+it carries no controls; this page is where it is told until
+[#103](https://github.com/Flowfin/jellyfin-plugin-discover/issues/103) lands.
+
+Turning it back on resumes the schedule. Nothing is refetched because it was
+off: the documents were never taken, so the next run is the ordinary one, and
+the catalogue is as it was up to what the retention took in the meantime.
+
+At the edges. It is a boolean, so there is no range to refuse. A document with
+the element spelled wrongly is
+[#105](https://github.com/Flowfin/jellyfin-plugin-discover/issues/105)'s third
+condition rather than this setting's.
 
 ### MaximumTitlesPerShelf
 

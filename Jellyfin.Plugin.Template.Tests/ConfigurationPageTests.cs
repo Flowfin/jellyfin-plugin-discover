@@ -48,9 +48,17 @@ public class ConfigurationPageTests
     /// for a title, so it belongs on the page more obviously than the two above
     /// do; what keeps it off is that there is no control set to put it in. It
     /// comes out of this list in #103 with them.
+    ///
+    /// Enabled is here for the same temporary reason. #109 makes it the switch
+    /// that stops every fetch without losing the configuration or the
+    /// catalogue, and a switch nobody can reach from the page is reachable only
+    /// by the hand edit docs/configuration.md describes; what keeps it off is
+    /// that there is no control set to put it in. It comes out of this list in
+    /// #103 with the three above.
     /// </remarks>
     private static readonly string[] HiddenFromThePage =
     [
+        "Enabled",
         "MaximumTitlesAcrossAllShelves",
         "MaximumTitlesPerShelf",
         "SchemaVersion",
