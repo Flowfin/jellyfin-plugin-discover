@@ -124,10 +124,10 @@ Everything above is the discover endpoint, and the adapter in this tree asks it
 for nothing. The six paths it builds are literals chosen by a switch:
 
     git grep -nE '"(trending|tv|movie)' -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:617:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:618:            "popular" => series ? "tv/popular" : "movie/popular",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:619:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:635:        if (locale.Region is { } region && path is "movie/popular" or "movie/top_rated")
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:637:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:638:            "popular" => series ? "tv/popular" : "movie/popular",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:639:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:655:        if (locale.Region is { } region && path is "movie/popular" or "movie/top_rated")
 
 The fourth match is not a path. It is the test in the same method that decides
 which of the six a region reaches, and it names two of them by the same
@@ -196,7 +196,7 @@ language stated to the adapter is sent to all six; a region stated to it is sent
 to `movie/popular` and to `movie/top_rated` and to no other address:
 
     git grep -n 'ARegionReachesOnlyTheAddressesThatDocumentOne' -- Jellyfin.Plugin.Template.Tests/TmdbSourceAdapterTests.cs
-    Jellyfin.Plugin.Template.Tests/TmdbSourceAdapterTests.cs:602:    public async Task ARegionReachesOnlyTheAddressesThatDocumentOne(string name, DiscoverTitleKind kind, string expected)
+    Jellyfin.Plugin.Template.Tests/TmdbSourceAdapterTests.cs:646:    public async Task ARegionReachesOnlyTheAddressesThatDocumentOne(string name, DiscoverTitleKind kind, string expected)
 
 Four of that test's six rows are the addresses that must not carry one, which is
 the half a reader should check: the two rows that do carry it would pass against
@@ -329,8 +329,8 @@ of them under a command exiting 1. Two of the three are mapped now:
 
     git grep -inE 'popularity|vote_average|vote_count' -- Jellyfin.Plugin.Template/ ; echo "exit=$?"
     Jellyfin.Plugin.Template/Catalogue/DiscoverTitleOrder.cs:55:    /// record. TMDB documents one, <c>popularity</c>, on every address this
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:418:            VoteAverage = Score(entry, "vote_average"),
-    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:419:            VoteCount = Count(entry, "vote_count")
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:438:            VoteAverage = Score(entry, "vote_average"),
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:439:            VoteCount = Count(entry, "vote_count")
     exit=0
 
 The first of the three matches is a remark rather than a mapping, and it says

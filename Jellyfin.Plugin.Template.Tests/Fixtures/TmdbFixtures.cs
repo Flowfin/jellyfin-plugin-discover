@@ -23,12 +23,12 @@ namespace Jellyfin.Plugin.Template.Tests.Fixtures;
 /// difference is the whole fixture, and base64 is the form no line-ending rule
 /// can reach.
 ///
-/// The set covers the six shapes the fifth condition on #48 asks for and five
+/// The set covers the six shapes the fifth condition on #48 asks for and six
 /// more that the adapter's own mapping needs: a series page, whose fields the
 /// source spells differently from a film's; a page whose reported total
 /// contradicts what it carries; a body from something that answered instead of
-/// the source; a page whose scores are not scores; and a page whose adult flag
-/// is four different things.
+/// the source; a page whose scores are not scores; a page whose adult flag is
+/// four different things; and a page of titles the source has not translated.
 /// </remarks>
 internal static class TmdbFixtures
 {
@@ -80,6 +80,21 @@ internal static class TmdbFixtures
     /// than a hole in one or a refusal for the whole page.
     /// </remarks>
     public const string PageWithAnUnknownFieldAndEntriesThatCannotBeMapped = "eyJwYWdlIjoxLCJyZXN1bHRzIjpbeyJpZCI6MTAwMDAzLCJ0aXRsZSI6IkEgRmlsbSBDYXJyeWluZyBBIEZpZWxkIFRoaXMgUGx1Z2luIERvZXMgTm90IEtub3ciLCJhX2ZpZWxkX2FkZGVkX2xhdGVyIjp7Im5lc3RlZCI6dHJ1ZX0sIm92ZXJ2aWV3IjoiQSBzeW50aGV0aWMgZGVzY3JpcHRpb24uIiwicmVsZWFzZV9kYXRlIjoiMjAyNC0wMS0wMiJ9LHsidGl0bGUiOiJBIEZpbG0gVGhlIFNvdXJjZSBHYXZlIE5vIElkZW50aWZpZXIgRm9yIiwicmVsZWFzZV9kYXRlIjoiMjAyNC0wMS0wMyJ9LHsiaWQiOjEwMDAwNCwicmVsZWFzZV9kYXRlIjoiMjAyNC0wMS0wNCJ9LCJhIHN0cmluZyB3aGVyZSB0aGUgc291cmNlIHVzdWFsbHkgcHV0cyBhbiBvYmplY3QiXSwidG90YWxfcGFnZXMiOjEsInRvdGFsX3Jlc3VsdHMiOjR9Cg==";
+
+    /// <summary>
+    /// A page of films the source has not translated into the language asked for.
+    /// </summary>
+    /// <remarks>
+    /// #81's fourth condition. Three entries, and the first two are the ones
+    /// worth having. The first carries its translated name and its summary as
+    /// empty strings beside an original name, which is one of the three shapes
+    /// <c>docs/source-api/tmdb.md</c> says no reference rules out; the third
+    /// carries no translated name at all, which is another. The second is
+    /// translated, so a fallback that fired on every entry would show here as
+    /// the wrong name on it. The mapping's fallback order is written at the
+    /// adapter, and this is the page it is proven over.
+    /// </remarks>
+    public const string PageOfFilmsWithNoTranslation = "eyJwYWdlIjoxLCJyZXN1bHRzIjpbeyJpZCI6MTAwMDMxLCJ0aXRsZSI6IiIsIm9yaWdpbmFsX3RpdGxlIjoiQSBGaWxtIFdpdGggTm8gVHJhbnNsYXRpb24iLCJvdmVydmlldyI6IiIsInBvc3Rlcl9wYXRoIjpudWxsLCJyZWxlYXNlX2RhdGUiOiIyMDIzLTA1LTA2Iiwidm90ZV9hdmVyYWdlIjo3LjEsInZvdGVfY291bnQiOjEyfSx7ImlkIjoxMDAwMzIsInRpdGxlIjoiQSBGaWxtIFdob3NlIFRyYW5zbGF0aW9uIEFycml2ZWQiLCJvcmlnaW5hbF90aXRsZSI6IkEgRmlsbSBXaG9zZSBUcmFuc2xhdGlvbiBBcnJpdmVkIEluIEl0cyBPd24gTGFuZ3VhZ2UiLCJvdmVydmlldyI6IkEgc3ludGhldGljIGRlc2NyaXB0aW9uIGluIHRoZSBsYW5ndWFnZSBhc2tlZCBmb3IuIiwicmVsZWFzZV9kYXRlIjoiMjAyMi0wMy0wNCJ9LHsiaWQiOjEwMDAzMywib3JpZ2luYWxfdGl0bGUiOiJBIEZpbG0gV2hvc2UgVHJhbnNsYXRlZCBOYW1lIElzIEFic2VudCBSYXRoZXIgVGhhbiBFbXB0eSIsInJlbGVhc2VfZGF0ZSI6IjIwMjEtMDEtMDIifV0sInRvdGFsX3BhZ2VzIjoxLCJ0b3RhbF9yZXN1bHRzIjozfQo=";
 
     /// <summary>
     /// A body that stops in the middle of a title.

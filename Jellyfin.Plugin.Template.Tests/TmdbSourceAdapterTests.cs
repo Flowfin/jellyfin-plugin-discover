@@ -296,6 +296,50 @@ public class TmdbSourceAdapterTests
     }
 
     /// <summary>
+    /// A title the source has not translated falls back to its original name, and its
+    /// summary is left unset rather than filled with anything.
+    /// </summary>
+    /// <remarks>
+    /// #81's second and fourth conditions. The order is the one written at the
+    /// adapter's mapping: the translated name, else the original one, else the
+    /// entry is dropped; the translated summary, else nothing. Both shapes a
+    /// missing translation can take on the wire are on the page, an empty string
+    /// and an absent field, and both end in the same record. The translated
+    /// entry between them is what catches a fallback that fires on every entry.
+    ///
+    /// The one-line mistake this is for is the mapping dropping an entry whose
+    /// translated name is empty, which is what it did before this landed: a
+    /// title with no translation vanished from the shelf rather than being drawn
+    /// blank, and neither is what the condition asks for.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task ATitleWithNoTranslationFallsBackToItsOriginalNameAndCarriesNoSummary()
+    {
+        var answer = await Asked(TmdbFixtures.PageOfFilmsWithNoTranslation)
+            .FetchAsync(new SourceQuery("popular", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.Equal(3, answer.Titles.Count);
+
+        var empty = answer.Titles[0];
+        Assert.Equal("A Film With No Translation", empty.Name);
+        Assert.Null(empty.OriginalName);
+        Assert.Null(empty.Summary);
+
+        var translated = answer.Titles[1];
+        Assert.Equal("A Film Whose Translation Arrived", translated.Name);
+        Assert.Equal("A Film Whose Translation Arrived In Its Own Language", translated.OriginalName);
+        Assert.Equal("A synthetic description in the language asked for.", translated.Summary);
+
+        var absent = answer.Titles[2];
+        Assert.Equal("A Film Whose Translated Name Is Absent Rather Than Empty", absent.Name);
+        Assert.Null(absent.OriginalName);
+        Assert.Null(absent.Summary);
+    }
+
+    /// <summary>
     /// A body that stops in the middle is a failure the caller can retry, and never an exception.
     /// </summary>
     /// <remarks>
