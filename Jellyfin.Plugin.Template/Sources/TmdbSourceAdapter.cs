@@ -379,6 +379,26 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// none of the six addresses this adapter builds states in its answer which
     /// language it answered in. So what a record can carry is what was asked
     /// for, which is what <see cref="DiscoverTitle.Language"/> says of itself.
+    ///
+    /// A TITLE WITH NO TRANSLATION FALLS BACK IN THIS ORDER, which is #81's
+    /// second condition, and the order is a decision rather than a measurement.
+    /// <c>docs/source-api/tmdb.md</c> records that none of the six references
+    /// says what comes back for a title the source has not translated into the
+    /// language asked for: whether the translated field is absent, empty, or
+    /// filled from the original language. The order below gives the same answer
+    /// for all three. The name is the translated one where the source sent one,
+    /// else the original-language name the same entry carries, else the entry
+    /// is dropped, because a title with no name in any language is a blank row.
+    /// The summary is the translated one or nothing: a list answer carries no
+    /// second summary to fall back to, and a placeholder would be a value this
+    /// plugin composed, which #55 refuses. Where the name fell back, the
+    /// original name is not carried a second time beside it, so a client draws
+    /// one name rather than the same name twice.
+    ///
+    /// What none of that is is a second request. The addresses that would
+    /// answer with a title's translations are one request per title, which is
+    /// the cost #55's fourth condition already prices for a rating, and nothing
+    /// here spends it.
     /// </remarks>
     private static DiscoverTitle? Title(JsonElement entry, DiscoverTitleKind kind, DateTimeOffset fetchedAt, string? language)
     {
@@ -389,7 +409,9 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
         var isSeries = kind == DiscoverTitleKind.Series;
 
-        var name = Text(entry, isSeries ? "name" : "title");
+        var translated = Text(entry, isSeries ? "name" : "title");
+        var original = Text(entry, isSeries ? "original_name" : "original_title");
+        var name = translated ?? original;
 
         if (name is null || !entry.TryGetProperty("id", out var identifier)
             || identifier.ValueKind != JsonValueKind.Number
@@ -397,8 +419,6 @@ public sealed class TmdbSourceAdapter : IMetadataSource
         {
             return null;
         }
-
-        var original = Text(entry, isSeries ? "original_name" : "original_title");
 
         return new DiscoverTitle
         {
