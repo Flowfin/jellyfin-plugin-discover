@@ -7,8 +7,11 @@
 # Three legs, and each of them is reported before the run ends, so a red run
 # names every reason rather than the first one.
 #
-#   1. An adapter with no page. A tracked file `FooSourceAdapter.cs` anywhere in
-#      the tree needs `docs/sources/foo.md` declaring `Source: foo`.
+#   1. A source with no page. A tracked C# type that implements
+#      `IMetadataSource`, outside the test project, needs
+#      `docs/sources/<token>.md` declaring `Source: <token>`, where the token is
+#      the lowercased `MetadataSource` member the type names in its own `Source`
+#      property.
 #   2. A host with no page. A hostname in an http or https URL anywhere in the
 #      tracked C#, comments included, has to be declared by a page as `Host:`,
 #      or written down in `docs/sources/README.md` as `Not a source:` with the
@@ -17,13 +20,22 @@
 #      `Terms read: YYYY-MM-DD`, because an undated reading is a claim about
 #      today made from an unknown day.
 #
-# What it cannot do. Leg 1 anchors on a file name, so an adapter named anything
-# else walks through it; the name is the convention #73 is expected to keep and
-# this check is where it is written down. Leg 2 reads the text of the files, so
-# a host assembled at run time from parts, or reached through a name resolved
-# somewhere else, is invisible to it. No leg reads the prose of a page: it
-# judges that the page exists and is dated, never that what it says about the
-# source is true or complete. And it holds only sources this plugin talks to
+# What it cannot do. Leg 1 anchored on a file name until #394, so an adapter
+# called anything else walked through it and whoever added the file chose whether
+# its terms had to be read at all. It reads the base list and the `Source`
+# property instead, which a source cannot rename its way out of, and three things
+# are still outside it. It reads text rather than compiling, so a type whose base
+# list is written across lines, or that reaches the interface through a base class
+# rather than naming it, is not in the population. It cannot place a source whose
+# `Source` property does not name a `MetadataSource` member in its own
+# declaration, and it fails closed on one rather than passing it. And the test
+# project is excluded by path, because a stand-in there reaches no third party and
+# owes no terms page - so a file under that path that does reach one is invisible
+# here and is `no-network-outside-source-adapter`'s subject instead. Leg 2 reads
+# the text of the files, so a host assembled at run time from parts, or reached
+# through a name resolved somewhere else, is invisible to it. No leg reads the
+# prose of a page: it judges that the page exists and is dated, never that what
+# it says about the source is true or complete. And it holds only sources this plugin talks to
 # itself, so anything the server fetches on its own account is outside it.
 name: source-terms
 
@@ -76,26 +88,49 @@ jobs:
             printf '%s' "$out"
           }
 
-          # Leg 1: an adapter with no page.
-          adapters=$(git ls-files -- '*SourceAdapter.cs')
-          if [ -z "$adapters" ]; then
-            echo "leg 1: no source adapter is in the tree, so no page is owed by one."
+          # Leg 1: a source with no page. What makes a file a source is the
+          # interface it implements, never what it is called: a name is chosen by
+          # whoever adds the file, so a suffix let a source decide for itself
+          # whether its own terms had to be read (#394). The test project is
+          # excluded by path rather than by a name pattern, and the reason is
+          # that a stand-in there reaches no third party.
+          sources=$(scan -lE '^[[:space:]]*(public|internal|private|protected|sealed|abstract|static|partial|file|[[:space:]])*\b(class|record|struct)\b[^={;]*:[^={;]*\bIMetadataSource\b' \
+            -- '*.cs' ':!Jellyfin.Plugin.Template.Tests/')
+          if [ -z "$sources" ]; then
+            echo "leg 1: no type outside the test project implements IMetadataSource, so no page is owed by one."
           else
-            while IFS= read -r adapter; do
-              [ -n "$adapter" ] || continue
-              base=${adapter##*/}
-              token=$(printf '%s' "${base%SourceAdapter.cs}" | tr '[:upper:]' '[:lower:]')
+            echo "leg 1: reading $(printf '%s\n' "$sources" | wc -l | tr -d ' ') file(s) declaring a type that implements IMetadataSource."
+            while IFS= read -r source; do
+              [ -n "$source" ] || continue
+              # Which body a source speaks for is the member it names in its own
+              # `Source` property, which the interface requires it to answer and
+              # which is a member of a closed enum. A source writing that property
+              # some other way is refused rather than skipped: this leg cannot say
+              # which terms such a file owes, and a source nobody can place is
+              # what it exists to catch.
+              member=$(sed -nE 's;.*\bMetadataSource[[:space:]]+Source\b[^;]*(=>|=)[[:space:]]*MetadataSource\.([A-Za-z0-9_]+).*;\2;p' "$source" | head -n 1)
+              if [ -z "$member" ]; then
+                echo "FAIL  leg 1: $source implements IMetadataSource and its Source property names no MetadataSource member in its own declaration, so which body it speaks for cannot be read here."
+                fail=1
+                continue
+              fi
+              if [ "$member" = "None" ]; then
+                echo "FAIL  leg 1: $source implements IMetadataSource and declares MetadataSource.None, which is no body at all and can owe no terms page."
+                fail=1
+                continue
+              fi
+              token=$(printf '%s' "$member" | tr '[:upper:]' '[:lower:]')
               page="$pages_dir/$token.md"
               if [ ! -f "$page" ]; then
-                echo "FAIL  leg 1: $adapter is an adapter for '$token' and $page does not exist."
+                echo "FAIL  leg 1: $source is a source for '$token' and $page does not exist."
                 fail=1
               elif ! grep -q "^Source: $token\$" "$page"; then
                 echo "FAIL  leg 1: $page exists and does not declare 'Source: $token'."
                 fail=1
               else
-                echo "ok    leg 1: $adapter is covered by $page."
+                echo "ok    leg 1: $source speaks for '$token' and is covered by $page."
               fi
-            done <<< "$adapters"
+            done <<< "$sources"
           fi
 
           # Leg 2: a host with no page. Every tracked C# file is read whole, the
