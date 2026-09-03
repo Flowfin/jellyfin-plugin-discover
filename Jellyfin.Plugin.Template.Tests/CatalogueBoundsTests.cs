@@ -77,18 +77,18 @@ public static class CatalogueBoundsTests
     public static void ABoundOfZeroOrLessIsRefusedOnEitherNumber()
     {
         var perShelf = Assert.Throws<ArgumentOutOfRangeException>(
-            () => CatalogueBounds.Of(titlesPerShelf: 0, titlesAcrossAllShelves: 120));
-        Assert.Equal("titlesPerShelf", perShelf.ParamName);
+            () => CatalogueBounds.Of(maximumTitlesPerShelf: 0, maximumTitlesAcrossAllShelves: 120));
+        Assert.Equal("maximumTitlesPerShelf", perShelf.ParamName);
 
         Assert.Throws<ArgumentOutOfRangeException>(
-            () => CatalogueBounds.Of(titlesPerShelf: -1, titlesAcrossAllShelves: 120));
+            () => CatalogueBounds.Of(maximumTitlesPerShelf: -1, maximumTitlesAcrossAllShelves: 120));
 
         var total = Assert.Throws<ArgumentOutOfRangeException>(
-            () => CatalogueBounds.Of(titlesPerShelf: 20, titlesAcrossAllShelves: 0));
-        Assert.Equal("titlesAcrossAllShelves", total.ParamName);
+            () => CatalogueBounds.Of(maximumTitlesPerShelf: 20, maximumTitlesAcrossAllShelves: 0));
+        Assert.Equal("maximumTitlesAcrossAllShelves", total.ParamName);
 
         Assert.Throws<ArgumentOutOfRangeException>(
-            () => CatalogueBounds.Of(titlesPerShelf: 20, titlesAcrossAllShelves: -120));
+            () => CatalogueBounds.Of(maximumTitlesPerShelf: 20, maximumTitlesAcrossAllShelves: -120));
     }
 
     /// <summary>
@@ -105,15 +105,15 @@ public static class CatalogueBoundsTests
     public static void ATotalBelowOneShelfsBoundIsRefusedWithBothNumbers()
     {
         var refusal = Assert.Throws<ArgumentOutOfRangeException>(
-            () => CatalogueBounds.Of(titlesPerShelf: 40, titlesAcrossAllShelves: 30));
+            () => CatalogueBounds.Of(maximumTitlesPerShelf: 40, maximumTitlesAcrossAllShelves: 30));
 
-        Assert.Equal("titlesAcrossAllShelves", refusal.ParamName);
+        Assert.Equal("maximumTitlesAcrossAllShelves", refusal.ParamName);
         Assert.Contains("40", refusal.Message, StringComparison.Ordinal);
         Assert.Contains("30", refusal.Message, StringComparison.Ordinal);
 
         // Equal is not below, so a single shelf holding the whole allowance is a
         // configuration rather than a contradiction.
-        var exact = CatalogueBounds.Of(titlesPerShelf: 30, titlesAcrossAllShelves: 30);
+        var exact = CatalogueBounds.Of(maximumTitlesPerShelf: 30, maximumTitlesAcrossAllShelves: 30);
         Assert.Equal(30, exact.TitlesPerShelf);
     }
 
@@ -130,14 +130,18 @@ public static class CatalogueBoundsTests
     [Fact]
     public static void ShelvesThatDoNotFitAreRefusedAndTheOneThatFitsIsNot()
     {
-        var bounds = CatalogueBounds.Of(titlesPerShelf: 20, titlesAcrossAllShelves: 120);
+        var bounds = CatalogueBounds.Of(maximumTitlesPerShelf: 20, maximumTitlesAcrossAllShelves: 120);
 
         bounds.ThrowIfShelvesDoNotFit(6);
 
-        var refusal = Assert.Throws<ArgumentOutOfRangeException>(
+        var refusal = Assert.Throws<ArgumentException>(
             () => bounds.ThrowIfShelvesDoNotFit(7));
 
-        Assert.Equal("shelfCount", refusal.ParamName);
+        // No argument of the call is wrong, so the refusal carries no parameter
+        // name: the count is the shipped set's own and what does not fit is the
+        // saved pair. A parameter name here would be "shelfCount", which is not
+        // a setting and not a word in the document.
+        Assert.Null(refusal.ParamName);
         Assert.Contains("140", refusal.Message, StringComparison.Ordinal);
         Assert.Contains("120", refusal.Message, StringComparison.Ordinal);
 
@@ -163,10 +167,10 @@ public static class CatalogueBoundsTests
     public static void AProductTooLargeForAnIntIsRefusedRatherThanWrapped()
     {
         var bounds = CatalogueBounds.Of(
-            titlesPerShelf: 200_000_000,
-            titlesAcrossAllShelves: int.MaxValue);
+            maximumTitlesPerShelf: 200_000_000,
+            maximumTitlesAcrossAllShelves: int.MaxValue);
 
-        var refusal = Assert.Throws<ArgumentOutOfRangeException>(
+        var refusal = Assert.Throws<ArgumentException>(
             () => bounds.ThrowIfShelvesDoNotFit(20));
 
         Assert.Contains(
@@ -200,10 +204,68 @@ public static class CatalogueBoundsTests
         var bounds = configuration.Bounds();
 
         // The shipped set at fifty a shelf is three hundred, which it is not.
-        var refusal = Assert.Throws<ArgumentOutOfRangeException>(
+        var refusal = Assert.Throws<ArgumentException>(
             () => bounds.ThrowIfShelvesDoNotFit(
                 ShippedShelves.Bounded(configuration.MaximumTitlesPerShelf).Count));
 
         Assert.Contains("300", refusal.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Every refusal names the setting as the configuration document spells it,
+    /// which is #105's first condition and the rule <see cref="PluginConfiguration"/>
+    /// states.
+    /// </summary>
+    /// <remarks>
+    /// The one-word mistake this is for is a refusal naming the method's own
+    /// parameter. The runtime appends that name to the message of an
+    /// <see cref="ArgumentOutOfRangeException"/> whatever the text says, so a
+    /// message that dropped the setting would still carry a word that looks
+    /// like it. The comparison is ordinal and the setting is spelled with its
+    /// capital, which the parameter is not, so that appended word does not
+    /// satisfy this and the sentence has to.
+    ///
+    /// The spelling is taken from the property by <c>nameof</c> rather than
+    /// typed, so a renamed setting reddens the refusal that still says the old
+    /// name instead of the test that still expects it.
+    /// </remarks>
+    /// <param name="perShelf">The per-shelf bound offered.</param>
+    /// <param name="total">The bound across all shelves offered.</param>
+    /// <param name="setting">The setting the refusal has to name, as the document spells it.</param>
+    [Theory]
+    [InlineData(0, 120, nameof(PluginConfiguration.MaximumTitlesPerShelf))]
+    [InlineData(20, 0, nameof(PluginConfiguration.MaximumTitlesAcrossAllShelves))]
+    [InlineData(40, 30, nameof(PluginConfiguration.MaximumTitlesAcrossAllShelves))]
+    public static void ARefusedBoundIsNamedAsTheDocumentSpellsIt(int perShelf, int total, string setting)
+    {
+        var refusal = Assert.Throws<ArgumentOutOfRangeException>(
+            () => CatalogueBounds.Of(perShelf, total));
+
+        Assert.Contains(setting, refusal.Message, StringComparison.Ordinal);
+        Assert.StartsWith(setting, refusal.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A set of shelves that does not fit is refused naming both settings, so
+    /// the operator can choose which of the two to change.
+    /// </summary>
+    /// <remarks>
+    /// Both, because the arithmetic in the message has two settings in it and
+    /// an operator who is told only one of them has been told which number to
+    /// look at but not what it is compared against. The old refusal named a
+    /// count that is not a setting at all, and this is what stops that coming
+    /// back.
+    /// </remarks>
+    [Fact]
+    public static void ShelvesThatDoNotFitAreRefusedNamingBothSettings()
+    {
+        var bounds = CatalogueBounds.Of(maximumTitlesPerShelf: 20, maximumTitlesAcrossAllShelves: 120);
+
+        var refusal = Assert.Throws<ArgumentException>(
+            () => bounds.ThrowIfShelvesDoNotFit(7));
+
+        Assert.Contains(nameof(PluginConfiguration.MaximumTitlesPerShelf), refusal.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(PluginConfiguration.MaximumTitlesAcrossAllShelves), refusal.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("shelfCount", refusal.Message, StringComparison.Ordinal);
     }
 }

@@ -97,14 +97,18 @@ public sealed class CatalogueBounds
     /// <summary>
     /// Reads a configured pair, refusing one no set of shelves could satisfy.
     /// </summary>
-    /// <param name="titlesPerShelf">The most titles one shelf may hold.</param>
-    /// <param name="titlesAcrossAllShelves">The most titles every shelf may hold between them.</param>
+    /// <param name="maximumTitlesPerShelf">The most titles one shelf may hold, as <see cref="PluginConfiguration.MaximumTitlesPerShelf"/> spells it.</param>
+    /// <param name="maximumTitlesAcrossAllShelves">The most titles every shelf may hold between them, as <see cref="PluginConfiguration.MaximumTitlesAcrossAllShelves"/> spells it.</param>
     /// <returns>The bounds, checked against each other.</returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when either number is zero or negative, or when the total is
-    /// smaller than one shelf's own bound. The message says which of the two is
-    /// being refused and against what, because "out of range" leaves an operator
-    /// who typed one number guessing which of the pair objected.
+    /// smaller than one shelf's own bound. The message names the setting as the
+    /// configuration document spells it, the number that was offered and the
+    /// range that is accepted, which is the rule <see cref="PluginConfiguration"/>
+    /// states for every refusal of a setting. "Out of range" alone leaves an
+    /// operator who typed one number guessing which of the pair objected, and a
+    /// message naming this method's parameter leaves them searching the document
+    /// for a word that is not in it.
     /// </exception>
     /// <remarks>
     /// Zero is refused rather than read as "hold nothing". A plugin that may
@@ -121,38 +125,52 @@ public sealed class CatalogueBounds
     /// their decision; what this refuses is a pair that contradicts itself, and
     /// inventing a maximum here would be a number chosen by feel in the one
     /// place this issue asks for numbers that are not.
+    ///
+    /// The parameters are spelled as the settings are, so the parameter name the
+    /// runtime appends to the message agrees with the setting the message opens
+    /// with rather than offering a second word for the same thing.
     /// </remarks>
-    public static CatalogueBounds Of(int titlesPerShelf, int titlesAcrossAllShelves)
+    public static CatalogueBounds Of(int maximumTitlesPerShelf, int maximumTitlesAcrossAllShelves)
     {
-        if (titlesPerShelf <= 0)
+        if (maximumTitlesPerShelf <= 0)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(titlesPerShelf),
-                titlesPerShelf,
-                "A shelf's bound is how many titles it may hold, so it is a positive count. Holding nothing is not spelled as a bound of zero: it is turning the shelf off.");
-        }
-
-        if (titlesAcrossAllShelves <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(titlesAcrossAllShelves),
-                titlesAcrossAllShelves,
-                "The bound across all shelves is how many titles this plugin may write into the library database, so it is a positive count. Writing nothing is not spelled as a bound of zero: it is not configuring the plugin.");
-        }
-
-        if (titlesAcrossAllShelves < titlesPerShelf)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(titlesAcrossAllShelves),
-                titlesAcrossAllShelves,
+                nameof(maximumTitlesPerShelf),
+                maximumTitlesPerShelf,
                 string.Format(
                     CultureInfo.InvariantCulture,
-                    "A total of {0} titles is smaller than the {1} one shelf may hold, so no set of shelves satisfies both. Raise the total or lower the per-shelf bound.",
-                    titlesAcrossAllShelves,
-                    titlesPerShelf));
+                    "{0} is {1}, and it is how many titles one shelf may hold, so it is a count of one or more. Holding nothing is not spelled as a bound of zero: it is turning the shelf off.",
+                    nameof(PluginConfiguration.MaximumTitlesPerShelf),
+                    maximumTitlesPerShelf));
         }
 
-        return new CatalogueBounds(titlesPerShelf, titlesAcrossAllShelves);
+        if (maximumTitlesAcrossAllShelves <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maximumTitlesAcrossAllShelves),
+                maximumTitlesAcrossAllShelves,
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0} is {1}, and it is how many titles this plugin may write into the library database, so it is a count of one or more. Writing nothing is not spelled as a bound of zero: it is not configuring the plugin.",
+                    nameof(PluginConfiguration.MaximumTitlesAcrossAllShelves),
+                    maximumTitlesAcrossAllShelves));
+        }
+
+        if (maximumTitlesAcrossAllShelves < maximumTitlesPerShelf)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maximumTitlesAcrossAllShelves),
+                maximumTitlesAcrossAllShelves,
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0} is {1}, which is smaller than {2} at {3}, so no set of shelves satisfies both. {0} is at least {2}: raise it, or lower {2}.",
+                    nameof(PluginConfiguration.MaximumTitlesAcrossAllShelves),
+                    maximumTitlesAcrossAllShelves,
+                    nameof(PluginConfiguration.MaximumTitlesPerShelf),
+                    maximumTitlesPerShelf));
+        }
+
+        return new CatalogueBounds(maximumTitlesPerShelf, maximumTitlesAcrossAllShelves);
     }
 
     /// <summary>
@@ -161,10 +179,17 @@ public sealed class CatalogueBounds
     /// <param name="shelfCount">How many shelves are on.</param>
     /// <returns>The same bounds, so a caller can check and use them in one step.</returns>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when the count is negative, or when that many shelves at the
-    /// per-shelf bound would exceed the total. The message carries all four
-    /// numbers, because the operator's next action is to change one of them and
-    /// they cannot choose which without seeing the arithmetic.
+    /// Thrown when the count is negative, which is a caller handing in a count
+    /// no set of shelves has rather than a number an operator typed.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when that many shelves at the per-shelf bound would exceed the
+    /// total. No argument of this call is wrong then: the count is the shipped
+    /// set's own, and what does not fit is the pair an operator saved. So the
+    /// refusal carries no parameter name, and it names the two settings as the
+    /// document spells them with all four numbers, because the operator's next
+    /// action is to change one of the two and they cannot choose which without
+    /// seeing the arithmetic.
     /// </exception>
     /// <remarks>
     /// This is #58's third condition and the reason it is a refusal rather than
@@ -174,6 +199,12 @@ public sealed class CatalogueBounds
     /// answered with nothing, which is the state #92 has to read thinnest. A
     /// refusal at the moment the pair is read happens while the operator is
     /// still looking at the numbers they typed.
+    ///
+    /// The refusal stays in the <see cref="ArgumentException"/> family on
+    /// purpose. The server answers a save with a status code chosen by the
+    /// exception's type, and that family is the one it reads as the request
+    /// being wrong rather than the server; the reading is in the change that
+    /// made it an <see cref="ArgumentException"/> rather than restated here.
     ///
     /// The product is computed in <see cref="long"/> so that a large per-shelf
     /// bound and a large count are refused rather than wrapping into a small
@@ -187,16 +218,17 @@ public sealed class CatalogueBounds
 
         if (wanted > TitlesAcrossAllShelves)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(shelfCount),
-                shelfCount,
+            throw new ArgumentException(
                 string.Format(
                     CultureInfo.InvariantCulture,
-                    "{0} shelves holding {1} titles each is {2} titles, which is more than the {3} allowed across all shelves. Turn a shelf off, lower the per-shelf bound, or raise the total.",
+                    "{0} shelves holding {1} titles each, which is {2} at {3}, is {4} titles, more than the {5} that {6} allows. Lower {2} or raise {6}.",
                     shelfCount,
                     TitlesPerShelf,
+                    nameof(PluginConfiguration.MaximumTitlesPerShelf),
+                    TitlesPerShelf,
                     wanted,
-                    TitlesAcrossAllShelves));
+                    TitlesAcrossAllShelves,
+                    nameof(PluginConfiguration.MaximumTitlesAcrossAllShelves)));
         }
 
         return this;

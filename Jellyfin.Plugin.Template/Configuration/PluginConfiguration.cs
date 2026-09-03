@@ -101,13 +101,38 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <returns>The bounds this document declares.</returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown by <see cref="CatalogueBounds.Of"/> when either number is zero or
-    /// negative, or when the total is smaller than one shelf's bound.
+    /// negative, or when the total is smaller than one shelf's bound. The
+    /// message names the setting as this document spells it, under the rule
+    /// stated on this class.
     /// </exception>
     /// <remarks>
     /// A method rather than a property, so that a reflection walk over this
     /// class's settings, which is what <c>docs/configuration.md</c> is held
     /// against, sees the two numbers an operator sets and not a third thing
     /// derived from them.
+    ///
+    /// WHAT A REFUSAL OF A SETTING NAMES, and it is one rule for every refusal
+    /// rather than a wording each one chooses. It names the setting as this
+    /// document spells it, which is the property's own name and the word an
+    /// operator finds in the file they edited; the value that was offered; and
+    /// the range that is accepted. Where that range is read off something
+    /// outside this plugin's own constants, a source's terms or the shipped set
+    /// of shelves, the refusal names that thing too, because an operator with
+    /// two sources cannot act on a ceiling that does not say whose it is. A
+    /// refusal naming a method's parameter instead of the setting sends an
+    /// operator searching the document for a word that is not in it, which is
+    /// #105's first condition. The rule sits here, on the member that reads
+    /// settings into a refusal, below the properties it is about: several pages
+    /// under <c>docs/</c> quote those properties by line number, and a
+    /// paragraph above them moves every one of those quotations.
+    /// <see cref="CatalogueBounds"/> and <see cref="Seam.WhoMayAsk"/> are the
+    /// refusals that follow it today.
+    ///
+    /// Where the message is read is the server's log rather than the dashboard,
+    /// and that is a fact about the server rather than a choice here: a save the
+    /// plugin refuses is answered with a status code and, outside a development
+    /// host, with a fixed sentence, while the exception's own message is written
+    /// to the log. The reading is on #105.
     /// </remarks>
     public CatalogueBounds Bounds() =>
         CatalogueBounds.Of(MaximumTitlesPerShelf, MaximumTitlesAcrossAllShelves);
