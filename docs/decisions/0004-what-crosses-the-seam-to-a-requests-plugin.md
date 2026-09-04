@@ -312,12 +312,25 @@ plugin tolerates a receiver built against an older version, and that a newer one
 is handled by a stated rule, are behaviours at the point implementations are
 resolved, which is now `WantHandover`, and neither is written there: what it does
 with a receiver's answer is take it or not take it, and it never reads a version
-back because there is none to read. Whether the interface is published for a
-sibling to compile against, or copied, is #101's fourth condition and is a
-packaging decision that needs a release path, which is
-[#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119). A copied
-interface is two types in one process that do not satisfy each other, so that
-condition is not a formality.
+back because there is none to read.
+
+Whether the interface is published for a sibling to compile against was #101's
+fourth condition and is decided, on 2026-09-04: it is not, and the reason is the
+failure this whole note is against. A shared interface assembly is the one
+artefact that makes two plugins meeting at versions nobody chose together certain
+rather than possible, because two plugins referencing different versions of one
+assembly name load whichever the host resolved first and the other then reads
+types that are not its own. The version-first rule above exists so that no
+compile-time binding is needed, and publishing an assembly would reintroduce
+exactly what that rule removes.
+
+What a sibling gets instead is this note, the version rule above, and the shape
+of a receiver that reads the version before any field, copied into the sibling as
+source it owns, with its own fixture pinned to the first version so the rule is
+held on its side too. The paragraph that stood here read a copied interface as
+two types in one process that do not satisfy each other. They do not satisfy each
+other and they do not have to: what crosses is the wire shape with its version in
+front, and nothing on either side resolves the other's type.
 
 The gesture that produces a want is
 [#96](https://github.com/Flowfin/jellyfin-plugin-discover/issues/96) and its
@@ -338,10 +351,10 @@ What is left is that issue's fourth condition, that a reader who has never seen
 this repository can implement the other side from the note. The field set, the
 meanings and the version rule are here, and the encoding and the route are now in
 the tree rather than owed: a receiver implements `IWantReceiver` and registers it
-under that interface in its own registrator. What a reader of this note alone
-still cannot do is compile against the type, because nothing publishes it yet,
-which is #101's fourth condition. That is a bound on this note rather than a gap
-in it, and it is a narrower one than the bound this paragraph used to state.
+under that interface in its own registrator. A reader of this note alone cannot
+compile against the type and is not meant to, which is the decision above rather
+than a bound this note is still waiting to have lifted: the shape is what
+crosses, and the type stays this repository's own.
 
 ## What would reverse this
 
