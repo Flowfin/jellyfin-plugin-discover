@@ -4,7 +4,7 @@ guid: "8227de33-0101-48a3-951d-2bf921709e48"
 imageUrl: "https://raw.githubusercontent.com/Flowfin/jellyfin-plugin-discover/master/img/logo.png"
 # version follows PluginVersion in Directory.Build.props, and the build fails
 # when the two drift. What the numbers mean is at the top of CHANGELOG.md.
-version: "0.0.0.0"
+version: "0.1.0.0"
 # targetAbi and framework follow Directory.Build.props, which is where the
 # server line is decided, and the build fails when these two drift from it.
 targetAbi: "10.11.0.0"

@@ -27,7 +27,7 @@ anything is compiled, packaged or installed against:
     Directory.Build.props:46:        <JellyfinDeclaredLines>10.11</JellyfinDeclaredLines>
 
     git grep -nE '^targetAbi|^version' -- build.yaml
-    build.yaml:7:version: "0.0.0.0"
+    build.yaml:7:version: "0.1.0.0"
     build.yaml:10:targetAbi: "10.11.0.0"
 
 So an operator running a 12.0 server gets nothing installable from this project

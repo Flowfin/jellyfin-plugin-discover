@@ -37,7 +37,7 @@
         10.11.11 is net9.0 and for the 12.0 candidates is net10.0.
     -->
     <PropertyGroup Condition=" '$(JellyfinLine)' == '10.11' ">
-        <JellyfinPackageVersion>10.11.11</JellyfinPackageVersion>
+        <JellyfinPackageVersion>10.11.0</JellyfinPackageVersion>
         <JellyfinTargetFramework>net9.0</JellyfinTargetFramework>
         <JellyfinTargetAbi>10.11.0.0</JellyfinTargetAbi>
     </PropertyGroup>
@@ -54,7 +54,7 @@
         the paragraph at the top of CHANGELOG.md.
     -->
     <PropertyGroup>
-        <PluginVersion>0.0.0.0</PluginVersion>
+        <PluginVersion>0.1.0.0</PluginVersion>
         <Version>$(PluginVersion)</Version>
         <AssemblyVersion>$(PluginVersion)</AssemblyVersion>
         <FileVersion>$(PluginVersion)</FileVersion>
