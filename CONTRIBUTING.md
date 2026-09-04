@@ -181,6 +181,57 @@ one the tree builds against today, and the two currently have different answers.
 [`docs/support.md`](docs/support.md) is the first one and states which lines
 carry a support commitment; this section is the second one only.
 
+## When an issue cannot move
+
+An open issue nobody can start on carries a label saying so, because a label is
+what a listing shows and the reason is otherwise at the bottom of a long thread.
+The cost of leaving it off is paid once per reader rather than once: the issue is
+opened, read to the end, found to be waiting and put back, by everybody in turn.
+
+Which label it takes follows what is on the other end of the wait, not how long
+it has waited:
+
+- `blocked-on-decision`, where the wait ends when somebody answers a question
+  this issue itself asks. The work is understood and cannot start because the
+  answer changes what gets built.
+- `blocked-on-dependency`, where the wait ends when something else changes state:
+  another issue closes, a type exists, a page lands, a package is published.
+  Nobody has to decide anything; somebody has to do something.
+
+Where both fit, the label names the nearest wait, decision first. A decision that
+is owed on another issue is a dependency on that issue rather than a decision
+here, so exactly one of the two applies and choosing between them is not a
+judgement about which matters more.
+
+There is a third state and this repository has no label for it. An issue can wait
+on somebody looking at something no checkout can produce: a client drawing a page
+on a television, a library large enough for a number to mean anything, a
+published package installed on a real server. That is not a decision, because
+nobody has a question to answer, and it is not a dependency, because the label
+above says in its own text that it is not waiting on a person. A label for it
+would mean: everything that can be built is built, and what is left is an
+observation. Until one exists such an issue carries no label and is counted as
+available, which is a known hole rather than a judgement that it is workable.
+
+The reason goes in the issue as well as in the label, on the first line of the
+body, so the two arrive together and a reader meets the second without opening
+the thread:
+
+    Waiting on: one line, naming the issue or the thing
+
+That line is also what makes the label removable. Before you close an issue, look
+for the open issues whose first line names it, and take their line and their
+label off:
+
+    gh issue list --repo Flowfin/jellyfin-plugin-discover --state open --limit 300 --json number,body --jq '.[] | select(.body | startswith("Waiting on:")) | select(.body | test("#123\b")) | .number'
+
+A label nothing removes is worse than no label, because it is believed. Nothing
+runs that command for you, and nothing here refuses an issue that waits in
+silence or one whose wait lifted a month ago; this section is a convention, like
+the rest of this file, and
+[#397](https://github.com/Flowfin/jellyfin-plugin-discover/issues/397) is where
+it is argued.
+
 ## Reporting something rather than fixing it
 
 Bugs and requests go in the issue tracker. A security problem does not: read
