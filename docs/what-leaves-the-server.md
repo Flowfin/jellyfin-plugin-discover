@@ -102,18 +102,38 @@ adapter:
 The first is where the server asks its questions. The second is where artwork
 sits, and the server is not what fetches it, which is the section below.
 
-Nothing else in the plugin can open a connection. The one outbound client in the
-project is inside the adapter and there is no second one:
+Nothing else in the plugin can open a connection. Two other lines answer a
+search for the vocabulary, and neither of them is a way out:
 
     git grep -nE 'HttpClient|IHttpClientFactory|HttpRequestMessage|Socket|Dns\.' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ':!Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs' ; echo "exit=$?"
-    exit=1
+    origin/master:Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:149:        // TmdbHttpClient: a factory answers a name nobody configured with a
+    origin/master:Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:178:            .AddHttpClient(Sources.TmdbHttpClient.Name)
+    exit=0
 
-That absence is held by a rule rather than by anybody remembering it:
+The first is a comment. The second is the registration #45 landed: this plugin
+declares one named client, so that the handler behind it is one thing rather
+than every caller's, and configuring a name is not opening anything. The client
+it names is asked for in the adapter and nowhere else, which is the first
+command on this page, and no source is registered, which is the list above. So
+what an installed plugin sends is unchanged by it, and this section is the
+disclosure of a registration rather than of a connection.
+
+Nothing configured on that client changes what a call would carry either. The
+registration sets no proxy, no connection limit and no certificate callback, so
+where the container holds no handler the client gets exactly the one the runtime
+would have made unasked.
+
+The absence around it is held by a rule rather than by anybody remembering it:
 
     git grep -n '^Id:\|^Subject:\|^Except:' origin/master -- tools/invariants/rules/no-network-outside-source-adapter.rule
     origin/master:tools/invariants/rules/no-network-outside-source-adapter.rule:1:Id: no-network-outside-source-adapter
     origin/master:tools/invariants/rules/no-network-outside-source-adapter.rule:3:Subject: *.cs
-    origin/master:tools/invariants/rules/no-network-outside-source-adapter.rule:4:Except: :!Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
+    origin/master:tools/invariants/rules/no-network-outside-source-adapter.rule:4:Except: :!Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs :!Jellyfin.Plugin.Template.Tests/AHandlerThatRefusesWhatNoTestSetUp.cs
+
+The second exception is a file in the test project, not in the plugin, and it is
+the substitute a test puts in front of that named client. It opens nothing: it
+answers what a test set up and refuses every other address. The rule's reach
+over the plugin is one adapter, one path, unchanged.
 
 ## What one request to the source carries
 

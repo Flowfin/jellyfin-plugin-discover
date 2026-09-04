@@ -145,6 +145,7 @@ run asks nobody:
 The only callers that build the adapter are still in the test project:
 
     git grep -rln 'new TmdbSourceAdapter' -- '*.cs'
+    Jellyfin.Plugin.Template.Tests/AHandlerThatRefusesWhatNoTestSetUp.cs
     Jellyfin.Plugin.Template.Tests/CatalogueRetentionTests.cs
     Jellyfin.Plugin.Template.Tests/ShelfTests.cs
     Jellyfin.Plugin.Template.Tests/SourceResponseFuzzTests.cs
