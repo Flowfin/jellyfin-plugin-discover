@@ -15,8 +15,8 @@ namespace Jellyfin.Plugin.Template.Catalogue;
 ///
 /// The set is not the set of sources this plugin fetches from. It is the set of
 /// identifier bodies a fetched response may name, which is wider: the first
-/// adapter is #74 and TheTVDB is deferred to #83, but a response from either
-/// commonly carries an IMDb identifier for the same title.
+/// adapter is #74 and TheTVDB was refused as a source on #83, but a response
+/// from either commonly carries an IMDb identifier for the same title.
 /// </remarks>
 public enum MetadataSource
 {
@@ -38,8 +38,10 @@ public enum MetadataSource
     Tmdb = 2,
 
     /// <summary>
-    /// TheTVDB, which #83 holds as a later source and which is declared here so
-    /// that a response naming one of its identifiers has somewhere to put it.
+    /// TheTVDB, which #83 refused as a source of this plugin and which is
+    /// declared here anyway, so that a response naming one of its identifiers
+    /// has somewhere to put it. Carrying an identifier and asking a source for
+    /// something are different acts, and only the second one was refused.
     /// </summary>
     Tvdb = 3
 }
