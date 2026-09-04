@@ -94,3 +94,8 @@ published. Whether the description is right is not judged by anything.
   do not fit inside, is refused when the configuration is saved rather than
   truncated later
   ([#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58)).
+- The scheduled refresh now defaults to a daily trigger at four in the morning of
+  the server's own time, instead of an interval of a day that fired a day after
+  the server last started and so ran while somebody was watching on half the
+  installations. It stays a default an operator moves in the dashboard
+  ([#87](https://github.com/Flowfin/jellyfin-plugin-discover/issues/87)).
