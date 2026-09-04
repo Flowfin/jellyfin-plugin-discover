@@ -29,7 +29,14 @@ jobs:
   prettier:
     name: Formatting outside the C#
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Ten rather than five, and the number is the download's rather than the
+    # check's. Prettier walks this tree in seconds; what varies is fetching it,
+    # which took ten seconds on some runs on 2026-09-04 and four minutes
+    # fifty-nine on others, and five attempts that day were cancelled at a cap of
+    # five with no file judged. The fetch below carries a bound of its own so
+    # that a hang is named rather than left to this number, and what is left here
+    # is the checkout, the check and the cleanup around it (#409).
+    timeout-minutes: 10
     permissions:
       contents: read # checkout only
 
@@ -40,9 +47,38 @@ jobs:
           # No step pushes via git, so do not persist the GITHUB_TOKEN in .git/config.
           persist-credentials: false
 
+      - name: Fetch the formatter
+        # Separate from the check below so that a download says so. Both used to
+        # be one command, and a slow registry then ended this job exactly as a
+        # badly formatted file would: red, with nothing in the result saying
+        # which of the two happened and a reader left to open the log. On
+        # 2026-09-04 that cost five cancelled attempts on a tree prettier agrees
+        # with (#409).
+        #
+        # The bound is this step's rather than the job's, because a job cancelled
+        # at its cap prints no reason at all. Four minutes is longer than any
+        # successful fetch measured that day and short enough to leave the check
+        # room under the job's ten.
+        #
+        # This also warms npx's cache, so the pinned version below is resolved
+        # locally rather than fetched a second time.
+        run: |
+          set -uo pipefail
+          timeout 240 npx --yes prettier@3.6.2 --version && exit 0
+          status=$?
+          if [ "$status" -eq 124 ]; then
+            echo "::error::Fetching prettier@3.6.2 took longer than four minutes, so this run judged no file. That is a download failure and not a formatting one."
+          else
+            echo "::error::Fetching prettier@3.6.2 failed with status $status, so this run judged no file. That is a download failure and not a formatting one."
+          fi
+          exit 1
+
       - name: Check formatting
         # The version is pinned because a formatter's output is a property of its
         # version: an unpinned one would start failing this repository on a day
-        # nothing here changed. Moving it is an edit to this line, and the diff it
-        # produces is reviewed like any other.
+        # nothing here changed. Moving it is an edit to this line and to the fetch
+        # above, and the diff it produces is reviewed like any other.
+        #
+        # A failure here is a formatting failure, because the step above has
+        # already answered for the download.
         run: npx --yes prettier@3.6.2 --check .
