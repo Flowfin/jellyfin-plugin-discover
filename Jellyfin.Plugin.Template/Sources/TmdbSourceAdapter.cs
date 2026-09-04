@@ -522,8 +522,8 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// those two shelves do instead is #93's own open half and belongs with the
     /// shelves that ship, which is #86.
     ///
-    /// There is no way to turn this off. #93 asks for one and it has nowhere to
-    /// live: the configuration page carries no controls, which is #103.
+    /// There is no way to turn this off yet. #93 asks for one; it goes where
+    /// every setting here is, on the configuration type and off the page.
     /// </remarks>
     private static bool TheSourceFlagsThisAsAdult(JsonElement entry) =>
         entry.ValueKind == JsonValueKind.Object
