@@ -241,36 +241,45 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     /// <inheritdoc />
     /// <remarks>
     /// <para>
-    /// One interval trigger of a day. #87's second condition asks for the
-    /// cadence to be derived from the source's request limit and the shelf
-    /// count, and that derivation does not bound anything: six requests against
-    /// a ceiling the source states as roughly forty per second permits several
-    /// refreshes a second, which is not a cadence. That reading is recorded on
-    /// the issue and this default is not it.
+    /// One daily trigger, at four in the morning of the server's own time.
+    /// #87's second condition asks for the cadence to be derived from the
+    /// source's request limit and the shelf count, and that derivation does not
+    /// bound anything: six requests against a ceiling the source states as
+    /// roughly forty per second permits several refreshes a second, which is not
+    /// a cadence. That reading is recorded on the issue and this default is not
+    /// it.
     /// </para>
     /// <para>
-    /// What it is derived from instead is what a shorter one would buy. Two of
-    /// the shipped shelves ask their source for a weekly window, so a refresh
-    /// far inside that window returns mostly the previous answer; the server
-    /// caches what a surface returned for three hours of its own, so a cadence
-    /// under that is spent on something no user can see; and the retention is
-    /// ninety days, so a daily refresh keeps every stored record two orders of
-    /// magnitude away from its expiry. A day is the longest cadence that
-    /// refreshes a weekly window several times over and the shortest that is
-    /// not paying for a difference behind a cache.
+    /// What the cadence is chosen against instead is the source's own rhythm.
+    /// The lists these shelves ask for move once a day, so a refresh more often
+    /// than that re-asks for an answer that has not changed; two of the shipped
+    /// shelves ask for a weekly window, so a daily run refreshes it several
+    /// times over; the server caches what a surface returned for three hours of
+    /// its own, so a cadence under that is spent on a difference no user can
+    /// see; and the retention is ninety days, so a daily refresh keeps every
+    /// stored record two orders of magnitude away from its expiry.
+    /// </para>
+    /// <para>
+    /// The hour is where the interval trigger this replaced could say nothing.
+    /// An interval of a day fires a day after the server last started, so on
+    /// half the installations it ran while somebody was watching something. Four
+    /// is the quiet hour on a media server and the hour the server schedules its
+    /// own library scans at by default, so an operator meets this task in the
+    /// company it belongs in.
     /// </para>
     /// <para>
     /// A default rather than a decision about the cadence. The trigger is one an
     /// operator can move or replace in the dashboard, which is the whole reason
-    /// this is the server's scheduler rather than a timer of this plugin's.
+    /// this is the server's scheduler rather than a timer of this plugin's, and
+    /// there is no second place in this plugin holding a cadence of its own.
     /// </para>
     /// </remarks>
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers() =>
     [
         new TaskTriggerInfo
         {
-            Type = TaskTriggerInfoType.IntervalTrigger,
-            IntervalTicks = TimeSpan.FromDays(1).Ticks
+            Type = TaskTriggerInfoType.DailyTrigger,
+            TimeOfDayTicks = TimeSpan.FromHours(4).Ticks
         }
     ];
 

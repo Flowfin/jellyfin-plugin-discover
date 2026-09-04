@@ -94,22 +94,29 @@ public class DiscoverRefreshTaskTests
     }
 
     /// <summary>
-    /// A fresh install refreshes once a day, on a trigger an operator can move.
+    /// A fresh install refreshes once a day at four in the morning, on a trigger
+    /// an operator can move.
     /// </summary>
     /// <remarks>
-    /// #87's first condition, in its default-schedule half. The interval is
-    /// asserted as a duration rather than as a tick count, because a tick count
-    /// in an assertion is a number a reader cannot check against the sentence
-    /// that argues for it.
+    /// #87's first and second conditions, in their default-schedule half. The
+    /// hour is asserted as a duration rather than as a tick count, because a
+    /// tick count in an assertion is a number a reader cannot check against the
+    /// sentence that argues for it.
+    ///
+    /// The kind is asserted beside the hour, and that is the half a reader
+    /// should not skip. An interval trigger of a day and a daily trigger at four
+    /// both refresh once a day; only the second says when. Asserting the hour
+    /// alone would pass on a trigger that carries no hour at all, because the
+    /// property it reads is nullable and an interval trigger leaves it unset.
     /// </remarks>
     [Fact]
-    public void TheDefaultScheduleIsOnceADay()
+    public void TheDefaultScheduleIsOnceADayAtFour()
     {
         var triggers = Composed().GetDefaultTriggers().ToArray();
 
         Assert.Single(triggers);
-        Assert.Equal(TaskTriggerInfoType.IntervalTrigger, triggers[0].Type);
-        Assert.Equal(TimeSpan.FromDays(1), TimeSpan.FromTicks(triggers[0].IntervalTicks!.Value));
+        Assert.Equal(TaskTriggerInfoType.DailyTrigger, triggers[0].Type);
+        Assert.Equal(TimeSpan.FromHours(4), TimeSpan.FromTicks(triggers[0].TimeOfDayTicks!.Value));
     }
 
     /// <summary>
