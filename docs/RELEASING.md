@@ -36,6 +36,37 @@ Push one tag at a time and wait for its run to finish. GitHub keeps at most one
 queued run per concurrency group, and although the group here is keyed on the tag,
 serialising them by hand is what keeps the release order readable.
 
+## Who pushes the tag
+
+The tag is pushed by the account that owns this repository and by nobody else,
+as an annotated, signed tag. Nothing else mints a release: the publish workflow
+runs on a tag and on no other trigger, so a release cannot be created out of
+band. The repository setting that restricts who may push `*-stable`, in the list
+at the end of this page, is the half of this a machine holds; this section is the
+other half and is a convention.
+
+Decided on 2026-09-04 and recorded on
+[#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119).
+
+## Before the first tag
+
+Three sibling plugins published a first release on 2026-09-03 whose package
+promised a floor it did not load on: the build had compiled against the newest
+server package rather than the one `targetAbi` names, and each of the three
+needed a second release the next day. That is cheap to check once and expensive
+to find afterwards, so before the first tag here two readings are taken by hand
+and written on
+[#163](https://github.com/Flowfin/jellyfin-plugin-discover/issues/163) beside the
+archive's md5:
+
+- the built assembly's bindings, read against the `targetAbi` that `build.yaml`
+  declares
+- the published archive installed on a container at that floor, and the server's
+  own plugin list read as `Active`
+
+Neither is a workflow today. A build leg that takes the first of them on every
+build is owed and is not a condition of the first tag.
+
 ## Interoperability, before the tag is pushed
 
 A release is not cut while the interoperability matrix is red. The matrix is
