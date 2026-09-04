@@ -49,6 +49,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Full history, because the history is part of what the pages assert.
+          # A page pastes what `git log` prints, and a checkout of one commit is
+          # a commit whose parents are cut off, so every file under it reads as
+          # added there and a correct page is refused for being right. The
+          # default depth of one is what made this job refuse
+          # docs/what-leaves-the-server.md for eight mainline runs (#406).
+          fetch-depth: 0
           # No step pushes via git, so do not persist the GITHUB_TOKEN in .git/config.
           persist-credentials: false
 
@@ -60,9 +67,13 @@ jobs:
         # one standing on the mainline. It is not fatal: a run that could not
         # fetch judges less and says so, rather than failing for a reason that
         # has nothing to do with the pages.
+        #
+        # No depth is asked for here either. A depth on this fetch would make
+        # the checkout above shallow again for the one ref every such block is
+        # read against, which is the whole of #406 arriving by the back door.
         run: |
           set -uo pipefail
-          if git fetch --no-tags --depth=1 origin '+master:refs/remotes/origin/master'; then
+          if git fetch --no-tags origin '+master:refs/remotes/origin/master'; then
             echo "origin/master is at $(git rev-parse origin/master)."
           else
             echo "::warning::origin/master could not be fetched, so blocks quoting it are skipped on this run and the reader prints each one."

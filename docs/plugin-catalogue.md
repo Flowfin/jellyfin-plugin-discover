@@ -279,7 +279,7 @@ catalogue's own tooling cites a commit this checkout does not carry, and nothing
 here fetches it, so each is refused by name:
 
     git grep -n 'names an object this repository does not carry' -- tools/documented-commands/run.sh
-    tools/documented-commands/run.sh:263:    echo "names an object this repository does not carry"
+    tools/documented-commands/run.sh:286:    echo "names an object this repository does not carry"
 
 So those go stale silently against a repository that moves on its own schedule,
 exactly as this paragraph said, and what catches them is still somebody running
@@ -294,7 +294,7 @@ disagrees, the block is reported and passed over instead, because a branch cut
 behind a red mainline did not make it red:
 
     git grep -n 'already disagrees with this block, so this change' -- tools/documented-commands/run.sh
-    tools/documented-commands/run.sh:415:  say "skip  $file:$line: the mainline already disagrees with this block, so this change is not what makes it wrong."
+    tools/documented-commands/run.sh:438:  say "skip  $file:$line: the mainline already disagrees with this block, so this change is not what makes it wrong."
 
 Nothing reads the prose on either half. What a block holds is that the command
 still prints what is pasted under it, never that the sentence over it is the right

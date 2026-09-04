@@ -571,7 +571,7 @@ agrees with the mainline and no longer agrees with the tree is a line this
 change moved, and it is refused on the pull request:
 
     git grep -n 'FAIL  %s:%s: this change moves a line the page quotes' -- tools/documented-commands/run.sh
-    tools/documented-commands/run.sh:398:    printf 'FAIL  %s:%s: this change moves a line the page quotes.\n' "$file" "$line"
+    tools/documented-commands/run.sh:421:    printf 'FAIL  %s:%s: this change moves a line the page quotes.\n' "$file" "$line"
 
 The reason such a block reads `origin/master` at all survives that, which is
 what the second run buys: a page changed together with the file it quotes agrees

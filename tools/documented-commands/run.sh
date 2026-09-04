@@ -29,6 +29,12 @@
 # showed. A carriage return is stripped from the answer: that is the checkout's
 # line-ending policy rather than anything the command found.
 #
+# A CHECKOUT HOLDING PART OF THE HISTORY IS REFUSED BEFORE A PAGE IS READ. The
+# history is part of what the pages assert, so a truncated one turns this check
+# around: a correct page is reported as drifted, which is worse than the drift it
+# was built to find. The refusal is at the top of this file with the reason and
+# the way out, and #406 is the eight mainline runs that bought it.
+#
 # A BLOCK NAMING `origin/master`, OFF THE MAINLINE, IS RUN TWICE. Half of this
 # check's failures on the default branch were one class: such a block was not
 # judged at all while the branch that broke it was open, and was judged for the
@@ -98,6 +104,23 @@ here=$(cd "$(dirname "$0")" && pwd)
 repo=$(git -C "$here" rev-parse --show-toplevel)
 cd "$repo"
 
+# A CHECKOUT HOLDING PART OF THE HISTORY CANNOT JUDGE A PAGE THAT READS IT, and
+# the way it fails is the failure this check exists to prevent, pointed the
+# other way. `git log` walks to the graft and stops, so a commit whose parents
+# were never fetched reads as the commit that added every file under it, and a
+# page pasting the real one is refused for being right. That is a refusal
+# manufactured by the checkout rather than found on the page, and a reader who
+# trusts it edits a page that was correct.
+#
+# So the depth is refused here, where the reason can be named, rather than
+# discovered at whichever block happens to read history first. #406 is where it
+# cost eight consecutive mainline runs, every one of them naming a page that
+# agreed with its command on any checkout carrying this repository's history.
+if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+  echo "::error::This checkout holds part of the history, so a block reading the history would be judged against a truncated one and a correct page refused. Run 'git fetch --unshallow', or check out with fetch-depth: 0, and run this again."
+  exit 1
+fi
+
 rel_here=$(git -C "$here" rev-parse --show-prefix)
 rel_here=${rel_here%/}
 rel_fixtures="$rel_here/fixtures"
@@ -111,8 +134,8 @@ readonly_verbs=" grep ls-files ls-tree log show blame diff rev-parse describe sh
 # the defaults the first run is the command exactly as the page writes it. They
 # are settable so that `--prove` can hand this reader two commits it made itself
 # and watch each arm of the comparison, which is the only way to exercise the
-# arms at all: the mainline job checks out one commit and there is no second
-# tree on that machine for the comparison to differ against.
+# arms at all: the mainline job checks out one tree and there is no second one
+# on that machine for the comparison to differ against.
 mainline_ref=${DOCUMENTED_COMMANDS_MAINLINE:-origin/master}
 tree_ref=${DOCUMENTED_COMMANDS_TREE:-HEAD}
 
@@ -596,12 +619,13 @@ prove() {
   # Legs 7, 8 and 9 are the three arms a block naming `origin/master` takes off
   # the mainline, and they are why this reader takes both commits from the
   # environment. The run that judges the tracked pages on the mainline has one
-  # commit checked out and no second tree to differ against, and a fixture
-  # pinning two commits of this history would not survive the shallow clone that
-  # run makes. What is handed in instead is this checkout's head and that head's
-  # tree, which every checkout carries whatever its depth: two different objects,
-  # answering `git cat-file -t` differently, so all three arms are exercised on
-  # every run of this check rather than only where a branch happens to differ.
+  # tree checked out and no second one to differ against, and a fixture pinning
+  # two commits of this history would pin two commits that a rewritten branch
+  # can move out from under it. What is handed in instead is this checkout's
+  # head and that head's tree, which every checkout carries whatever it stands
+  # on: two different objects, answering `git cat-file -t` differently, so all
+  # three arms are exercised on every run of this check rather than only where a
+  # branch happens to differ.
   local commit="" tree=""
   commit=$(git rev-parse --verify --quiet HEAD) || commit=""
   tree=$(git rev-parse --verify --quiet 'HEAD^{tree}') || tree=""
@@ -673,12 +697,55 @@ prove() {
     bad=1
   fi
 
+  # Leg 10 is the guard on the checkout depth, and proving it needs a repository
+  # that is really shallow rather than one told that it is. What is made is a
+  # scratch clone of this checkout's head, one commit deep, with the reader under
+  # proof copied over the one the clone carries, so what is exercised is the file
+  # in hand rather than the last one committed. It is an init and a fetch: no
+  # commit is authored, nothing is signed, and nothing is written into this
+  # repository, which is the accident the allowlist above was built after.
+  #
+  # The other half of the proof is every leg here and the tracked-page pass,
+  # which run in this checkout and are silent, so the guard is shown to bite on a
+  # repository holding part of the history and to stay out of the way on one
+  # holding all of it.
+  local scratch="" made=""
+  scratch=$(mktemp -d)
+  if made=$( { git init --quiet "$scratch/dst" \
+      && git -C "$scratch/dst" fetch --quiet --no-tags --depth=1 "file://$repo" HEAD \
+      && git -C "$scratch/dst" checkout --quiet --detach FETCH_HEAD \
+      && cp "$script" "$scratch/dst/$rel_here/run.sh"; } 2>&1 ); then
+    if [ "$(git -C "$scratch/dst" rev-parse --is-shallow-repository)" != "true" ]; then
+      echo "FAIL  leg 10: the scratch clone is not shallow, so this leg would pass without the guard ever being asked."
+      bad=1
+    elif out=$(QUIET=1 bash "$scratch/dst/$rel_here/run.sh" 2>&1); then
+      echo "FAIL  leg 10: a checkout holding one commit of the history was judged rather than refused."
+      bad=1
+    else
+      case $out in
+        *"holds part of the history"*)
+          echo "ok    leg 10: a checkout holding part of the history is refused, and the refusal names the depth."
+          ;;
+        *)
+          echo "FAIL  leg 10: a checkout holding one commit was refused for something other than its depth:"
+          printf '%s\n' "$out" | sed 's/^/        /'
+          bad=1
+          ;;
+      esac
+    fi
+  else
+    echo "FAIL  leg 10: the scratch clone this leg reads could not be made, so the guard on the checkout depth is unproven:"
+    printf '%s\n' "$made" | sed 's/^/        /'
+    bad=1
+  fi
+  rm -rf "$scratch" 2>/dev/null || true
+
   if [ "$bad" -ne 0 ]; then
     echo "::error::The documented-commands check did not hold its own legs."
     exit 1
   fi
 
-  echo "The check fires on the fixture that breaks the rule, is silent on the one that holds it, refuses to run a block carrying a redirection, carries a blank line through an output and refuses one pasted only as far as it, refuses a block the mainline agrees with and this checkout does not, reads the same block the other way round as a repair, passes over one the mainline is already wrong about, and is silent on the tracked pages."
+  echo "The check fires on the fixture that breaks the rule, is silent on the one that holds it, refuses to run a block carrying a redirection, carries a blank line through an output and refuses one pasted only as far as it, refuses a block the mainline agrees with and this checkout does not, reads the same block the other way round as a repair, passes over one the mainline is already wrong about, refuses a checkout holding part of the history rather than judging pages against it, and is silent on the tracked pages."
 }
 
 if [ "${1:-}" = "--prove" ]; then
