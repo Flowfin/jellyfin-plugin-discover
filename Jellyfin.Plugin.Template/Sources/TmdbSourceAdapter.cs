@@ -903,7 +903,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
         request.Headers.TryAddWithoutValidation("Accept", "application/json");
         request.Headers.TryAddWithoutValidation("User-Agent", Identity());
 
-        var client = httpClientFactory.CreateClient();
+        var client = httpClientFactory.CreateClient(TmdbHttpClient.Name);
 
         using var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
 

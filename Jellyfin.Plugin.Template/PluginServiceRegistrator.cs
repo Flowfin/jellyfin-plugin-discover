@@ -133,5 +133,50 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // configured builds a task that asks nobody. That is the state
         // AFreshInstallHoldsNoWayOutTests asserts from the other side.
         serviceCollection.AddSingleton<IScheduledTask, DiscoverRefreshTask>();
+
+        // The one way out of this server, named. #45's second condition asks
+        // that every outbound call go through one injected handler, and the
+        // reading taken on 2026-09-04 is that this is one injection POINT
+        // rather than one handler instance: a single named client, whose
+        // primary handler is the one thing a test replaces.
+        //
+        // An unnamed client could not be it. The factory hands that one to
+        // every caller in the server, so configuring its handler would
+        // configure everybody's, and configuring a client under this plugin's
+        // own name while the adapter asked for the unnamed one would configure
+        // a client nothing uses. The name is one constant both sides read
+        // rather than a string typed twice, and the argument for that is at
+        // TmdbHttpClient: a factory answers a name nobody configured with a
+        // default client rather than refusing, so two spellings drifting apart
+        // is silent in exactly the direction that matters.
+        //
+        // The primary handler is whatever the container holds, and where it
+        // holds none it is a fresh one of exactly the type the factory would
+        // have made unasked. Nothing is configured on it: no callback, no
+        // validation switch, no proxy and no connection limit, so a real
+        // server, which registers no handler, gets the runtime's own defaults
+        // and its certificate verification untouched. Constructing it here
+        // rather than leaving the line off is what the non-deprecated shape of
+        // this call requires, and it is the reason the sentence above is about
+        // what is NOT set rather than about the line not existing.
+        //
+        // What registers one is a test. That is the whole of what the second
+        // condition asks for: a substitute reached without a trust store, an
+        // environment variable or a global verification switch, and no test
+        // needing a real endpoint.
+        //
+        // This registers no source, so a fresh install still holds no way out.
+        // A configured client name that nothing asks for makes no call, which is
+        // what AFreshInstallHoldsNoWayOutTests counts one level up.
+        //
+        // The three types are named in full rather than through a using, so
+        // that this block adds no line above itself. Several pages under docs/
+        // and the README quote lines of this file by number, and a using added
+        // at the top moves every one of those quotations for a change that is
+        // about the bottom of the file.
+        serviceCollection
+            .AddHttpClient(Sources.TmdbHttpClient.Name)
+            .ConfigurePrimaryHttpMessageHandler(provider =>
+                provider.GetService<System.Net.Http.HttpMessageHandler>() ?? new System.Net.Http.HttpClientHandler());
     }
 }

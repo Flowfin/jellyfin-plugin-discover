@@ -47,6 +47,16 @@ Microsoft.AspNetCore.Http.Abstractions
 Microsoft.Extensions.DependencyInjection
 Microsoft.Extensions.DependencyInjection.Abstractions
 
+# The client factory, and it is here for #45's second condition rather than for
+# anything the suite fetches. The injection point that condition asks for is one
+# named client this plugin registers, so a test that puts a substitute in front
+# of it configures a client, which is this assembly. It opens nothing: what it
+# configures is a handler that answers what the test set up and refuses every
+# other address, and the default client gets a second one with nothing set up on
+# it at all, so a call made through the wrong client is refused here instead of
+# leaving the runner.
+Microsoft.Extensions.Http
+
 # The logging abstractions, for the loggers a test passes in and reads back.
 Microsoft.Extensions.Logging.Abstractions
 
