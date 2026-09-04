@@ -126,14 +126,13 @@ row says what makes it so. `defer` means an open question decides it.
 | `own-repository-name.yml`    | keep            | Two workflows here declared they were running on the template's repository and their jobs silently never ran; nothing on the target has that shape to refuse.                                                                                                                                                                         |
 | `plugin-loads.yml`           | keep            | The target proves a login works; this proves the packaged plugin loads at all on each targeted line, which is the claim that matters when there is no login.                                                                                                                                                                          |
 | `source-terms.yml`           | keep            | This plugin takes data from third parties under terms, and the target takes none, so nothing there has a reason to refuse an adapter whose terms were never written down.                                                                                                                                                             |
-| `sync-labels.yaml`           | keep            | Inherited from the template; it keeps the label set in step and touches nothing a merge depends on.                                                                                                                                                                                                                                   |
 
 The two tables account for every workflow file in this repository. Sixteen are
 named in the first table's last column as the counterpart of a target workflow,
-and the twelve above are the rest:
+and the eleven above are the rest:
 
     ls .github/workflows | wc -l
-    28
+    27
 
 It read fourteen and twenty-three, and then fifteen and nine.
 `abi-matches-the-line.yml` landed after the tables were written and was named on
@@ -141,6 +140,18 @@ neither of them, so the sentence claiming they accounted for everything was
 false while the command under it printed a number nobody had re-run. It is named
 in the `dotnet.yml` row rather than in the second table, because the ABI floor is
 a job of that workflow on the target rather than a check the target does not run.
+
+`sync-labels.yaml` was a twelfth row here until 2026-09-04 and is gone from the
+tree, which is where the second number above lost one. Its row read `keep`,
+because it kept the label set in step and touched nothing a merge depends on.
+The second half of that sentence was true and was never the cost: the run
+replaces this repository's whole label set with a list another organisation
+holds for its own plugins, so every label this board mints for itself is deleted
+on the first of the month.
+[#411](https://github.com/Flowfin/jellyfin-plugin-discover/issues/411) carries
+the removal and what that run took, and the decision to remove it on every board
+of the family is
+[jellyfin-plugin-share-links#338](https://github.com/Flowfin/jellyfin-plugin-share-links/issues/338).
 
 Those two corrections were both made by hand, months apart, by somebody who
 happened to run the command. `gate-parity.yml` is what reads the claim now: a
