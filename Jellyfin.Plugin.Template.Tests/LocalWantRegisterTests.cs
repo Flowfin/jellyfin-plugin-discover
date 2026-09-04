@@ -18,9 +18,13 @@ namespace Jellyfin.Plugin.Template.Tests;
 ///
 /// One of #97's conditions has no subject here and is not pretended at. The
 /// operator sees this list on the configuration page, and the page carries no
-/// controls, which is #103. Another is unmet rather than absent: a want
-/// surviving a restart needs the list to be written down, and nothing writes it,
-/// which the register says of itself and which is recorded on the issue.
+/// controls, which is #103. The other one this called unmet is met, and the
+/// register no longer says otherwise of itself: a want surviving a restart
+/// needed the list to be written down and nothing wrote it, and
+/// <see cref="WantListStore"/> writes it where the register is given one. What
+/// is still not asserted here is the writing, because this suite holds the
+/// register's own rules against a register built without a store, and the store
+/// is exercised where it lives, in <c>WantListStoreTests</c>.
 ///
 /// Every moment below comes from a clock a test moves. Nothing here sleeps and
 /// nothing reads the machine, which is what <c>no-sleep-in-a-test</c> and
