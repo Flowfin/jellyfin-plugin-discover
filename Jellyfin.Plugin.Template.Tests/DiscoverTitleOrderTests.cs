@@ -21,12 +21,17 @@ namespace Jellyfin.Plugin.Template.Tests;
 /// sequence whatever sequence it went in as, that no two distinct titles are
 /// left for the sort to place, and that nothing outside the record is read.
 ///
-/// What is not here is a refresh. Two refreshes of identical source data
-/// producing identical order is #91's own third condition and it has no subject
-/// yet: nothing in this tree runs a refresh, and nothing writes a title to the
-/// catalogue. The half that catches the defect is the one below, because an
-/// order that depends on arrival sequence fails on a shuffled response long
-/// before a second refresh exists to notice.
+/// What is not here is still a refresh, and the reason it is not here has
+/// changed. This said #91's third condition had no subject, because nothing in
+/// this tree runs a refresh and nothing writes a title to the catalogue. Both
+/// do since the refresh landed under #87, and that condition is asserted over
+/// it rather than absent, in
+/// <c>CatalogueRefreshTests.TheSameAnswerInAnySequenceProducesTheSameDocument</c>,
+/// which compares the document three runs of the same answer produce byte for
+/// byte. The half that stays here is the one that catches the defect earliest,
+/// because an order depending on arrival sequence fails on a shuffled response
+/// without a second refresh to notice it, and because it is a property of the
+/// comparer rather than of what writes a document.
 /// </remarks>
 public class DiscoverTitleOrderTests
 {

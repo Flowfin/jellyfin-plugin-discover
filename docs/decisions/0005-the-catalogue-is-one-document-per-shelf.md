@@ -79,7 +79,7 @@ It also costs nothing at uninstall, which is the place the single file would hav
 helped. The directory is removed whole rather than by name:
 
     git grep -n 'public void RemoveEverything' origin/master -- Jellyfin.Plugin.Template/Catalogue/CatalogueDirectory.cs
-    origin/master:Jellyfin.Plugin.Template/Catalogue/CatalogueDirectory.cs:228:    public void RemoveEverything()
+    origin/master:Jellyfin.Plugin.Template/Catalogue/CatalogueDirectory.cs:229:    public void RemoveEverything()
 
 **One document per shelf per source.** Rejected as a distinction with no subject.
 A shelf names exactly one source, so the source is a property of the shelf rather

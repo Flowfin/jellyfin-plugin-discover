@@ -34,12 +34,13 @@ namespace Jellyfin.Plugin.Template.Catalogue;
 /// #107's, and it is named in the decision note so it is not discovered on a
 /// user's server.
 ///
-/// What is deliberately not here is the layout inside the directory. One file
-/// per shelf against one file for all is decided against the concurrency the
-/// refresh in #87 needs, and #87 does not exist, so choosing now would be
-/// choosing by preference. This type is where that decision lands when it is
-/// taken, and until then it answers where things go rather than what goes
-/// there.
+/// What is not here is the layout inside the directory, and this said the
+/// choice was still open because the refresh in #87 did not exist to decide it
+/// against. That refresh exists and the choice is taken: one document per
+/// shelf, derived in <see cref="CatalogueLayout"/> under #65 with the argument
+/// in the decision note beside it. So this type still answers where things go
+/// rather than what goes there, and it is not where the reader waits for that
+/// decision to land.
 /// </remarks>
 public sealed class CatalogueDirectory
 {
