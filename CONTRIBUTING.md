@@ -181,6 +181,54 @@ one the tree builds against today, and the two currently have different answers.
 [`docs/support.md`](docs/support.md) is the first one and states which lines
 carry a support commitment; this section is the second one only.
 
+## When an issue cannot move
+
+An open issue nobody can start on carries a label saying so, because a label is
+what a listing shows and the reason is otherwise at the bottom of a long thread.
+The cost of leaving it off is paid once per reader rather than once: the issue is
+opened, read to the end, found to be waiting and put back, by everybody in turn.
+
+Which label it takes follows what is on the other end of the wait, not how long
+it has waited:
+
+- `blocked-on-decision`, where the wait ends when somebody who can change a
+  setting, hold a token or take a scope question answers. Nothing anybody builds
+  moves it.
+- `blocked-on-dependency`, where the wait ends when something else changes state:
+  another issue closes, a type exists, a page lands, a package is published.
+  Nobody has to decide anything; somebody has to do something.
+
+An issue waits on one of the two and never on both. Where a decision is owed on
+another issue, that is a dependency on that issue rather than a decision here, so
+the choice between the two is not a judgement about which matters more.
+
+The reason is written in the same act as the label, as a comment whose FIRST line
+is one of three shapes, so that what is waited on can be read rather than
+inferred from prose:
+
+    Waiting for: <owner>/<repo>#<n>
+    Waiting for: decision - <what, in one clause>
+    Waiting for: act - <what> (<who>)
+
+The same line opens the issue body, so a reader meets it without reading to the
+bottom of the thread. Two renderings of one line, and the reason for the second
+is that a listing shows neither.
+
+When the wait lifts, the label comes off and a comment says what answered it,
+with `Freed: ` and that answer as its first line. A label nothing removes is
+worse than no label, because it is believed. Nothing runs either of those for
+you: this section is a convention, like the rest of this file, and
+[#397](https://github.com/Flowfin/jellyfin-plugin-discover/issues/397) is where
+it is argued.
+
+There is a third state and this repository has no label for it. An issue can wait
+on somebody looking at something no checkout produces: a client drawing a page on
+a television, a library large enough for a number to mean anything, a published
+package installed on a real server. That is neither of the two above, and forcing
+it into one of them would be a wrong label, which hides work that could be
+started. Until a name for it exists such an issue carries none and is counted as
+available, which is a hole rather than a judgement that it is workable.
+
 ## Reporting something rather than fixing it
 
 Bugs and requests go in the issue tracker. A security problem does not: read
