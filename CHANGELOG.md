@@ -83,8 +83,14 @@ published. Whether the description is right is not judged by anything.
 
 ## Unreleased
 
-- Nothing has been released. What exists so far is repository setup rather than
-  plugin behaviour, and the plan is on the milestones.
+- Nothing yet.
+
+## 0.1.0.0 - 2026-09-04
+
+- The first release. The package is built against the floor its manifest
+  promises, `10.11.0`, rather than against `10.11.11`, so the assembly binds at
+  the version a `10.11.0` server carries and an install at the floor loads it
+  ([#163](https://github.com/Flowfin/jellyfin-plugin-discover/issues/163)).
 - One place now states which server line the build targets, and the build
   refuses a package whose manifest disagrees with it
   ([#15](https://github.com/Flowfin/jellyfin-plugin-discover/issues/15)).

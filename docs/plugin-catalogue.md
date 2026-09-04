@@ -151,7 +151,7 @@ and this repository declares that field, with the rest of what a package needs:
     git grep -n '^name:\|^guid:\|^version:\|^targetAbi:\|^framework:\|^artifacts:' origin/master -- build.yaml
     origin/master:build.yaml:2:name: "Discover"
     origin/master:build.yaml:3:guid: "8227de33-0101-48a3-951d-2bf921709e48"
-    origin/master:build.yaml:7:version: "0.0.0.0"
+    origin/master:build.yaml:7:version: "0.1.0.0"
     origin/master:build.yaml:10:targetAbi: "10.11.0.0"
     origin/master:build.yaml:11:framework: "net9.0"
     origin/master:build.yaml:21:artifacts:
