@@ -52,6 +52,38 @@ namespace Jellyfin.Plugin.Template.Sources;
 public sealed class TmdbSourceAdapter : IMetadataSource
 {
     /// <summary>
+    /// The name this adapter asks the factory for its client under.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// #45's second condition, on the reading taken on 2026-09-04: one
+    /// injection point, which is a single named client whose primary handler is
+    /// the one thing a test replaces. An unnamed client cannot be that. Every
+    /// caller in a server shares it, so a registration configuring its handler
+    /// would configure everybody's, and a registration configuring this
+    /// plugin's would configure a client this code never asks for. A name makes
+    /// the client this plugin's own, and it is the same string in the
+    /// registrator and here or the configuration reaches nothing, which is what
+    /// the assertion on it is about.
+    /// </para>
+    /// <para>
+    /// A constant of this type rather than a string in two files, and read from
+    /// here by <see cref="PluginServiceRegistrator"/>, because the failure of
+    /// two spellings drifting apart is silent: the factory answers an
+    /// unconfigured name with a default client rather than refusing, so the
+    /// plugin would go on calling out through a handler nobody chose and every
+    /// test supplying one would still pass.
+    /// </para>
+    /// <para>
+    /// It is not the assembly's name. A rename is #14 and this string is a key
+    /// in a container rather than anything that reaches a source, an operator or
+    /// a disk, so it survives one without being derived from something that
+    /// moves.
+    /// </para>
+    /// </remarks>
+    public const string HttpClientName = "discover.tmdb";
+
+    /// <summary>
     /// How many titles one page of this source's answers holds.
     /// </summary>
     /// <remarks>
@@ -903,7 +935,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
         request.Headers.TryAddWithoutValidation("Accept", "application/json");
         request.Headers.TryAddWithoutValidation("User-Agent", Identity());
 
-        var client = httpClientFactory.CreateClient();
+        var client = httpClientFactory.CreateClient(HttpClientName);
 
         using var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
