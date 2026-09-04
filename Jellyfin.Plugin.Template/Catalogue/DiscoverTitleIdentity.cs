@@ -97,7 +97,9 @@ public sealed class DiscoverTitleIdentity : IEquatable<DiscoverTitleIdentity>
     /// was the fetching source's own identifier would move every title's
     /// identity when the source behind a shelf changed, which is the orphaning
     /// #60 is about. TMDB next, as the source #74 puts behind the first
-    /// adapter, and TheTVDB last, as the one #83 defers.
+    /// adapter, and TheTVDB last, as the one #83 refused as a source. Its
+    /// identifiers still arrive, from another source's answer and from the
+    /// server's own library, so it keeps a place in the order.
     /// </remarks>
     public static IReadOnlyList<MetadataSource> Precedence => _precedence;
 

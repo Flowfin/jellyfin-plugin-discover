@@ -12,13 +12,29 @@ be a claim made from memory rather than from the source.
 Nothing on this page is legal advice; the reasoning behind that sentence is in
 [the directory's README](README.md).
 
-## This source is not adopted
+## This source is not taken, decided on 2026-09-04
 
-No adapter exists, no request is made, and whether this source is wanted at all
-is not decided here.
-[#83](https://github.com/Flowfin/jellyfin-plugin-discover/issues/83) holds that
-decision and this page is the reading it needs to be made from. A page in this
-directory means the terms have been read, not that the source has been taken.
+No adapter exists and no request is made, and that is now a decision rather than
+a question nobody had answered. TheTVDB is not a source of this plugin, neither
+now nor as a later one, until somebody reopens
+[#83](https://github.com/Flowfin/jellyfin-plugin-discover/issues/83) with a
+reason the terms below do not answer.
+
+The reason is what the rest of this page reads. A licence with a cost and a set
+of obligations is worth carrying for a source that answers for titles the first
+one cannot, and nothing read here shows that it does: the catalogue this plugin
+fills is already filled from TMDb. What a second source adds for certain is the
+obligation, which outlives the feature; what it adds beyond that is unmeasured.
+
+The page stays as the record of what was read, so that the next person deciding
+this reads a reading rather than the terms again. A page in this directory means
+the terms have been read, not that the source has been taken, and this one now
+means they were read and the answer was no.
+
+What is not decided here is what the `Tvdb` member of `MetadataSource` is for.
+That member is an identifier a title can carry, which reaches this plugin from
+TMDb's own answer and from the server's library, and carrying an identifier is
+not asking a source for anything. Nothing in this decision removes it.
 
 ## What was read, and where
 
