@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using Jellyfin.Plugin.Template.Randomness;
 using Jellyfin.Plugin.Template.Refresh;
 using Jellyfin.Plugin.Template.Seam;
 using Jellyfin.Plugin.Template.Server;
-using Jellyfin.Plugin.Template.Sources;
 using Jellyfin.Plugin.Template.Surface;
 using Jellyfin.Plugin.Template.Time;
 using MediaBrowser.Controller;
@@ -146,8 +144,9 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // every caller in the server, so configuring its handler would
         // configure everybody's, and configuring a client under this plugin's
         // own name while the adapter asked for the unnamed one would configure
-        // a client nothing uses. The name is read off the adapter rather than
-        // typed here, because a factory answers a name nobody configured with a
+        // a client nothing uses. The name is one constant both sides read
+        // rather than a string typed twice, and the argument for that is at
+        // TmdbHttpClient: a factory answers a name nobody configured with a
         // default client rather than refusing, so two spellings drifting apart
         // is silent in exactly the direction that matters.
         //
@@ -169,9 +168,15 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // This registers no source, so a fresh install still holds no way out.
         // A configured client name that nothing asks for makes no call, which is
         // what AFreshInstallHoldsNoWayOutTests counts one level up.
+        //
+        // The three types are named in full rather than through a using, so
+        // that this block adds no line above itself. Several pages under docs/
+        // and the README quote lines of this file by number, and a using added
+        // at the top moves every one of those quotations for a change that is
+        // about the bottom of the file.
         serviceCollection
-            .AddHttpClient(TmdbSourceAdapter.HttpClientName)
+            .AddHttpClient(Sources.TmdbHttpClient.Name)
             .ConfigurePrimaryHttpMessageHandler(provider =>
-                provider.GetService<HttpMessageHandler>() ?? new HttpClientHandler());
+                provider.GetService<System.Net.Http.HttpMessageHandler>() ?? new System.Net.Http.HttpClientHandler());
     }
 }

@@ -38,16 +38,17 @@ refuse.
 The headless rule is not what stops it. Its three prohibitions are a display,
 elevation and a machine trust store, and a network call is none of them. Where it
 touches this at all is the replacement it names for the refused trust-store test,
-one injected handler in front of every outbound call, and that page says how much
-of it is built rather than this one saying it again:
+one injected handler in front of every outbound call, and that page says where
+that replacement stands rather than this one saying it again:
 
-    git grep -c 'Part of it is built' -- Jellyfin.Plugin.Template.Tests/HEADLESS.md
+    git grep -c 'It is built and it is reached' -- Jellyfin.Plugin.Template.Tests/HEADLESS.md
     Jellyfin.Plugin.Template.Tests/HEADLESS.md:1
 
-This paragraph said the handler does not exist yet and handed the reader a search
-for that sentence, on a page that stopped carrying it when the first half of the
-handler landed. The row there names which half is built and which is not, so a
-pointer is what this page owes and a second account of it is what it does not.
+The search this paragraph hands the reader has been rewritten twice, each time
+because the row it points at moved: once when the handler did not exist yet, and
+once when it landed under #45 and the row stopped saying that part of it was
+built. That is the cost of pointing at a sentence rather than at a section, and
+it is paid here rather than by a second account of the row living on this page.
 
 The route is [`capture.sh`](capture.sh) beside this page. Nothing in the test
 project names it and nothing in the test project starts a process, so `dotnet
