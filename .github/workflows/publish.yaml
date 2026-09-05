@@ -4,6 +4,18 @@ name: Publish Release
 # is published. CI builds the plugin from the tagged commit, creates the GitHub release
 # for that tag and uploads the assets. No release is ever created by hand.
 #
+# A run of this workflow that fails raises an issue in this repository, in the alert job
+# at the bottom. A failed run nobody is watching is the same as no check at all, and the
+# two failures this route has - a tag that publishes nothing, and a run that reports
+# success while shipping nothing - are both silent unless something writes them where a
+# person reads. #121.
+#
+# The second trigger below exists so that alert can be watched firing without minting
+# anything. A dispatch is refused by the first step of the gate job, before the checkout
+# and whatever ref it names, so it reaches no build, no attestation and no release. That
+# refusal is what keeps the paragraph above true now that a second trigger exists: a tag
+# push is still the only thing that publishes.
+#
 # The numeric part of the tag is the plugin version Jellyfin installs. It must equal
 # build.yaml's `version`, and the gate job below fails the run if it does not.
 #
@@ -16,6 +28,19 @@ on:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+-stable"
       - "[0-9]+.[0-9]+.[0-9]+.[0-9]+-stable"
+  # This publishes nothing. It fails at the gate's first step, and the only thing it
+  # produces is the alert, which is the point of it: the alert path cannot otherwise be
+  # watched failing without pushing a tag, and a tag that released nothing is a state
+  # every later reader has to explain.
+  workflow_dispatch:
+    inputs:
+      prove_the_alert:
+        description: >-
+          Say in the alert that this run was started on purpose. A dispatch fails and
+          publishes nothing either way; this only changes what the alert says about it.
+        type: boolean
+        default: false
+        required: false
 
 # Deny by default. Each job opts into the smallest scope it needs.
 permissions: {}
@@ -40,6 +65,24 @@ jobs:
     outputs:
       version: ${{ steps.metadata.outputs.version }}
     steps:
+      - name: Refuse a run that no tag push started
+        # First, and before the checkout, so a dispatch reaches nothing at all. The ref
+        # is deliberately not consulted: a dispatch can name a tag as readily as a
+        # branch, and a dispatch naming a tag would otherwise walk the whole gate and
+        # publish a release nobody pushed a tag for. What this reads is the event, which
+        # no ref can change.
+        if: ${{ github.event_name != 'push' }}
+        env:
+          DELIBERATE: ${{ inputs.prove_the_alert }}
+        run: |
+          set -euo pipefail
+          if [ "${DELIBERATE}" = "true" ]; then
+            echo "::error::This run was started to watch the alert fire, and it fails here on purpose. Nothing was checked out, built, attested or released."
+          else
+            echo "::error::This workflow publishes from a tag push and from nothing else. A dispatch fails here, whatever ref it names, and publishes nothing. Push a tag to publish."
+          fi
+          exit 1
+
       - name: Check out the tagged commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -96,8 +139,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          # A workflow_dispatch or a run started from a branch would name the release
-          # after the branch and tag a commit nobody released.
+          # A run started from a branch would name the release after the branch and tag
+          # a commit nobody released. A dispatch is already refused above, before the
+          # checkout, and this stays as a second and independent bound: it reads the ref
+          # rather than the event, so it still refuses a trigger added after this line.
           if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
             echo "::error::This workflow publishes from a tag only, but it was started from ${GITHUB_REF_TYPE} ${GITHUB_REF_NAME}."
             exit 1
@@ -497,3 +542,91 @@ jobs:
           files: ./*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  alert:
+    name: Raise an alert for a failed publish
+    needs: [gate, build, attest, release]
+    # always(), because a job that runs only when its needs succeeded is exactly the job
+    # that never runs here. The condition names what it reads rather than using
+    # failure(): a run that was CANCELLED raises nothing, and that bound is stated on
+    # #121 rather than left to be found.
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Writes an issue and nothing else. It checks out nothing, restores nothing and
+    # never sees the archive, so the one job that can write to the tracker runs none of
+    # the tooling the build job runs.
+    permissions:
+      issues: write
+    steps:
+      - name: Open an issue naming what failed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          EVENT_NAME: ${{ github.event_name }}
+          COMMIT: ${{ github.sha }}
+          DELIBERATE: ${{ github.event_name == 'workflow_dispatch' && inputs.prove_the_alert }}
+          GATE_RESULT: ${{ needs.gate.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          ATTEST_RESULT: ${{ needs.attest.result }}
+          RELEASE_RESULT: ${{ needs.release.result }}
+        # One issue per failed run, keyed on the run id in its title, with no attempt to
+        # fold a second failure into a first. A publish runs on a tag push, which is
+        # rare, so what this can produce is bounded by how often somebody tags; folding
+        # would lose the second alert of two, which is the direction a route about
+        # unseen failures must not fail in.
+        run: |
+          set -euo pipefail
+
+          body="${RUNNER_TEMP}/alert-body.md"
+          {
+            echo "The publish workflow failed. No release was published by this run."
+            echo
+            echo "| Job | Result |"
+            echo "| --- | --- |"
+            echo "| Release metadata gate | \`${GATE_RESULT}\` |"
+            echo "| Build package | \`${BUILD_RESULT}\` |"
+            echo "| Attest build provenance | \`${ATTEST_RESULT}\` |"
+            echo "| Publish the release | \`${RELEASE_RESULT}\` |"
+            echo
+            echo "- Run: ${RUN_URL}"
+            echo "- Attempt: ${RUN_ATTEMPT}"
+            echo "- Started by: \`${EVENT_NAME}\`, on ${REF_TYPE} \`${REF_NAME}\`"
+            echo "- Commit: \`${COMMIT}\`"
+            echo "- Failed at: $(date -u '+%Y-%m-%d %H:%M:%SZ')"
+            echo
+            if [ "${DELIBERATE}" = "true" ]; then
+              echo "This run was started on purpose, to watch this alert fire. It published"
+              echo "nothing: a dispatch is refused by the first step of the gate job, before"
+              echo "the checkout, so no build, no attestation and no release ran. Close this"
+              echo "issue once it has been read."
+            else
+              echo "Read the run, fix what it names, and raise the version in \`build.yaml\`"
+              echo "before tagging again. A tag that has already created a release is never"
+              echo "reused, and \`docs/RELEASING.md\` says what to do when a run left a"
+              echo "release half-published."
+            fi
+            echo
+            echo "Opened by the workflow run linked above, and carrying only what that run"
+            echo "reported."
+          } > "${body}"
+
+          title="Publish failed on ${REF_NAME}, run ${RUN_ID}"
+
+          # The label, the milestone and the assignee are how this issue reaches a
+          # listing rather than only a notification. They are not worth losing the alert
+          # over, so a refusal on any of them is retried without them and says so.
+          if ! url="$(gh issue create --title "${title}" --body-file "${body}" \
+                --label ci --label "area: release" \
+                --milestone "M11 Release and catalogue readiness" \
+                --assignee iderex)"; then
+            echo "::warning::Opening the alert with its label, milestone and assignee was refused. Opening it with the title and body alone, because an alert nobody sees is the failure this job exists against."
+            url="$(gh issue create --title "${title}" --body-file "${body}")"
+          fi
+
+          echo "::notice::Alert raised: ${url}"

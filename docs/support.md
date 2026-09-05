@@ -128,7 +128,7 @@ is cheaper to fix now than to argue about with the first person on it. Nothing
 published from here is marked as a pre-release today:
 
     git grep -n 'prerelease:' -- .github/workflows/publish.yaml
-    .github/workflows/publish.yaml:492:          prerelease: false
+    .github/workflows/publish.yaml:537:          prerelease: false
 
 Building the channel, and making a beta build tellable from a stable one, is
 [#121](https://github.com/Flowfin/jellyfin-plugin-discover/issues/121). This

@@ -39,11 +39,40 @@ serialising them by hand is what keeps the release order readable.
 ## Who pushes the tag
 
 The tag is pushed by the account that owns this repository and by nobody else,
-as an annotated, signed tag. Nothing else mints a release: the publish workflow
-runs on a tag and on no other trigger, so a release cannot be created out of
-band. The repository setting that restricts who may push `*-stable`, in the list
-at the end of this page, is the half of this a machine holds; this section is the
-other half and is a convention.
+as an annotated, signed tag. Nothing else mints a release, and since
+[#121](https://github.com/Flowfin/jellyfin-plugin-discover/issues/121) that no
+longer follows from the workflow having one trigger. It has two:
+
+    git show origin/master:.github/workflows/publish.yaml | sed -n '/^on:/,/^permissions:/p'
+
+The second is a manual dispatch, and it exists so the alert below can be watched
+firing without pushing a tag. What holds the property now is the gate job's first
+step, which refuses every dispatch before the checkout and does not consult the
+ref, so a dispatch naming a tag is refused exactly as a dispatch naming a branch
+is, and neither reaches the build, the attestation or the release. The repository
+setting that restricts who may push `*-stable`, in the list at the end of this
+page, is the half of this a machine holds; this section and that step are the
+other half.
+
+## When a publish fails
+
+A run of `Publish Release` that fails opens an issue in this repository, in the
+workflow's `alert` job, naming which of the four jobs failed, the run, the commit
+and the moment. A failed run nobody is watching is the same as no check at all,
+and a tag is pushed rarely enough that nobody is watching by default.
+
+The alert is one issue per failed run, so two failures leave two issues rather
+than one. Three things it does not cover, each for a different reason:
+
+- A run that is CANCELLED raises nothing. The job's condition asks for a failed
+  job among its four, and a cancellation produces none.
+- A run that never starts raises nothing, because nothing in it runs. A workflow
+  file that YAML cannot parse is the case to have in mind.
+- A run that reports success while shipping nothing raises nothing here. That is
+  the other failure this route has, and what is designed against it is the
+  freshness check of
+  [#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120), which
+  does not exist yet.
 
 Decided on 2026-09-04 and recorded on
 [#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119).

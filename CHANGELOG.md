@@ -42,13 +42,22 @@ under its own heading.
 
 There is no beta suffix, because a four-number version has nowhere to put one,
 and nothing published from here is marked as a pre-release either.
-`.github/workflows/publish.yaml` runs on a tag ending in `-stable` and on no
-other, and it creates every release with that flag off:
+`.github/workflows/publish.yaml` publishes from a tag ending in `-stable`, and it
+creates every release with that flag off:
 
     git grep -nE '^      - "\[0-9\]|prerelease:' -- .github/workflows/publish.yaml
-    .github/workflows/publish.yaml:17:      - "[0-9]+.[0-9]+.[0-9]+-stable"
-    .github/workflows/publish.yaml:18:      - "[0-9]+.[0-9]+.[0-9]+.[0-9]+-stable"
-    .github/workflows/publish.yaml:492:          prerelease: false
+    .github/workflows/publish.yaml:29:      - "[0-9]+.[0-9]+.[0-9]+-stable"
+    .github/workflows/publish.yaml:30:      - "[0-9]+.[0-9]+.[0-9]+.[0-9]+-stable"
+    .github/workflows/publish.yaml:537:          prerelease: false
+
+THIS PARAGRAPH SAID THE WORKFLOW RAN ON A TAG AND ON NO OTHER TRIGGER. It carries
+a second one since
+[#121](https://github.com/Flowfin/jellyfin-plugin-discover/issues/121), a manual
+dispatch that the gate job's first step refuses before the checkout so that it
+reaches no build, no attestation and no release. The block above cannot show it:
+that pattern matches the tag lines and stops there, so the paste stayed correct
+while the sentence over it went wrong, which is why the correction is written
+here rather than left to the block.
 
 So a beta build is not told apart from a stable one by its version, and it is not
 told apart by the release either. Which channel a pre-release would reach, what

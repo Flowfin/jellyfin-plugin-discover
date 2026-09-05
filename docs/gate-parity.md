@@ -263,16 +263,17 @@ cannot report on a class of change refuses that change rather than passing it.
 
 ### One thing this section does not answer
 
-Seven jobs here declare that they follow another:
+Eight jobs here declare that they follow another:
 
     git grep -n '^    needs:' -- .github/workflows/
     .github/workflows/abi-matches-the-line.yml:97:    needs: lines
     .github/workflows/abi-matches-the-line.yml:184:    needs: [lines, package]
     .github/workflows/discover-surface-appears.yml:111:    needs: lines
     .github/workflows/plugin-loads.yml:101:    needs: lines
-    .github/workflows/publish.yaml:240:    needs: gate
-    .github/workflows/publish.yaml:384:    needs: build
-    .github/workflows/publish.yaml:410:    needs: [build, attest]
+    .github/workflows/publish.yaml:285:    needs: gate
+    .github/workflows/publish.yaml:429:    needs: build
+    .github/workflows/publish.yaml:455:    needs: [build, attest]
+    .github/workflows/publish.yaml:548:    needs: [gate, build, attest, release]
 
 What a check run of that kind reports when the job it follows has failed, and
 whether a required entry naming it is then satisfied, has not been measured
