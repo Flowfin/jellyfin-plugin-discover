@@ -25,15 +25,17 @@ public static class WantContract
     /// The contract version this build writes onto every want it hands over.
     /// </summary>
     /// <remarks>
-    /// THIS SAID VERSION 1 IS NOT FROZEN YET, on the ground that nothing had
-    /// been published from this repository and no sibling exists.
-    /// 0.1.0.0-stable was published on 2026-09-04, so half of that ground is
-    /// gone and the other half is not: the archive carries this type and
-    /// carries no receiver, and no sibling exists, so nothing anywhere holds a
-    /// version 1 want for an edit to break. Whether a release that ships the
-    /// type without a receiver is the release that freezes the contract is
-    /// #94's and #10's, and until one of them says, a change to the field set
-    /// is not to be taken as free.
+    /// THIS SAID VERSION 1 IS NOT FROZEN YET, on two grounds, and BOTH OF THEM
+    /// HAVE RETIRED. 0.1.0.0-stable was published on 2026-09-04, and the
+    /// sibling repository exists, which #94 established on 2026-08-27 and this
+    /// remark went on denying. What carries the conclusion instead is the bound
+    /// #101's fourth condition decided on 2026-09-04: nothing here publishes
+    /// <see cref="IWantReceiver"/> for anybody to compile against, so no
+    /// receiver anywhere can have been built against version 1 and nothing
+    /// holds a version 1 want for an edit to break. Whether a release that
+    /// ships the type without a receiver is the release that freezes the
+    /// contract is #94's and #10's, and until one of them says, a change to the
+    /// field set is not to be taken as free.
     ///
     /// The replay marker on <see cref="Want"/> is the first field to arrive
     /// that way, under #335. It arrived at version 1 for two reasons that hold
