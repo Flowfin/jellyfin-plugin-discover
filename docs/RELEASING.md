@@ -205,7 +205,16 @@ instead, and what neither of them says about the contents - is on
 
 Nothing here writes a plugin catalog. A GitHub release is the whole output. If this
 repository previously published through the Jellyfin meta plugins workflow, that path
-is gone and no catalog is fed until a manifest generator is added.
+is gone.
+
+A catalog is fed all the same, and this run is not what feeds it. The Flowfin
+catalogue at `flowfin.dev/manifest.json` reads this repository's releases and
+writes an entry from the descriptor the packaging step puts beside the archive.
+It does that on its own schedule rather than on this run, so a release is
+published here first and appears there afterwards, and nothing in this repository
+reports either the delay or a failure to publish. What an operator does with that
+address is on [`installing.md`](installing.md); what is still owed is
+[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120).
 
 ## What fails the run
 
