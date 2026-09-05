@@ -35,6 +35,37 @@
 # exists but is not the one the check was meant to guard passes here. And it
 # reaches no prose: a comment describing a branch is not read, so a sentence
 # that has gone stale against the tree it sits in stays for a person to catch.
+#
+# THAT LAST SENTENCE WAS TRUE OF THE FIRST SPELLING AND FALSE OF THE SECOND
+# UNTIL #430. The ref arm was a grep over this directory that filtered nothing
+# by syntax, so a fully qualified ref written in a comment was read and refused
+# exactly like one in a job condition, and the stated bound under-claimed in the
+# direction that surprises somebody mid-change: an example command in a comment
+# could not carry a real ref spelling, and one page was reworded to route around
+# a refusal rather than because the wording was better. The disagreement is
+# settled towards the narrower reach, because what this check exists to refuse is
+# a name that fails SILENTLY - a trigger that never fires, a condition that is
+# never true - and a comment starts nothing. A comment that has gone stale is
+# exactly the case the sentence above already hands to a person.
+#
+# So a comment is dropped before either spelling reads a line. A line whose
+# first non-blank character opens one is not read at all, and a comment ending a
+# line ends what that line states. The bound that leaves is the one a line-based
+# reader always has: a `#` inside a quoted scalar ends the line here even though
+# YAML would keep it, so a branch name written after such a `#` on the same line
+# is not seen, and the run printing every value it did look at is where that
+# shows. Dropping the line rather than ending the block also means a comment
+# written inside a `branches:` list no longer stops the values under it being
+# read, which they were not before.
+#
+# THE PAIR PROVES ITSELF ON EVERY RUN, BEFORE IT READS THIS DIRECTORY. The scan
+# is one function and the step calls it twice: once on a fixture the step writes,
+# carrying a comment with a fully qualified ref to a branch nothing has, a
+# comment inside a `branches:` list, and a trailing comment after a live
+# condition; and once on `.github/workflows/`. The fixture run has to return the
+# two values that are not comments and nothing else, or the step fails before a
+# branch list is fetched. The bound is executed rather than described, which is
+# the whole of what #430 asked for.
 name: branch-name-exists
 
 on:
@@ -71,6 +102,97 @@ jobs:
         run: |
           set -euo pipefail
 
+          # The literal that prefixes a fully qualified head ref, assembled from
+          # two halves rather than written out, because a check whose own
+          # machinery, prose or failure message carries the string it looks for
+          # reads itself. The name is taken up to the first character a ref may
+          # not carry, so a quote or a space ends it.
+          head_ref='refs/''heads/'
+
+          # Every branch name the workflow files under one directory state, as
+          # the file, the line and the value. Both spellings are read in one
+          # pass so that a comment is dropped once and for both of them: a value
+          # under a branches: or branches-ignore: key, in a block list, a
+          # bracketed list or a plain scalar, and a fully qualified head ref
+          # written into a job or step condition.
+          scan() {
+            find "$1" -type f \( -name '*.yml' -o -name '*.yaml' \) -print0 \
+              | sort -z \
+              | xargs -0 -r awk -v prefix="$head_ref" '
+                function emit(v) {
+                  gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+                  gsub(/^"|"$|^'"'"'|'"'"'$/, "", v)
+                  if (v != "") print FILENAME ":" FNR "\t" v
+                }
+                FNR == 1 { inblock = 0 }
+                {
+                  line = $0
+
+                  # Prose states nothing this check judges.
+                  if (line ~ /^[[:space:]]*#/) next
+                  sub(/[[:space:]]#.*$/, "", line)
+
+                  rest = line
+                  while ((at = index(rest, prefix)) > 0) {
+                    rest = substr(rest, at + length(prefix))
+                    match(rest, /^[^"'"'"'[:space:]]*/)
+                    print FILENAME ":" FNR "\t" substr(rest, 1, RLENGTH)
+                    rest = substr(rest, RLENGTH + 1)
+                  }
+
+                  if (match(line, /^[[:space:]]*branches(-ignore)?:[[:space:]]*/)) {
+                    rest = substr(line, RLENGTH + 1)
+                    gsub(/[[:space:]]+$/, "", rest)
+                    if (rest == "") { inblock = 1; next }
+                    inblock = 0
+                    if (substr(rest, 1, 1) == "[") {
+                      sub(/^\[/, "", rest)
+                      sub(/\][[:space:]]*$/, "", rest)
+                      n = split(rest, parts, ",")
+                      for (i = 1; i <= n; i++) emit(parts[i])
+                    } else {
+                      emit(rest)
+                    }
+                    next
+                  }
+                  if (inblock) {
+                    if (match(line, /^[[:space:]]*-[[:space:]]*/)) { emit(substr(line, RLENGTH + 1)); next }
+                    if (line ~ /^[[:space:]]*$/) next
+                    inblock = 0
+                  }
+                }
+              '
+          }
+
+          # The proof, run before this repository's own files are read and
+          # before a branch list is fetched, so a scan that has stopped drawing
+          # the line it claims to draw fails here rather than passing quietly
+          # over the tree. Three comments and two live values: none of the
+          # comments may appear in the answer and both of the values must.
+          fixture="$(mktemp -d)/workflows"
+          mkdir -p "$fixture"
+          {
+            printf '# %sa-branch-nothing-has\n' "$head_ref"
+            printf 'on:\n'
+            printf '  push:\n'
+            printf '    branches:\n'
+            printf '      # %salso-nothing\n' "$head_ref"
+            printf '      - read-me\n'
+            printf 'jobs:\n'
+            printf '  one:\n'
+            printf "    if: github.ref == '%sread-me-too' # %sand-not-me\n" "$head_ref" "$head_ref"
+          } >"$fixture/fixture.yml"
+
+          expected=$(printf 'fixture.yml:6\tread-me\nfixture.yml:9\tread-me-too')
+          observed=$(scan "$fixture" | sed 's#^[^:]*/##')
+          if [ "$observed" != "$expected" ]; then
+            echo "::error::The scan does not read its own fixture the way this file describes it. A comment is meant to state nothing and a condition is meant to be read; one of the two has stopped being true, so what this check refuses over the tree below cannot be trusted."
+            printf 'expected:\n%s\n\nobserved:\n%s\n' "$expected" "$observed"
+            exit 1
+          fi
+          echo 'The scan reads a condition and skips a comment, proven on a fixture before this directory was read.'
+          echo
+
           # The branches this repository has, from the forge rather than from
           # the checkout, which is shallow and carries one ref.
           branches=$(gh api "repos/${THIS_REPOSITORY}/branches" --paginate --jq '.[].name')
@@ -82,54 +204,7 @@ jobs:
           printf '%s\n' "$branches" | sed 's/^/  /'
           echo
 
-          # Every value under a branches: or branches-ignore: key, with the file
-          # and line it came from. Three spellings are read: a block list, a
-          # bracketed list, and a plain scalar.
-          stated=$(find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -print0 \
-            | sort -z \
-            | xargs -0 awk '
-              function emit(v) {
-                sub(/[[:space:]]*#.*$/, "", v)
-                gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
-                gsub(/^"|"$|^'"'"'|'"'"'$/, "", v)
-                if (v != "") print FILENAME ":" FNR "\t" v
-              }
-              FNR == 1 { inblock = 0 }
-              {
-                if (match($0, /^[[:space:]]*branches(-ignore)?:[[:space:]]*/)) {
-                  rest = substr($0, RLENGTH + 1)
-                  sub(/[[:space:]]*#.*$/, "", rest)
-                  gsub(/[[:space:]]+$/, "", rest)
-                  if (rest == "") { inblock = 1; next }
-                  inblock = 0
-                  if (substr(rest, 1, 1) == "[") {
-                    sub(/^\[/, "", rest)
-                    sub(/\][[:space:]]*$/, "", rest)
-                    n = split(rest, parts, ",")
-                    for (i = 1; i <= n; i++) emit(parts[i])
-                  } else {
-                    emit(rest)
-                  }
-                  next
-                }
-                if (inblock) {
-                  if (match($0, /^[[:space:]]*-[[:space:]]*/)) { emit(substr($0, RLENGTH + 1)); next }
-                  if ($0 ~ /^[[:space:]]*$/) next
-                  inblock = 0
-                }
-              }
-            ')
-
-          # The other spelling: a ref compared in a job or step condition. The
-          # prefix is assembled from two halves so that this file does not carry
-          # it whole; written out, the scan below would read its own machinery
-          # and its own messages as branch names. The name is taken up to the
-          # first character a ref may not carry, so a quote or a brace ends it.
-          head_ref='refs/''heads/'
-          refs=$(grep -rnoE "${head_ref}"'[^"'"'"'[:space:]]*' .github/workflows/ \
-            | sed -E "s#^([^:]+):([0-9]+):${head_ref}#\1:\2\t#" || true)
-
-          stated=$(printf '%s\n%s\n' "$stated" "$refs" | grep -v '^[[:space:]]*$' || true)
+          stated=$(scan .github/workflows | grep -v '^[[:space:]]*$' || true)
 
           if [ -z "$stated" ]; then
             echo "::error::No workflow states a branch name at all, which is not a state this repository has been in. Something changed in how the files are written and this check stopped reading them."
