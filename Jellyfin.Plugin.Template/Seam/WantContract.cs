@@ -25,20 +25,23 @@ public static class WantContract
     /// The contract version this build writes onto every want it hands over.
     /// </summary>
     /// <remarks>
-    /// Version 1 is not frozen yet. Nothing has been published from this
-    /// repository and no sibling exists, so a change to the field set before
-    /// the first release edits version 1 rather than minting version 2. From
-    /// the first release that ships this seam, the rule above applies as
-    /// written.
+    /// THIS SAID VERSION 1 IS NOT FROZEN YET, on the ground that nothing had
+    /// been published from this repository and no sibling exists.
+    /// 0.1.0.0-stable was published on 2026-09-04, so half of that ground is
+    /// gone and the other half is not: the archive carries this type and
+    /// carries no receiver, and no sibling exists, so nothing anywhere holds a
+    /// version 1 want for an edit to break. Whether a release that ships the
+    /// type without a receiver is the release that freezes the contract is
+    /// #94's and #10's, and until one of them says, a change to the field set
+    /// is not to be taken as free.
     ///
     /// The replay marker on <see cref="Want"/> is the first field to arrive
-    /// that way, under #335. It arrives at version 1 rather than minting a
-    /// second one for two reasons that hold separately: it is a field a
-    /// receiver may ignore, which the rule above says does not raise the
-    /// number, and no release has shipped, which the paragraph above says
-    /// makes the field set version 1's rather than a successor's. The note
-    /// under `## How this contract changes` carries the argument and the
-    /// commands behind both.
+    /// that way, under #335. It arrived at version 1 for two reasons that hold
+    /// separately, and only one of them has survived the release: it is a field
+    /// a receiver may ignore, which the rule above says does not raise the
+    /// number, and that one is untouched. The other was that no release had
+    /// shipped. The note under `## How this contract changes` carries both
+    /// halves and the commands behind them.
     /// </remarks>
     public const int CurrentVersion = 1;
 }

@@ -216,8 +216,11 @@ public sealed record DiscoverTitle
     /// May be absent, and every record written before this field existed is.
     /// Absent means the source was asked for no language and answered in
     /// whatever its own default is, which is a different statement from a
-    /// language nobody recorded, and no catalogue holds the second: nothing has
-    /// been published, so no stored record predates this field.
+    /// language nobody recorded, and no catalogue holds the second. THAT SAID
+    /// NOTHING HAS BEEN PUBLISHED, and 0.1.0.0-stable shipped on 2026-09-04.
+    /// The claim survives on the narrower reason rather than that one: nothing
+    /// writes a catalogue record, so no stored record exists at all and none
+    /// can predate this field, whatever has been published.
     /// </remarks>
     public string? Language { get; init; }
 

@@ -127,12 +127,24 @@ THE DIRECTORY CAN STILL MOVE, BY THE OTHER HALF OF THE SAME EXPRESSION. The name
 is `Path.GetFileNameWithoutExtension(assemblyFilePath)`, so a release that ships
 an assembly under a different file name derives a different folder and leaves the
 old one full. The rename this repository still owes is
-[#14](https://github.com/Flowfin/jellyfin-plugin-discover/issues/14), and it
-costs nothing today because nothing has been published, so no server holds a
-folder under the old name. It stops being free at the first release, which is the
-ordering that matters rather than the hazard itself. Whether that duplication is
-handled is
+[#14](https://github.com/Flowfin/jellyfin-plugin-discover/issues/14), and IT HAS
+STOPPED BEING FREE. This paragraph said it cost nothing because nothing had been
+published, so no server held a folder under the old name. `0.1.0.0-stable` was
+published on 2026-09-04, and the archive it publishes carries one assembly beside
+its metadata:
+
+    Jellyfin.Plugin.Template.dll
+    meta.json
+
+That file name is what the expression above derives the folder from, so a server
+which installed that release holds `Jellyfin.Plugin.Template` under the plugins
+path and the rename leaves it there full. What was an ordering question is a
+duplication that can now exist, and handling it is
 [#107](https://github.com/Flowfin/jellyfin-plugin-discover/issues/107)'s.
+
+Whether any server has installed it is not knowable from here, and this note does
+not claim one has. What changed is that the answer stopped being no by
+construction, which is the whole of what the free-today sentence rested on.
 
 The path is not re-derived in this plugin. The base class owns that rule,
 including the branch, and a second copy of it here would be a copy that drifts.

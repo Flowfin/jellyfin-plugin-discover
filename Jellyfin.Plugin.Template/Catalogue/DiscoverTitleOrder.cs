@@ -58,8 +58,12 @@ public static class DiscoverTitleOrder
     /// row that rearranges under a user, for reasons neither the user nor this
     /// plugin can see, which is what #91 exists against. A shelf whose whole
     /// premise is that ranking is a case for #86 to argue, and the field can be
-    /// added to the record then: nothing has been published, so adding one
-    /// costs no migration until the first release.
+    /// added to the record then. THIS SAID ADDING ONE COSTS NO MIGRATION
+    /// BECAUSE NOTHING HAS BEEN PUBLISHED, and 0.1.0.0-stable shipped on
+    /// 2026-09-04. The narrower reason holds and is what the cost rests on now:
+    /// nothing writes a catalogue record, so no server holds one to migrate,
+    /// whatever has been published, and that ends when a refresh on some server
+    /// writes the first.
     /// </remarks>
     public static IComparer<DiscoverTitle> ByStanding { get; } = new StandingComparer();
 

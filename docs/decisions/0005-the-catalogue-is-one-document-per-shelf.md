@@ -126,10 +126,16 @@ refresh's.
 
 Nothing writes a catalogue document. The layout is a derivation and a set of
 names, reached by the suite and by nothing else, so no server holds a document
-under any of these names and the choice costs no migration today. It stops being
-free at the first release, which is
-[#107](https://github.com/Flowfin/jellyfin-plugin-discover/issues/107)'s
-ordering rather than this note's.
+under any of these names and the choice costs no migration today.
+
+THE FIRST RELEASE HAS BEEN PUBLISHED AND THIS PARAGRAPH SURVIVES IT, which is
+worth stating because neighbouring notes rested on the same date and did not.
+`0.1.0.0-stable` shipped on 2026-09-04. What this paragraph rests on is narrower
+than nothing having shipped: it is that nothing writes a document, and a release
+of code that writes none does not change that. It stops being free when a refresh
+on some server writes one, and that ordering is
+[#107](https://github.com/Flowfin/jellyfin-plugin-discover/issues/107)'s rather
+than this note's.
 
 ## What would reverse this
 

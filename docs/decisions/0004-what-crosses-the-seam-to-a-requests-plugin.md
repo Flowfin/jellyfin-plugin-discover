@@ -137,9 +137,9 @@ The first is that adding a field a receiver may ignore does not raise the
 number. This is exactly such a field: a receiver that never looks for it reads
 every want it could read before.
 
-The second is that version 1 is not frozen. Nothing has been published from this
-repository, so a change to the field set edits version 1 rather than minting
-version 2. Read on 2026-08-29:
+The second is that version 1 was not frozen when this note landed. Nothing had
+been published from this repository, so a change to the field set edited version
+1 rather than minting version 2. Read on 2026-08-29:
 
     gh release list --repo Flowfin/jellyfin-plugin-discover --limit 5 ; echo "exit=$?"
     exit=0
@@ -147,7 +147,25 @@ version 2. Read on 2026-08-29:
     git ls-remote --tags origin ; echo "exit=$?"
     exit=0
 
-No release and no tag, so the window that paragraph describes is open.
+BOTH ANSWER SOMETHING NOW. Re-run on 2026-09-05:
+
+    gh release list --repo Flowfin/jellyfin-plugin-discover --limit 5 ; echo "exit=$?"
+    0.1.0.0-stable	Latest	0.1.0.0-stable	2026-09-04T20:48:05Z
+    exit=0
+
+    git ls-remote --tags origin ; echo "exit=$?"
+    ead0985b5a955a5c68a434745270bd6ec470d8db	refs/tags/0.1.0.0-stable
+    42115deb88204a6ee8d2b65cbc34ec69b9edafbc	refs/tags/0.1.0.0-stable^{}
+    exit=0
+
+So the window is closed by the letter of that reason and open by what the reason
+is for, and this note takes neither half. The release ships the type: its archive
+carries this plugin's assembly, and `WantContract` and the field set above are in
+it. It ships no receiver, and no sibling exists, so nothing anywhere holds a
+version 1 want to be broken by an edit. Which of the two settles it is
+[#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94)'s and
+[#10](https://github.com/Flowfin/jellyfin-plugin-discover/issues/10)'s, and until
+one of them says, a change to the field set is not to be taken as free.
 
 **What raising the number would have cost, measured rather than argued.** A
 receiver refuses a version it does not know, because the number only ever grows.
@@ -289,13 +307,17 @@ A refusal is not an error on this side. The want is already recorded locally, by
 receiver that refuses is behind rather than broken. Retrying the same message
 produces the same refusal, so it is not retried for that reason.
 
-**Version 1 is not frozen yet, and this says where that stops being true.**
-Nothing has been published from this repository, so the field set above is
-version 1 and a change to it before the first release edits version 1 rather
-than minting version 2. From the first release that ships this seam, every rule
-above applies as written. That is the same window `CHANGELOG.md` describes for
-the leading zero in this plugin's own version: cheap now, and expensive from the
-moment somebody has installed something.
+**Version 1 was not frozen, and the first release has arrived.** This paragraph
+said nothing had been published, so the field set above was version 1 and a
+change to it before the first release edited version 1 rather than minting
+version 2, and that from the first release shipping this seam every rule above
+applies as written. `0.1.0.0-stable` was published on 2026-09-04. Whether it
+ships THIS SEAM in the sense that rule turns on is not obvious and is not settled
+here: the archive carries the type and carries no receiver, and no sibling
+exists, so nothing holds a version 1 want. Both halves and the commands behind
+them are under **How this contract changes** above. That is the same window
+`CHANGELOG.md` describes for the leading zero in this plugin's own version, and
+it is no longer the cheap side of it by default.
 
 That sentence also rested on no sibling existing, and one does, with releases of
 its own. What the retired half was carrying is carried by the half that is left,
