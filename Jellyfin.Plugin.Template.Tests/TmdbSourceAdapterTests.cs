@@ -57,6 +57,23 @@ public class TmdbSourceAdapterTests
     };
 
     /// <summary>
+    /// Every entry of <c>PageWhoseAdultFlagIsFourThings</c>, in the order the source sent them.
+    /// </summary>
+    /// <remarks>
+    /// What an operator who turned the exclusion off gets, which is the page
+    /// untouched. It is the list above with the flagged title put back in its
+    /// own place rather than appended, because where it lands is part of what
+    /// the assertion is about.
+    /// </remarks>
+    private static readonly string[] _allFourInTheOrderTheSourceSentThem =
+    {
+        "A Film The Source Did Not Flag",
+        "A Film The Source Flagged",
+        "A Film Whose Flag Arrived As Text",
+        "A Film The Source Said Nothing About"
+    };
+
+    /// <summary>
     /// The adapter says which body it speaks for.
     /// </summary>
     /// <remarks>
@@ -144,6 +161,51 @@ public class TmdbSourceAdapterTests
         Assert.Equal(
             _theThreeTheSourceDidNotFlag,
             answer.Titles.Select(title => title.Name).ToArray());
+    }
+
+    /// <summary>
+    /// An operator who turned the exclusion off gets the title the source flagged, and every other title is unmoved.
+    /// </summary>
+    /// <remarks>
+    /// The other half of #93's first condition, which asks for the exclusion
+    /// UNLESS an operator has deliberately turned it off. The test above is the
+    /// default and this is the deliberate act, and the two together are what
+    /// makes the default a default rather than the only behaviour: an exclusion
+    /// nothing can lift is not one an operator agreed to.
+    ///
+    /// The whole page is asserted rather than the one entry, because the failure
+    /// worth catching is the switch reaching further than it should. Turning it
+    /// on is permission for one entry the source flagged, and every other rule
+    /// this reader applies - the flag that arrived as text, the entry the source
+    /// said nothing about, the order the page came in - is unchanged by it.
+    /// </remarks>
+    /// <returns>A <see cref="Task"/> that completes when the assertion has been made.</returns>
+    [Fact]
+    public async Task AnOperatorWhoTurnedTheExclusionOffGetsTheTitleTheSourceFlagged()
+    {
+        var answer = await AskedIncludingAdultTitles(TmdbFixtures.PageWhoseAdultFlagIsFourThings)
+            .FetchAsync(new SourceQuery("trending", DiscoverTitleKind.Movie, null, null), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        Assert.Equal(SourceOutcome.Answered, answer.Outcome);
+        Assert.Equal(
+            _allFourInTheOrderTheSourceSentThem,
+            answer.Titles.Select(title => title.Name).ToArray());
+    }
+
+    /// <summary>
+    /// A fresh configuration excludes, which is what makes the exclusion the default rather than a value somebody set.
+    /// </summary>
+    /// <remarks>
+    /// Read off the type rather than written out, so the assertion is about what
+    /// a server nobody has configured does. An XML deserialiser leaves an absent
+    /// element at the initialiser's value, so this is also what a configuration
+    /// document written before the setting existed carries.
+    /// </remarks>
+    [Fact]
+    public void AFreshConfigurationExcludesTheTitlesTheSourceFlags()
+    {
+        Assert.False(new Configuration.PluginConfiguration().IncludeAdultTitles);
     }
 
     /// <summary>
@@ -1310,6 +1372,28 @@ public class TmdbSourceAdapterTests
             configured: true,
             new ClockATestAdvances(_fetched),
             SourceLocale.Unstated);
+
+    /// <summary>
+    /// An adapter that answers one page and was built for an operator who turned the adult exclusion off.
+    /// </summary>
+    /// <param name="fixture">One page, as the source would have answered with it.</param>
+    /// <returns>The adapter.</returns>
+    /// <remarks>
+    /// Named rather than given as an argument to the helper above, so that every
+    /// other test in this class reads as one built the way a server nobody
+    /// configured builds it. The switch is #93's, it is a setting on the
+    /// configuration type, and what carries it to an adapter is a constructor
+    /// argument for the same reason the credential and the locale are: where a
+    /// setting is stored and how it is entered is not this type's business.
+    /// </remarks>
+    private static TmdbSourceAdapter AskedIncludingAdultTitles(string fixture) =>
+        new(
+            (address, cancellationToken) =>
+                Task.FromResult(new SourceTransportReply(200, TmdbFixtures.Body(fixture), null)),
+            configured: true,
+            new ClockATestAdvances(_fetched),
+            SourceLocale.Unstated,
+            includeAdultTitles: true);
 
     /// <summary>
     /// An adapter that answers one page of films and was told which language to ask in.

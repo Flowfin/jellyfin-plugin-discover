@@ -55,10 +55,19 @@ public class ConfigurationPageTests
     /// by the hand edit docs/configuration.md describes; what keeps it off is
     /// that there is no control set to put it in. It comes out of this list in
     /// #103 with the three above.
+    ///
+    /// IncludeAdultTitles is here for the same temporary reason, and it is the
+    /// entry on this list whose absence from the page costs the most. #93 makes
+    /// it the operator's decision about what a screen everybody in a household
+    /// can see may hold, and until #103 the only way to change it is a hand edit
+    /// of the document on disk. What keeps it off is that there is no control set
+    /// to put it in, and its default is the cautious answer, so the operator who
+    /// cannot reach it is not the one who is exposed by that.
     /// </remarks>
     private static readonly string[] HiddenFromThePage =
     [
         "Enabled",
+        "IncludeAdultTitles",
         "MaximumTitlesAcrossAllShelves",
         "MaximumTitlesPerShelf",
         "SchemaVersion",

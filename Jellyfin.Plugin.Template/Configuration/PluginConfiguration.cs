@@ -143,6 +143,48 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool Enabled { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets a value indicating whether a title the source flags as adult may be kept.
+    /// </summary>
+    /// <remarks>
+    /// #93's first condition, in the half that is an operator's rather than a
+    /// default's. That condition asks that every source request exclude adult
+    /// content UNLESS an operator has deliberately turned that off, and that the
+    /// default be the exclusion. The exclusion landed without the switch,
+    /// because there was nowhere for a switch to live; this is that switch, and
+    /// false is the exclusion.
+    ///
+    /// It is a setting rather than something a user chooses. What a given user
+    /// may see out of what the plugin holds is
+    /// <see cref="UsersRefusedTheAsk"/>'s neighbour, #57, and it is a different
+    /// control: this one decides what the catalogue is allowed to hold at all,
+    /// so a shelf's artwork on a screen everybody in a household can see is
+    /// bounded by a server-wide answer rather than by who is logged in.
+    ///
+    /// WHAT TURNING IT ON DOES NOT BUY, AND THIS IS THE PART TO READ BEFORE
+    /// SETTING IT. The exclusion it lifts is made on the source's answer,
+    /// because no address this plugin asks accepts a parameter that would leave
+    /// adult titles out of the request, which <c>docs/limits.md</c> carries. So
+    /// what the plugin sends is unchanged in either position: the switch decides
+    /// what is kept out of the catalogue rather than what is asked for.
+    ///
+    /// It also says nothing about the two shelves whose source documents no such
+    /// flag at all. Those ship and are unchanged by this setting in either
+    /// position, and what to do about them is #93's own open half.
+    ///
+    /// False by default, and false for a configuration document written before
+    /// this setting existed, because an XML deserialiser leaves an absent
+    /// element at the initialiser's value. It is an initialiser rather than a
+    /// line in the constructor, and it is the last property in this type, for
+    /// the reason the property above it gives: several pages under
+    /// <c>docs/</c> quote the properties here by line number.
+    ///
+    /// There is no control for it on the configuration page, which carries no
+    /// controls at all, so until #103 lands it is a hand edit of the document on
+    /// disk like every setting above it, recorded in the same list.
+    /// </remarks>
+    public bool IncludeAdultTitles { get; set; }
+
+    /// <summary>
     /// Reads the two bounds as one value, refusing a pair that contradicts itself.
     /// </summary>
     /// <returns>The bounds this document declares.</returns>

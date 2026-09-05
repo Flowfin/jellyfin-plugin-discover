@@ -79,6 +79,8 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
     private readonly TimeSpan _deadline;
 
+    private readonly bool _includeAdultTitles;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TmdbSourceAdapter"/> class, speaking to the source.
     /// </summary>
@@ -94,9 +96,15 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// from is #81 and is not this type's business either, in the same way and
     /// for the same reason as the credential above.
     /// </param>
+    /// <param name="includeAdultTitles">Whether a title the source flags as adult may be kept, which is #93's operator switch and is false unless an operator turned the exclusion off.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
-    public TmdbSourceAdapter(IHttpClientFactory httpClientFactory, string? accessToken, IClock clock, SourceLocale locale)
-        : this(httpClientFactory, accessToken, clock, locale, DefaultDeadline)
+    public TmdbSourceAdapter(
+        IHttpClientFactory httpClientFactory,
+        string? accessToken,
+        IClock clock,
+        SourceLocale locale,
+        bool includeAdultTitles = false)
+        : this(httpClientFactory, accessToken, clock, locale, DefaultDeadline, includeAdultTitles)
     {
     }
 
@@ -120,19 +128,22 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// exists to prove.
     /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
+    /// <param name="includeAdultTitles">Whether a title the source flags as adult may be kept, which is #93's operator switch and is false unless an operator turned the exclusion off.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="deadline"/> is negative.</exception>
     public TmdbSourceAdapter(
         IHttpClientFactory httpClientFactory,
         string? accessToken,
         IClock clock,
         SourceLocale locale,
-        TimeSpan deadline)
+        TimeSpan deadline,
+        bool includeAdultTitles = false)
         : this(
             TransportOver(httpClientFactory, accessToken),
             !string.IsNullOrWhiteSpace(accessToken),
             clock,
             locale,
-            deadline)
+            deadline,
+            includeAdultTitles)
     {
     }
 
@@ -150,9 +161,15 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// constructor's transport without breaking the rule that keeps outbound
     /// calls in adapters.
     /// </remarks>
+    /// <param name="includeAdultTitles">Whether a title the source flags as adult may be kept, which is #93's operator switch and is false unless an operator turned the exclusion off.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="transport"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
-    public TmdbSourceAdapter(Func<Uri, CancellationToken, Task<SourceTransportReply>> transport, bool configured, IClock clock, SourceLocale locale)
-        : this(transport, configured, clock, locale, DefaultDeadline)
+    public TmdbSourceAdapter(
+        Func<Uri, CancellationToken, Task<SourceTransportReply>> transport,
+        bool configured,
+        IClock clock,
+        SourceLocale locale,
+        bool includeAdultTitles = false)
+        : this(transport, configured, clock, locale, DefaultDeadline, includeAdultTitles)
     {
     }
 
@@ -183,13 +200,15 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="transport"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
+    /// <param name="includeAdultTitles">Whether a title the source flags as adult may be kept, which is #93's operator switch and is false unless an operator turned the exclusion off.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="deadline"/> is negative.</exception>
     public TmdbSourceAdapter(
         Func<Uri, CancellationToken, Task<SourceTransportReply>> transport,
         bool configured,
         IClock clock,
         SourceLocale locale,
-        TimeSpan deadline)
+        TimeSpan deadline,
+        bool includeAdultTitles = false)
     {
         ArgumentNullException.ThrowIfNull(transport);
         ArgumentNullException.ThrowIfNull(clock);
@@ -208,6 +227,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
         _locale = locale;
         _configured = configured;
         _deadline = deadline;
+        _includeAdultTitles = includeAdultTitles;
     }
 
     /// <summary>
@@ -352,7 +372,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
             await expiry.CancelAsync().ConfigureAwait(false);
         }
 
-        return Read(reply, asked, page, _clock.UtcNow, _locale.Language);
+        return Read(reply, asked, page, _clock.UtcNow, _locale.Language, _includeAdultTitles);
     }
 
     /// <summary>
@@ -395,6 +415,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// The language the request asked for, carried onto every record this reply
     /// produces, or null where it asked for none.
     /// </param>
+    /// <param name="includeAdultTitles">Whether a title the source flags as adult may be kept, which is #93's operator switch and is false unless an operator turned the exclusion off.</param>
     /// <returns>The answer, never an exception.</returns>
     /// <remarks>
     /// A credential the source rejected is <see cref="SourceOutcome.NotConfigured"/>
@@ -407,7 +428,13 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// absent, wrong or revoked its key is. #92 is where an operator is shown
     /// the state of a shelf, and this is the case it will find thinnest.
     /// </remarks>
-    private static SourceAnswer Read(SourceTransportReply reply, SourceQuery query, int page, DateTimeOffset fetchedAt, string? language)
+    private static SourceAnswer Read(
+        SourceTransportReply reply,
+        SourceQuery query,
+        int page,
+        DateTimeOffset fetchedAt,
+        string? language,
+        bool includeAdultTitles)
     {
         var status = (HttpStatusCode)reply.StatusCode;
 
@@ -444,7 +471,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
 
         using (document)
         {
-            return Titles(document.RootElement, query, page, fetchedAt, language);
+            return Titles(document.RootElement, query, page, fetchedAt, language, includeAdultTitles);
         }
     }
 
@@ -456,6 +483,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// <param name="page">Which page this is, so the start index inside it can be dropped.</param>
     /// <param name="fetchedAt">When the source answered, carried onto every record this page produces.</param>
     /// <param name="language">The language the request asked for, carried onto every record this page produces.</param>
+    /// <param name="includeAdultTitles">Whether a title the source flags as adult may be kept, which is #93's operator switch and is false unless an operator turned the exclusion off.</param>
     /// <returns>What the page held, with everything unmappable left out.</returns>
     /// <remarks>
     /// An entry this plugin cannot map is dropped rather than carried, and the
@@ -470,7 +498,13 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// contradiction on would throw out of the adapter, and #73 asks that this
     /// method not throw to report anything about a source.
     /// </remarks>
-    private static SourceAnswer Titles(JsonElement root, SourceQuery query, int page, DateTimeOffset fetchedAt, string? language)
+    private static SourceAnswer Titles(
+        JsonElement root,
+        SourceQuery query,
+        int page,
+        DateTimeOffset fetchedAt,
+        string? language,
+        bool includeAdultTitles)
     {
         if (root.ValueKind != JsonValueKind.Object
             || !root.TryGetProperty("results", out var results)
@@ -492,7 +526,7 @@ public sealed class TmdbSourceAdapter : IMetadataSource
                 continue;
             }
 
-            if (TheSourceFlagsThisAsAdult(entry))
+            if (!includeAdultTitles && TheSourceFlagsThisAsAdult(entry))
             {
                 continue;
             }
