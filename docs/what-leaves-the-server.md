@@ -279,7 +279,7 @@ nothing. The one thing in this plugin that writes to disk is reached, by the
 scheduled task:
 
     git grep -n 'new CatalogueDocumentStore(' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ; echo "exit=$?"
-    origin/master:Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:381:                new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
+    origin/master:Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:423:                new CatalogueDocumentStore(new CatalogueDirectory(dataFolderPath), _storeLogger),
     exit=0
 
 What that store can be handed is a shelf's titles and nothing else, so what a

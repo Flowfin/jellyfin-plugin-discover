@@ -45,11 +45,20 @@ catalogue with it. The one place it is read is where a run is handed its
 shelves:
 
     git grep -n 'configuration.Enabled' -- Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs
-    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:237:            : configuration.Enabled
+    Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:270:        if (!configuration.Enabled)
 
 A run while it is off is handed no shelves, so it asks nothing and writes
 nothing, and a test counts the questions a fake source was asked across such a
 run and compares the catalogue byte for byte before and after it.
+
+It is read before the two bounds below are judged, and a document with the
+plugin off therefore carries a pair of them that does not fit onto disk and past
+that reading, meeting its refusal when somebody turns the plugin back on. What
+that ordering buys is the paragraph immediately below: a run under a turned-off
+plugin goes on taking what the retention takes, which no number in that pair has
+any bearing on. Whether the trade is the right one is
+[#105](https://github.com/Flowfin/jellyfin-plugin-discover/issues/105), and a
+test holds the ordering so that changing it is a decision rather than an edit.
 
 **The scheduled task still runs while the plugin is off, and that is a decision
 rather than an oversight.** What a run with no shelves does is take what the
@@ -173,13 +182,22 @@ saved, rather than truncated at a refresh nobody is watching: a surface whose
 last shelves are short for a reason nothing on the screen explains is
 indistinguishable from a source that answered with nothing.
 
+It is refused where a run reads it as well, and not only where a page saves it.
+A configuration is written by a page, by a restored backup and by an operator
+editing the file, and only the first of those goes through the save, so the same
+call is made where the shelves for a run are derived. The rule is the same rule
+and the words are the same words; nothing rewrites the file and nothing
+substitutes a default.
+
 The refusal names all four numbers, the shelf count, the per-shelf bound, the
 product and the total, because an operator's next action is to change one of
 them and they cannot choose which without seeing the arithmetic.
 
 **What has not been observed is what the dashboard draws.** The refusal happens
-in `Plugin.UpdateConfiguration`, so the save does not reach disk. Nothing in this
-repository has been run against a server, so how the message reaches the operator
+in `Plugin.UpdateConfiguration`, so the save does not reach disk, and on the read
+path it is the scheduled task that fails, so what the server shows is that task's
+failure. Nothing in this
+repository has been run against a server, so how either message reaches the operator
 is unknown here; the configuration page is
 [#103](https://github.com/Flowfin/jellyfin-plugin-discover/issues/103) and
 refusing a bad setting as a general rule is
