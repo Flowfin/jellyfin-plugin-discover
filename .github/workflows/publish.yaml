@@ -44,11 +44,11 @@ on:
   #     git push origin master:<name>
   #     gh workflow run publish.yaml --ref <name> -f prove_the_alert=true
   #
-  # <name> is a placeholder and the example is deliberately not a real branch name.
-  # branch-name-exists refuses a name no branch of this repository carries, and its
-  # second spelling greps the whole of this directory rather than the trigger keys, so
-  # a fully qualified ref written in a comment here is read and refused like a live
-  # one. That check's own bounds say it reaches no prose; #430 carries the difference.
+  # <name> is a placeholder because the branch is thrown away after the dispatch, so no
+  # name written here would be the one a reader uses. It was also the way around a check:
+  # branch-name-exists read a fully qualified ref in a comment and refused it like a live
+  # one. #430 has since narrowed both its spellings to state nothing about a comment and
+  # proves that on a fixture, so a real spelling would pass and still name no branch.
   workflow_dispatch:
     inputs:
       prove_the_alert:
