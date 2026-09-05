@@ -142,7 +142,7 @@ shelf can carry:
 
 The series half is the one an operator cannot derive from watching a shelf, and
 it is why it is written here. A series the server carries as a row with no
-episode under it — added by hand, or left behind when the files went — is not
+episode under it, added by hand or left behind when the files went, is not
 something anybody in the household can watch, so it does not count as owned and
 the shelf may still offer it. One episode is enough to make it owned, and the
 shelf stops offering it from then on.
@@ -162,8 +162,8 @@ A server answers that question now, through an adapter over its own library
 beside the one the discover page itself is drawn through. What it asks about a
 film is the film; what it asks about a series is the series first, by
 identifier, and then how many episodes the server holds under it. Rows the
-server carries for something it does not have — the missing episodes an operator
-can have shown — are left out of both counts, because a row nobody can play is
+server carries for something it does not have, the missing episodes an operator
+can have shown, are left out of both counts, because a row nobody can play is
 not a part.
 
 **Nothing here has been measured on a real library.** The comparison is one
