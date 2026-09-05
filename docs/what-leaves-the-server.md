@@ -102,21 +102,28 @@ adapter:
 The first is where the server asks its questions. The second is where artwork
 sits, and the server is not what fetches it, which is the section below.
 
-Nothing else in the plugin can open a connection. Two other lines answer a
-search for the vocabulary, and neither of them is a way out:
+Nothing else in the plugin can open a connection. Four other lines answer a
+search for the vocabulary, and none of them is a way out:
 
     git grep -nE 'HttpClient|IHttpClientFactory|HttpRequestMessage|Socket|Dns\.' origin/master -- 'Jellyfin.Plugin.Template/*.cs' ':!Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs' ; echo "exit=$?"
     origin/master:Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:149:        // TmdbHttpClient: a factory answers a name nobody configured with a
     origin/master:Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:178:            .AddHttpClient(Sources.TmdbHttpClient.Name)
+    origin/master:Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:180:                provider.GetService<System.Net.Http.HttpMessageHandler>() ?? new System.Net.Http.HttpClientHandler());
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbHttpClient.cs:38:public static class TmdbHttpClient
     exit=0
 
-The first is a comment. The second is the registration #45 landed: this plugin
-declares one named client, so that the handler behind it is one thing rather
-than every caller's, and configuring a name is not opening anything. The client
-it names is asked for in the adapter and nowhere else, which is the first
-command on this page, and no source is registered, which is the list above. So
-what an installed plugin sends is unchanged by it, and this section is the
-disclosure of a registration rather than of a connection.
+The first is a comment. The second and the third are the registration #45
+landed: this plugin declares one named client, so that the handler behind it is
+one thing rather than every caller's, and it hands that client the primary
+handler the container holds. Configuring a name is not opening anything, and
+neither is asking the container for a handler. The fourth is the declaration of
+the type that carries the name, which holds one constant and calls nothing.
+
+The client those lines register is asked for in the adapter and nowhere else,
+which is the first command on this page, and no source is registered, which is
+the list above. So what an installed plugin sends is unchanged by any of the
+four, and this section is the disclosure of a registration rather than of a
+connection.
 
 Nothing configured on that client changes what a call would carry either. The
 registration sets no proxy, no connection limit and no certificate callback, so
