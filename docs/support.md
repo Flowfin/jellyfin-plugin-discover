@@ -36,14 +36,23 @@ report. Compiling against a second line is
 [#31](https://github.com/Flowfin/jellyfin-plugin-discover/issues/31), and it
 carries a second package and a second published artefact behind it.
 
-Read a line as carried once a release exists for it. No release exists for
-either line yet, because this repository has never published one, which is
-[#163](https://github.com/Flowfin/jellyfin-plugin-discover/issues/163).
+Read a line as carried once a release exists for it. One exists for 10.11 since
+2026-09-04, `0.1.0.0-stable`, which is
+[#163](https://github.com/Flowfin/jellyfin-plugin-discover/issues/163) and is
+closed as completed. None exists for 12.0 and none can before the build does.
 
-| Server line | What exists for it today                                                   | What is owed before it is carried                                                                             |
-| ----------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 10.11       | The tree compiles, packages and boots a server against it on every change. | A published release, which is [#163](https://github.com/Flowfin/jellyfin-plugin-discover/issues/163).         |
-| 12.0        | Nothing. No compile, no package, no server booted with this plugin on it.  | The build, which is [#31](https://github.com/Flowfin/jellyfin-plugin-discover/issues/31), and then a release. |
+THIS PARAGRAPH SAID NEITHER LINE HAD ONE, because this repository had never
+published. What the rule above then does to 10.11 is make it read as carried, and
+that is this page applying its own rule rather than anybody having decided a
+commitment. What is supported and for how long is
+[#125](https://github.com/Flowfin/jellyfin-plugin-discover/issues/125), and a
+reader who needs the difference between a line this table calls carried and a
+promise somebody made should take that issue's answer over this one's.
+
+| Server line | What exists for it today                                                                                             | What is owed before it is carried                                                                                               |
+| ----------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 10.11       | The tree compiles, packages and boots a server against it on every change, and `0.1.0.0-stable` is published for it. | Nothing this table can name. What a commitment means is [#125](https://github.com/Flowfin/jellyfin-plugin-discover/issues/125). |
+| 12.0        | Nothing. No compile, no package, no server booted with this plugin on it.                                            | The build, which is [#31](https://github.com/Flowfin/jellyfin-plugin-discover/issues/31), and then a release.                   |
 
 ## When a server line ends upstream
 

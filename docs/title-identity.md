@@ -168,12 +168,17 @@ start:
     git grep -n 'AddSingleton<IChannel' -- Jellyfin.Plugin.Template/PluginServiceRegistrator.cs
     Jellyfin.Plugin.Template/PluginServiceRegistrator.cs:74:        serviceCollection.AddSingleton<IChannel, DiscoverSurfaceAdapter>();
 
-Nothing has been published from this repository, so no install carries a row
-under that name and the cost above is still ahead of every server rather than
-behind one:
+THIS SAID NOTHING HAD BEEN PUBLISHED, so no install carried a row under that
+name and the cost above was ahead of every server rather than behind one. It was
+published on 2026-09-04. Read on 2026-09-05:
 
     gh api repos/Flowfin/jellyfin-plugin-discover/releases --jq 'length'
-    0
+    1
+
+The surface is offered to the server on every start, so a server which installed
+`0.1.0.0` carries a row under that name and the cost above is behind it rather
+than ahead of it. Whether any server did is not knowable from here and is not
+claimed; what changed is that nothing rules it out any more.
 
 This paragraph said there is no surface to rename yet and sent the reader to
 [#53](https://github.com/Flowfin/jellyfin-plugin-discover/issues/53) for one.

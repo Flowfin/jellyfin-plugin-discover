@@ -48,18 +48,23 @@ Not in scope, and worth stating so a report is not spent on them:
 
 ## Which versions are supported
 
-None. Nothing has been published from this repository, so there is no released
-version to fix and no user to protect yet:
+No policy exists, and there is now something for one to be about.
+
+THIS SECTION ANSWERED "None", on the ground that nothing had been published, so
+there was no released version to fix and no user to protect. `0.1.0.0-stable` was
+published on 2026-09-04 and that ground is gone. Read on 2026-09-05:
 
     gh api repos/Flowfin/jellyfin-plugin-discover/releases --jq 'length'
-    0
+    1
 
-That sentence is the current state and not the policy. What is supported and for
-how long is
+One released version exists, and anybody who installed it is somebody this page
+is addressed to. What is supported and for how long is
 [#125](https://github.com/Flowfin/jellyfin-plugin-discover/issues/125), and the
 release-readiness pass is
 [#123](https://github.com/Flowfin/jellyfin-plugin-discover/issues/123). Until one
-of those lands, a report about this tree is a report about a plan.
+of those lands there is a released version and no commitment about it, and
+reading this section as a promise to fix `0.1.0.0` would be reading a policy
+nobody has written.
 
 ## What already runs against every change
 
