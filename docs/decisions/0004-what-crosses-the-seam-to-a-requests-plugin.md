@@ -161,8 +161,13 @@ BOTH ANSWER SOMETHING NOW. Re-run on 2026-09-05:
 So the window is closed by the letter of that reason and open by what the reason
 is for, and this note takes neither half. The release ships the type: its archive
 carries this plugin's assembly, and `WantContract` and the field set above are in
-it. It ships no receiver, and no sibling exists, so nothing anywhere holds a
-version 1 want to be broken by an edit. Which of the two settles it is
+it. It ships no receiver. THE SIBLING EXISTS AND THAT IS NOT WHAT CARRIES THIS -
+what does is the bound the section below states, that nothing here publishes
+`IWantReceiver` for anybody to compile against, decided on 2026-09-04 under
+[#101](https://github.com/Flowfin/jellyfin-plugin-discover/issues/101)'s fourth
+condition. So no receiver anywhere can have been built against version 1 and
+nothing holds a version 1 want to be broken by an edit. Which of the two settles
+it is
 [#94](https://github.com/Flowfin/jellyfin-plugin-discover/issues/94)'s and
 [#10](https://github.com/Flowfin/jellyfin-plugin-discover/issues/10)'s, and until
 one of them says, a change to the field set is not to be taken as free.
@@ -313,9 +318,11 @@ change to it before the first release edited version 1 rather than minting
 version 2, and that from the first release shipping this seam every rule above
 applies as written. `0.1.0.0-stable` was published on 2026-09-04. Whether it
 ships THIS SEAM in the sense that rule turns on is not obvious and is not settled
-here: the archive carries the type and carries no receiver, and no sibling
-exists, so nothing holds a version 1 want. Both halves and the commands behind
-them are under **How this contract changes** above. That is the same window
+here: the archive carries the type and carries no receiver, and nothing here
+publishes `IWantReceiver` for anybody to compile against, so nothing holds a
+version 1 want. Both halves and the commands behind them are under **How this
+contract changes** above, and the paragraph below says why the sibling existing
+is not what that rests on. That is the same window
 `CHANGELOG.md` describes for the leading zero in this plugin's own version, and
 it is no longer the cheap side of it by default.
 
