@@ -151,17 +151,17 @@ The path is one of six literals chosen by a switch, and no value a caller
 supplied reaches it as text:
 
     git grep -n '"trending" =>\|"popular" =>\|"top-rated" =>' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:806:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:807:            "popular" => series ? "tv/popular" : "movie/popular",
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:808:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:834:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:835:            "popular" => series ? "tv/popular" : "movie/popular",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:836:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
 
 The query is a page number, and a language and a region where this plugin was
 told them:
 
     git grep -n 'parameters +=\|var parameters =' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:817:        var parameters = FormattableString.Invariant($"page={page}");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:821:            parameters += FormattableString.Invariant($"&language={language}");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:826:            parameters += FormattableString.Invariant($"&region={region}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:845:        var parameters = FormattableString.Invariant($"page={page}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:849:            parameters += FormattableString.Invariant($"&language={language}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:854:            parameters += FormattableString.Invariant($"&region={region}");
 
 Neither of the two is composed here and neither is free text. `SourceLocale`
 admits a language only as two lower-case letters, optionally a hyphen and two
@@ -181,9 +181,9 @@ that.
 The headers are three:
 
     git grep -n 'TryAddWithoutValidation' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:902:        request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + accessToken);
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:903:        request.Headers.TryAddWithoutValidation("Accept", "application/json");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:904:        request.Headers.TryAddWithoutValidation("User-Agent", Identity());
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:953:        request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + accessToken);
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:954:        request.Headers.TryAddWithoutValidation("Accept", "application/json");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:955:        request.Headers.TryAddWithoutValidation("User-Agent", Identity());
 
 The first is a credential, and whose it is and where it is stored is
 [#77](https://github.com/Flowfin/jellyfin-plugin-discover/issues/77). The third
@@ -191,7 +191,7 @@ names this plugin and its version and nothing about the server or the operator,
 which the source's terms require and which is derived rather than typed:
 
     git grep -n -A 5 'private static string Identity()' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:925:    private static string Identity()
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:976:    private static string Identity()
     origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-926-    {
     origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-927-        var assembly = typeof(TmdbSourceAdapter).Assembly.GetName();
     origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-928-
@@ -237,7 +237,7 @@ The plugin never fetches an image. What it stores is a location at the source's
 image host, turned from the path the source gave:
 
     git grep -n 'return new Uri(_artworkBase' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:754:        return new Uri(_artworkBase, path.AsSpan(1).ToString());
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:782:        return new Uri(_artworkBase, path.AsSpan(1).ToString());
 
 and it hands that location to the server as the item's picture:
 
