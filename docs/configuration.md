@@ -25,6 +25,7 @@ the server hands it back rather than when it is typed.
 | Setting                         | Type             | Default | Introduced by                                                          |
 | ------------------------------- | ---------------- | ------- | ---------------------------------------------------------------------- |
 | `Enabled`                       | `bool`           | `true`  | [#109](https://github.com/Flowfin/jellyfin-plugin-discover/issues/109) |
+| `IncludeAdultTitles`            | `bool`           | `false` | [#93](https://github.com/Flowfin/jellyfin-plugin-discover/issues/93)   |
 | `MaximumTitlesAcrossAllShelves` | `int`            | `120`   | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58)   |
 | `MaximumTitlesPerShelf`         | `int`            | `20`    | [#58](https://github.com/Flowfin/jellyfin-plugin-discover/issues/58)   |
 | `SchemaVersion`                 | `int`            | `1`     | [#17](https://github.com/Flowfin/jellyfin-plugin-discover/issues/17)   |
@@ -82,6 +83,49 @@ the catalogue is as it was up to what the retention took in the meantime.
 At the edges. It is a boolean, so there is no range to refuse. A document with
 the element spelled wrongly is
 [#105](https://github.com/Flowfin/jellyfin-plugin-discover/issues/105)'s third
+condition rather than this setting's.
+
+### IncludeAdultTitles
+
+Whether a title the source flags as adult may be kept. False by default, and
+false for a configuration document written before the setting existed, so the
+exclusion holds on a server nobody has configured, which is what
+[#93](https://github.com/Flowfin/jellyfin-plugin-discover/issues/93) asks for.
+
+Left false, a title the source flagged is dropped before it becomes a record, so
+nothing a shelf could draw, a catalogue could store or the seam could hand over
+is ever built from one. Set to true, such a title is kept like any other. The
+one place it is read is where a page the source answered with is turned into
+records:
+
+    git grep -n 'includeAdultTitles && TheSourceFlagsThisAsAdult' -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
+    Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:529:            if (!includeAdultTitles && TheSourceFlagsThisAsAdult(entry))
+
+**It changes what is kept and not what is asked for.** No address this plugin
+asks accepts a parameter that would leave adult titles out of the request, which
+is a row on [`docs/limits.md`](limits.md), so the exclusion is made on the
+answer. What this server sends is the same in either position, and turning the
+setting on does not spare a request.
+
+**It says nothing about the two shelves the source gives no adult flag for.**
+Two of the six addresses document no such field on a result, so on those shelves
+the exclusion has nothing to read in either position. They ship and are
+unchanged by this setting, and what they should do instead is
+[#93](https://github.com/Flowfin/jellyfin-plugin-discover/issues/93)'s own open
+half. That is the sentence to read before setting this to false and treating the
+surface as filtered.
+
+**It is not a per-user control.** What a given user may see out of what the
+plugin holds is
+[#57](https://github.com/Flowfin/jellyfin-plugin-discover/issues/57); this
+decides what the catalogue may hold at all, so it binds every user on the
+server.
+
+At the edges. It is a boolean, so there is no range to refuse. Changing it does
+not revisit what is already stored: a title kept while it was true stays in the
+catalogue until a refresh replaces that shelf's document or the retention takes
+it, and a rule that invalidated the catalogue on a configuration change is
+[#93](https://github.com/Flowfin/jellyfin-plugin-discover/issues/93)'s second
 condition rather than this setting's.
 
 ### MaximumTitlesPerShelf

@@ -84,19 +84,21 @@ write:
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs:113:    public void AStartWithNothingConfiguredWritesNothing()
     Jellyfin.Plugin.Template.Tests/AFreshInstallWritesNothingTests.cs:188:    public async Task ARunWithNothingConfiguredWritesNothing()
 
-The configuration page carries no controls. The configuration itself has four
+The configuration page carries no controls. The configuration itself has five
 properties with a setter: the schema version, the two bounds on how many titles
-this plugin may write into the library database, and the switch that turns the
-plugin off without removing it:
+this plugin may write into the library database, the switch that turns the
+plugin off without removing it, and the switch that lifts the exclusion of the
+titles a source flags as adult:
 
     git grep -n 'public .* { get; set; }' -- Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs
     Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:46:    public int SchemaVersion { get; set; }
     Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:58:    public int MaximumTitlesPerShelf { get; set; }
     Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:69:    public int MaximumTitlesAcrossAllShelves { get; set; }
     Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:143:    public bool Enabled { get; set; } = true;
+    Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:185:    public bool IncludeAdultTitles { get; set; }
 
 A property is not a control. The page has no script that reads or writes a
-configuration, so the bounds and the switch are reachable today only by editing
+configuration, so the bounds and the two switches are reachable today only by editing
 the plugin's configuration document on disk, and their defaults are what an
 operator who does nothing gets. What each one means and what it costs is
 `docs/configuration.md`, and the page that would carry them as controls is
