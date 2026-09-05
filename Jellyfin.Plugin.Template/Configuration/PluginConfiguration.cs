@@ -133,7 +133,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// constructor because three pages under docs/ quote the properties above
     /// by line number, and a line added to the constructor moves every one of
     /// them. A document with the element spelled wrongly is a
-    /// different case and is #105's third condition.
+    /// different case and is #106's, which owns the load path.
     ///
     /// There is no control for it on the configuration page, which carries no
     /// controls at all, so until #103 lands it is a hand edit of the document

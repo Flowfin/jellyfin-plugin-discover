@@ -56,8 +56,9 @@ plugin off therefore carries a pair of them that does not fit onto disk and past
 that reading, meeting its refusal when somebody turns the plugin back on. What
 that ordering buys is the paragraph immediately below: a run under a turned-off
 plugin goes on taking what the retention takes, which no number in that pair has
-any bearing on. Whether the trade is the right one is
-[#105](https://github.com/Flowfin/jellyfin-plugin-discover/issues/105), and a
+any bearing on. Whether the trade is the right one is a question about what a
+load judges, which is
+[#106](https://github.com/Flowfin/jellyfin-plugin-discover/issues/106), and a
 test holds the ordering so that changing it is a decision rather than an edit.
 
 **The scheduled task still runs while the plugin is off, and that is a decision
@@ -81,9 +82,10 @@ off: the documents were never taken, so the next run is the ordinary one, and
 the catalogue is as it was up to what the retention took in the meantime.
 
 At the edges. It is a boolean, so there is no range to refuse. A document with
-the element spelled wrongly is
-[#105](https://github.com/Flowfin/jellyfin-plugin-discover/issues/105)'s third
-condition rather than this setting's.
+the element spelled wrongly reads as one with the element absent, and what a
+load does with a stored document this build cannot accept is
+[#106](https://github.com/Flowfin/jellyfin-plugin-discover/issues/106)'s rather
+than this setting's.
 
 ### IncludeAdultTitles
 

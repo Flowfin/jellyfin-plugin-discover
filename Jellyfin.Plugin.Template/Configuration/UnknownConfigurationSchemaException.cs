@@ -21,9 +21,10 @@ public class UnknownConfigurationSchemaException : Exception
     public UnknownConfigurationSchemaException(int foundSchemaVersion)
         : base(string.Format(
             CultureInfo.InvariantCulture,
-            "This configuration declares schema version {0} and this build reads version {1}. It has been refused rather than read as if it were version {1}, because a document from another version can mean something different field by field. Install a build that knows version {0}, or remove the configuration and set it up again.",
+            "{2} is {0}, and this build reads version {1}. It has been refused rather than read as if it were version {1}, because a document from another version can mean something different field by field. Install a build that knows version {0}, or remove the configuration and set it up again.",
             foundSchemaVersion,
-            PluginConfiguration.CurrentSchemaVersion))
+            PluginConfiguration.CurrentSchemaVersion,
+            nameof(PluginConfiguration.SchemaVersion)))
     {
         FoundSchemaVersion = foundSchemaVersion;
     }
