@@ -153,36 +153,15 @@ public class OneInjectedHandlerInFrontOfEveryCallTests
     /// <param name="inFront">What answers this plugin's own named client.</param>
     /// <param name="anywhereElse">What answers the default client, so a call made through the wrong one is refused rather than made.</param>
     /// <returns>The container.</returns>
+    /// <remarks>
+    /// The arrangement itself moved next to the substitute when the fourth
+    /// condition's tests needed the same one, and this stays as the name the
+    /// assertions above read. What it must not become is a second copy: two
+    /// containers each claiming to be the server's drift apart, and the one a
+    /// failing test is not reading is the one that drifted.
+    /// </remarks>
     private static ServiceProvider AContainerHolding(
         AHandlerThatRefusesWhatNoTestSetUp inFront,
-        AHandlerThatRefusesWhatNoTestSetUp anywhereElse)
-    {
-        var services = new ServiceCollection();
-
-        // What the server has already put in the container before it calls a
-        // plugin's registrator, the same two every other test of this
-        // registrator names and for the same reasons.
-        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
-        services.AddSingleton(ServerLibraryAdapterStandIn.RefusingEveryCall());
-
-        new PluginServiceRegistrator().RegisterServices(services, new ServerApplicationHostThatRefusesEveryCall());
-
-        // The substitution the condition asks for. One registration, read by
-        // the filter the registrator put on its own named client, and no test
-        // names that client's name: a test naming it would pass while the
-        // adapter asked for another.
-        services.AddSingleton<HttpMessageHandler>(inFront);
-
-        // The drift guard, and the reason nothing here can reach a source. The
-        // default client is what a factory hands back for a name nobody
-        // configured, so an adapter that lost its own name lands on this and is
-        // refused rather than making the call.
-        services.AddHttpClient(string.Empty).ConfigurePrimaryHttpMessageHandler(() => anywhereElse);
-
-        return services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateOnBuild = true,
-            ValidateScopes = true
-        });
-    }
+        AHandlerThatRefusesWhatNoTestSetUp anywhereElse) =>
+        AHandlerThatRefusesWhatNoTestSetUp.AContainerHolding(inFront, anywhereElse);
 }

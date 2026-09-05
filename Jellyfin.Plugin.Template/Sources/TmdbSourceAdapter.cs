@@ -96,16 +96,44 @@ public sealed class TmdbSourceAdapter : IMetadataSource
     /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
     public TmdbSourceAdapter(IHttpClientFactory httpClientFactory, string? accessToken, IClock clock, SourceLocale locale)
+        : this(httpClientFactory, accessToken, clock, locale, DefaultDeadline)
     {
-        ArgumentNullException.ThrowIfNull(httpClientFactory);
-        ArgumentNullException.ThrowIfNull(clock);
-        ArgumentNullException.ThrowIfNull(locale);
+    }
 
-        _clock = clock;
-        _locale = locale;
-        _configured = !string.IsNullOrWhiteSpace(accessToken);
-        _deadline = DefaultDeadline;
-        _transport = (address, cancellationToken) => SendAsync(httpClientFactory, accessToken, address, cancellationToken);
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TmdbSourceAdapter"/> class over a server's client with a chosen deadline.
+    /// </summary>
+    /// <param name="httpClientFactory">Where the client comes from, so the server owns its lifetime and its handler.</param>
+    /// <param name="accessToken">The credential to present, or null where none has been supplied.</param>
+    /// <param name="clock">What the instant on each record is read from.</param>
+    /// <param name="locale">Which language to ask in and which region to ask about.</param>
+    /// <param name="deadline">How long one request may take before it is given up on.</param>
+    /// <remarks>
+    /// #45's fourth condition, which asks for the deadline to be driven against
+    /// the injected handler. Until this existed the two halves of that could not
+    /// be had at once: the constructor above takes the client the container
+    /// holds and fixes the deadline at <see cref="DefaultDeadline"/>, which is
+    /// longer than the whole suite takes to run, and the one that lets a test
+    /// name the deadline stands in front of a transport function the test
+    /// supplied, one layer inside the client. A test over that seam reaches the
+    /// number and not the wiring, and the wiring is what a substitute handler
+    /// exists to prove.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/>, <paramref name="clock"/> or <paramref name="locale"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="deadline"/> is negative.</exception>
+    public TmdbSourceAdapter(
+        IHttpClientFactory httpClientFactory,
+        string? accessToken,
+        IClock clock,
+        SourceLocale locale,
+        TimeSpan deadline)
+        : this(
+            TransportOver(httpClientFactory, accessToken),
+            !string.IsNullOrWhiteSpace(accessToken),
+            clock,
+            locale,
+            deadline)
+    {
     }
 
     /// <summary>
@@ -864,6 +892,29 @@ public sealed class TmdbSourceAdapter : IMetadataSource
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// The transport both constructors over a server's client are built on.
+    /// </summary>
+    /// <param name="httpClientFactory">Where the client comes from.</param>
+    /// <param name="accessToken">The credential to present, or null where none has been supplied.</param>
+    /// <returns>What carries a request through the client the container holds.</returns>
+    /// <remarks>
+    /// It exists so that the constructor naming a deadline over that client can
+    /// hand this to the constructor holding the fields, rather than the two
+    /// building the same closure twice. The null check is here because a
+    /// constructor initializer runs before any body, so this is where the
+    /// argument is first read.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClientFactory"/> is null.</exception>
+    private static Func<Uri, CancellationToken, Task<SourceTransportReply>> TransportOver(
+        IHttpClientFactory httpClientFactory,
+        string? accessToken)
+    {
+        ArgumentNullException.ThrowIfNull(httpClientFactory);
+
+        return (address, cancellationToken) => SendAsync(httpClientFactory, accessToken, address, cancellationToken);
     }
 
     /// <summary>

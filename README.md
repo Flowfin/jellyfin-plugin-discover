@@ -170,6 +170,7 @@ builds one:
     Jellyfin.Plugin.Template.Tests/CatalogueRetentionSweepTests.cs
     Jellyfin.Plugin.Template.Tests/DiscoverRefreshTaskTests.cs
     Jellyfin.Plugin.Template.Tests/PluginDataPurgeTests.cs
+    Jellyfin.Plugin.Template.Tests/TheDeadlineAndTheRestThroughTheInjectedHandlerTests.cs
     Jellyfin.Plugin.Template.Tests/TitlesTheServerAlreadyHasTests.cs
     Jellyfin.Plugin.Template.Tests/WantIdentifierAcrossARefreshTests.cs
     Jellyfin.Plugin.Template.Tests/WantListStoreTests.cs

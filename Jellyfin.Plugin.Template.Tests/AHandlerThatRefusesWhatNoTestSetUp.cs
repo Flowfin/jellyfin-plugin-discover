@@ -4,11 +4,14 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Template.Sources;
 using Jellyfin.Plugin.Template.Time;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Jellyfin.Plugin.Template.Tests;
 
@@ -53,7 +56,7 @@ namespace Jellyfin.Plugin.Template.Tests;
 internal sealed class AHandlerThatRefusesWhatNoTestSetUp : HttpMessageHandler
 {
     /// <summary>
-    /// The credential <see cref="AnAdapterOver"/> hands the adapter.
+    /// The credential <see cref="AnAdapterOver(System.IServiceProvider, Jellyfin.Plugin.Template.Time.IClock, Jellyfin.Plugin.Template.Sources.SourceLocale)"/> and its neighbour hand the adapter.
     /// </summary>
     /// <remarks>
     /// Named rather than written twice, because a test asserting that it does
@@ -64,6 +67,8 @@ internal sealed class AHandlerThatRefusesWhatNoTestSetUp : HttpMessageHandler
     public const string TheCredentialItSupplies = "a-credential-no-source-would-answer";
 
     private readonly Dictionary<Uri, Func<HttpResponseMessage>> _replies = new Dictionary<Uri, Func<HttpResponseMessage>>();
+
+    private readonly HashSet<Uri> _silent = new HashSet<Uri>();
 
     private readonly List<Uri> _asked = new List<Uri>();
 
@@ -127,6 +132,80 @@ internal sealed class AHandlerThatRefusesWhatNoTestSetUp : HttpMessageHandler
     }
 
     /// <summary>
+    /// An adapter whose client comes from a container this handler was put into, with a deadline the test names.
+    /// </summary>
+    /// <param name="provider">The container a plugin registrator filled.</param>
+    /// <param name="clock">What the instant on each record is read from.</param>
+    /// <param name="locale">Which language to ask in and which region to ask about.</param>
+    /// <param name="deadline">How long one request may take before it is given up on.</param>
+    /// <returns>The adapter, over the factory the container holds.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="provider"/> is null.</exception>
+    /// <remarks>
+    /// #45's fourth condition. The overload above leaves the deadline at the
+    /// adapter's own default, which is longer than the whole suite takes to run,
+    /// so a test about the deadline reached through it would be a test that
+    /// waits. Naming <see cref="TimeSpan.Zero"/> makes the case the bound exists
+    /// for - a request that has not answered - decidable rather than waited out.
+    /// </remarks>
+    public static TmdbSourceAdapter AnAdapterOver(IServiceProvider provider, IClock clock, SourceLocale locale, TimeSpan deadline)
+    {
+        ArgumentNullException.ThrowIfNull(provider);
+
+        return new TmdbSourceAdapter(
+            provider.GetRequiredService<IHttpClientFactory>(),
+            TheCredentialItSupplies,
+            clock,
+            locale,
+            deadline);
+    }
+
+    /// <summary>
+    /// A container filled the way the server fills one, with a substitute in front of this plugin's client and another in front of every other.
+    /// </summary>
+    /// <param name="inFront">What answers this plugin's own named client.</param>
+    /// <param name="anywhereElse">What answers the default client, so a call made through the wrong one is refused rather than made.</param>
+    /// <returns>The container.</returns>
+    /// <remarks>
+    /// It sits beside the substitute for the same reason
+    /// <see cref="AnAdapterOver(IServiceProvider, IClock, SourceLocale)"/> does,
+    /// and it moved here when a second test file needed it: a copy in each would
+    /// be two arrangements claiming to be the server's, and the one a test was
+    /// not reading would be the one that drifted.
+    /// </remarks>
+    public static ServiceProvider AContainerHolding(
+        AHandlerThatRefusesWhatNoTestSetUp inFront,
+        AHandlerThatRefusesWhatNoTestSetUp anywhereElse)
+    {
+        var services = new ServiceCollection();
+
+        // What the server has already put in the container before it calls a
+        // plugin's registrator, the same two every other test of this
+        // registrator names and for the same reasons.
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddSingleton(ServerLibraryAdapterStandIn.RefusingEveryCall());
+
+        new PluginServiceRegistrator().RegisterServices(services, new ServerApplicationHostThatRefusesEveryCall());
+
+        // The substitution the condition asks for. One registration, read by
+        // the filter the registrator put on its own named client, and no test
+        // names that client's name: a test naming it would pass while the
+        // adapter asked for another.
+        services.AddSingleton<HttpMessageHandler>(inFront);
+
+        // The drift guard, and the reason nothing here can reach a source. The
+        // default client is what a factory hands back for a name nobody
+        // configured, so an adapter that lost its own name lands on this and is
+        // refused rather than making the call.
+        services.AddHttpClient(string.Empty).ConfigurePrimaryHttpMessageHandler(() => anywhereElse);
+
+        return services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+    }
+
+    /// <summary>
     /// Says what this handler answers one address with.
     /// </summary>
     /// <param name="address">The address a test expects the client to ask for.</param>
@@ -144,6 +223,60 @@ internal sealed class AHandlerThatRefusesWhatNoTestSetUp : HttpMessageHandler
         ArgumentNullException.ThrowIfNull(body);
 
         _replies[address] = () => new HttpResponseMessage(status) { Content = new StringContent(body) };
+    }
+
+    /// <summary>
+    /// Says what this handler answers one address with, and how long the answer says to wait before asking again.
+    /// </summary>
+    /// <param name="address">The address a test expects the client to ask for.</param>
+    /// <param name="status">The status code that comes back.</param>
+    /// <param name="body">The body that comes back.</param>
+    /// <param name="retryAfter">The wait the answer states, as a number of seconds.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="address"/> or <paramref name="body"/> is null.</exception>
+    /// <remarks>
+    /// The header rather than a field on a reply record, because that is the
+    /// half of a refusal a transport double cannot carry: the wait a source
+    /// states arrives on the response the client reads, and whether this plugin
+    /// reads it is a property of the client and of the adapter together.
+    /// </remarks>
+    public void Answer(Uri address, HttpStatusCode status, string body, TimeSpan retryAfter)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        ArgumentNullException.ThrowIfNull(body);
+
+        _replies[address] = () =>
+        {
+            var reply = new HttpResponseMessage(status) { Content = new StringContent(body) };
+            reply.Headers.RetryAfter = new RetryConditionHeaderValue(retryAfter);
+            return reply;
+        };
+    }
+
+    /// <summary>
+    /// Says that this handler takes one address and never answers it.
+    /// </summary>
+    /// <param name="address">The address a test expects the client to ask for.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="address"/> is null.</exception>
+    /// <remarks>
+    /// <para>
+    /// What a deadline is for, and the only arrangement in which the deadline
+    /// firing is a decision rather than a race. A handler that answered would
+    /// leave which of the two completed first up to the machine; a request that
+    /// cannot complete until its token is cancelled means the timer is the only
+    /// thing that can finish, on a loaded runner as on an idle one.
+    /// </para>
+    /// <para>
+    /// It waits on the token rather than on the clock, so nothing here sleeps
+    /// and no wall-clock interval is spent. The address is recorded as asked
+    /// before the silence begins, because a call that left through the client
+    /// and was never answered is still a call this plugin chose to make.
+    /// </para>
+    /// </remarks>
+    public void NeverAnswer(Uri address)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+
+        _silent.Add(address);
     }
 
     /// <inheritdoc />
@@ -167,12 +300,40 @@ internal sealed class AHandlerThatRefusesWhatNoTestSetUp : HttpMessageHandler
             First(request, "User-Agent"),
             First(request, "Accept")));
 
+        if (_silent.Contains(address))
+        {
+            return Silence(cancellationToken);
+        }
+
         if (_replies.TryGetValue(address, out var reply))
         {
             return Task.FromResult(reply());
         }
 
         throw new InvalidOperationException(Refusal(address));
+    }
+
+    /// <summary>
+    /// A request that finishes only when whoever made it stops waiting.
+    /// </summary>
+    /// <param name="cancellationToken">The token the client handed this handler.</param>
+    /// <returns>A task that never carries a response.</returns>
+    /// <remarks>
+    /// The completion source is settled by the registration and by nothing
+    /// else, and the registration is released when it is, so a test that set an
+    /// address to be unanswered leaves neither a timer nor a live callback
+    /// behind it.
+    /// </remarks>
+    private static async Task<HttpResponseMessage> Silence(CancellationToken cancellationToken)
+    {
+        var never = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using (cancellationToken.Register(
+            static waiting => ((TaskCompletionSource<HttpResponseMessage>)waiting!).TrySetCanceled(),
+            never))
+        {
+            return await never.Task.ConfigureAwait(false);
+        }
     }
 
     /// <summary>
