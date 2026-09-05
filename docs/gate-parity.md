@@ -270,10 +270,10 @@ Eight jobs here declare that they follow another:
     .github/workflows/abi-matches-the-line.yml:184:    needs: [lines, package]
     .github/workflows/discover-surface-appears.yml:111:    needs: lines
     .github/workflows/plugin-loads.yml:101:    needs: lines
-    .github/workflows/publish.yaml:285:    needs: gate
-    .github/workflows/publish.yaml:429:    needs: build
-    .github/workflows/publish.yaml:455:    needs: [build, attest]
-    .github/workflows/publish.yaml:548:    needs: [gate, build, attest, release]
+    .github/workflows/publish.yaml:296:    needs: gate
+    .github/workflows/publish.yaml:440:    needs: build
+    .github/workflows/publish.yaml:466:    needs: [build, attest]
+    .github/workflows/publish.yaml:559:    needs: [gate, build, attest, release]
 
 What a check run of that kind reports when the job it follows has failed, and
 whether a required entry naming it is then satisfied, has not been measured

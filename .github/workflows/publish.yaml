@@ -32,6 +32,17 @@ on:
   # produces is the alert, which is the point of it: the alert path cannot otherwise be
   # watched failing without pushing a tag, and a tag that released nothing is a state
   # every later reader has to explain.
+  #
+  # DISPATCH THIS ON A THROWAWAY BRANCH AND NOT ON master. The run's jobs attach as
+  # check-runs to whatever commit the ref names, and this run is meant to fail, so a
+  # dispatch on master leaves a mainline commit reading as red for as long as the run is
+  # kept. That happened on the run that first proved the alert, 33947960318 against
+  # 67cc791, and it is recorded on #121 rather than repaired, because deleting the run
+  # would delete the evidence the proof rests on. A branch cut from master carries this
+  # file and dispatches identically:
+  #
+  #     git push origin master:refs/heads/probe/the-alert-fires
+  #     gh workflow run publish.yaml --ref probe/the-alert-fires -f prove_the_alert=true
   workflow_dispatch:
     inputs:
       prove_the_alert:
