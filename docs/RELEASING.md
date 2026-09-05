@@ -184,19 +184,24 @@ that downloads the archive and runs no build tooling. A downloaded archive can b
 checked against it:
 
 ```
-gh attestation verify <archive>.zip --repo <owner>/<repository>
+gh attestation verify <archive>.zip \
+  --repo Flowfin/jellyfin-plugin-discover \
+  --signer-workflow Flowfin/jellyfin-plugin-discover/.github/workflows/publish.yaml
 ```
 
-That checks which repository the archive came from and not which workflow minted
-the statement, which are different claims on a repository whose other workflows
-could mint one under the same identity. `gh attestation verify --help` calls
-`--repo` the minimum and names `--signer-workflow` and `--cert-identity` as what
-validates the signer workflow's path. The value that would pin the job above is not
-written here: nothing has been published from this repository, so there is no
-attestation to read a signer identity off, and one typed from expectation is the
-claim this repository does not make. That second flag and a run against a real
-published package are both
-[#124](https://github.com/Flowfin/jellyfin-plugin-discover/issues/124).
+`--repo` alone checks which repository the archive came from and not which
+workflow minted the statement, which are different claims on a repository whose
+other workflows could mint one under the same identity. `gh attestation verify
+--help` calls `--repo` the minimum and names `--signer-workflow` and
+`--cert-identity` as what validates the signer workflow's path.
+
+THE SECOND FLAG'S VALUE WAS NOT WRITTEN HERE UNTIL 2026-09-05, because nothing
+had been published and a signer identity typed from expectation is the claim this
+repository does not make. `0.1.0.0-stable` published on 2026-09-04, and the value
+above is read off that release's own attestation rather than composed. The
+operator's half of this - what a pass looks like, what the checksum answers
+instead, and what neither of them says about the contents - is on
+[`installing.md`](installing.md) rather than a second time here.
 
 Nothing here writes a plugin catalog. A GitHub release is the whole output. If this
 repository previously published through the Jellyfin meta plugins workflow, that path

@@ -45,15 +45,99 @@ thing this page owes and cannot pay.
 
 ## Installing
 
-There is no manifest to install from. Publishing one is
+A package is published and no catalogue entry is, and both halves decide what an
+operator does. The releases are here, and the first one is `0.1.0.0-stable`,
+published on 2026-09-04:
+
+    gh release list --repo Flowfin/jellyfin-plugin-discover
+
+Publishing a manifest is
 [#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120) and has
-not happened, so no address exists that a server's plugin catalogue can be
-pointed at. What is left is a package built from this tree and copied into place
-by hand, and the steps for that are under **Running it against a local server**
-in [the README](../README.md) rather than a second time here.
+not happened, so there is still no address a server's plugin catalogue can be
+pointed at. The dashboard will not find this plugin, and nothing on the server
+notices a later release: an operator installing this way is the thing that has
+to watch for one.
+
+A release carries four files, the archive and three that describe it:
+
+    gh release download 0.1.0.0-stable --repo Flowfin/jellyfin-plugin-discover
+
+Check the archive before you unpack it, under **Checking what you downloaded**
+below, and then put it in place by hand:
+
+1. Create a directory inside the server's plugin directory. That is
+   `%LOCALAPPDATA%\jellyfin\plugins\` on Windows and
+   `~/.local/share/jellyfin/plugins/` on Linux, unless the server was told to
+   keep its data somewhere else.
+2. Unpack the archive into it.
+
+Building a package out of this tree instead is under **Running it against a
+local server** in [the README](../README.md). That is the developer's route and
+it produces no attestation, so nothing below applies to it.
 
 Restart the server afterwards. The plugin is loaded at start-up and nothing
 picks it up while the server is running.
+
+## Checking what you downloaded
+
+Two questions, and an answer to one is not an answer to the other.
+
+**Did this come from this repository, and from the workflow that publishes it.**
+The publish run signs a provenance statement for the archive, and `gh` compares a
+downloaded file against it:
+
+    gh attestation verify discover_0.1.0.0.zip \
+      --repo Flowfin/jellyfin-plugin-discover \
+      --signer-workflow Flowfin/jellyfin-plugin-discover/.github/workflows/publish.yaml
+
+`--repo` alone answers the first half only. `gh attestation verify --help` calls
+it the minimum and names `--signer-workflow` as what validates the signer
+workflow's path, so a statement minted by some other workflow of this repository
+satisfies `--repo` and is what the second flag is against. Its value is the path
+of the publish workflow rather than a name somebody chose, and it is read off the
+published attestation rather than typed from expectation.
+
+**A PASS IS SILENT AND THE VERDICT IS THE EXIT STATUS.** Run against the first
+published package on 2026-09-05, with both streams captured, the command printed
+nothing whatever and ended 0:
+
+    gh attestation verify discover_0.1.0.0.zip --repo Flowfin/jellyfin-plugin-discover --signer-workflow Flowfin/jellyfin-plugin-discover/.github/workflows/publish.yaml ; echo "exit=$?"
+    exit=0
+
+Naming a workflow that did not sign it ends 1 and says so:
+
+    gh attestation verify discover_0.1.0.0.zip --repo Flowfin/jellyfin-plugin-discover --signer-workflow Flowfin/jellyfin-plugin-discover/.github/workflows/build-run.yml ; echo "exit=$?"
+
+    Error: verifying with issuer "sigstore.dev"
+    exit=1
+
+So no output is the pass rather than the check having done nothing, which is the
+way round an operator gets wrong, and a run whose status nobody read has not been
+verified. Both runs are on `gh version 2.98.0 (2026-08-20)`; a later `gh` may
+print where this one is quiet, and the exit status is the part to keep reading.
+
+**Is this the file the release lists.** That is the other question, and it is the
+checksum beside the archive rather than the attestation:
+
+    sha256sum -c discover_0.1.0.0.sha256
+    discover_0.1.0.0.zip: OK
+
+The `.md5` is the same comparison in the value a Jellyfin catalogue serves as a
+plugin checksum, for the day there is a catalogue to serve it.
+
+**What neither answers.** Both bind the archive to a build; neither says what is
+inside it. The list of what ships is the bill of materials, and it is written on
+the build rather than on the publish, so it is not among the four files a release
+carries and an operator following this section gets provenance rather than
+contents.
+
+And nothing re-checks any of this afterwards. The comparison an operator would
+most want repeated is a catalogue's published checksum against the file it serves,
+and there is no catalogue and no manifest to hold one, which is
+[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120) again. The
+scheduled half of
+[#124](https://github.com/Flowfin/jellyfin-plugin-discover/issues/124) waits on
+that and on nothing in this page.
 
 ## What you get after installing and doing nothing
 
@@ -252,3 +336,9 @@ No numbers. See **Before you install**.
 
 No client was tried. What a client draws from an empty entry is
 [#115](https://github.com/Flowfin/jellyfin-plugin-discover/issues/115).
+
+No installation of the published archive was watched. The commands under
+**Checking what you downloaded** were run against the real published package on
+2026-09-05 and what is pasted under them is what they printed, but nothing
+unpacked that archive into a server, started one, or read a plugin list
+afterwards.
