@@ -151,17 +151,17 @@ The path is one of six literals chosen by a switch, and no value a caller
 supplied reaches it as text:
 
     git grep -n '"trending" =>\|"popular" =>\|"top-rated" =>' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:834:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:835:            "popular" => series ? "tv/popular" : "movie/popular",
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:836:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:868:            "trending" => series ? "trending/tv/week" : "trending/movie/week",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:869:            "popular" => series ? "tv/popular" : "movie/popular",
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:870:            "top-rated" => series ? "tv/top_rated" : "movie/top_rated",
 
 The query is a page number, and a language and a region where this plugin was
 told them:
 
     git grep -n 'parameters +=\|var parameters =' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:845:        var parameters = FormattableString.Invariant($"page={page}");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:849:            parameters += FormattableString.Invariant($"&language={language}");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:854:            parameters += FormattableString.Invariant($"&region={region}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:879:        var parameters = FormattableString.Invariant($"page={page}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:883:            parameters += FormattableString.Invariant($"&language={language}");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:888:            parameters += FormattableString.Invariant($"&region={region}");
 
 Neither of the two is composed here and neither is free text. `SourceLocale`
 admits a language only as two lower-case letters, optionally a hyphen and two
@@ -181,9 +181,9 @@ that.
 The headers are three:
 
     git grep -n 'TryAddWithoutValidation' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:953:        request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + accessToken);
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:954:        request.Headers.TryAddWithoutValidation("Accept", "application/json");
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:955:        request.Headers.TryAddWithoutValidation("User-Agent", Identity());
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:987:        request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + accessToken);
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:988:        request.Headers.TryAddWithoutValidation("Accept", "application/json");
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:989:        request.Headers.TryAddWithoutValidation("User-Agent", Identity());
 
 The first is a credential, and whose it is and where it is stored is
 [#77](https://github.com/Flowfin/jellyfin-plugin-discover/issues/77). The third
@@ -191,7 +191,7 @@ names this plugin and its version and nothing about the server or the operator,
 which the source's terms require and which is derived rather than typed:
 
     git grep -n -A 5 'private static string Identity()' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:976:    private static string Identity()
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:1010:    private static string Identity()
     origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-926-    {
     origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-927-        var assembly = typeof(TmdbSourceAdapter).Assembly.GetName();
     origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs-928-
@@ -237,7 +237,7 @@ The plugin never fetches an image. What it stores is a location at the source's
 image host, turned from the path the source gave:
 
     git grep -n 'return new Uri(_artworkBase' origin/master -- Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs
-    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:782:        return new Uri(_artworkBase, path.AsSpan(1).ToString());
+    origin/master:Jellyfin.Plugin.Template/Sources/TmdbSourceAdapter.cs:816:        return new Uri(_artworkBase, path.AsSpan(1).ToString());
 
 and it hands that location to the server as the item's picture:
 
@@ -506,7 +506,7 @@ An administrator opening the plugin's page sends nothing outside the server, and
 a test refuses the change rather than anybody remembering it:
 
     git grep -n 'ThePageRequestsNothingFromAHostOutsideTheServer' origin/master -- Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs
-    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:208:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
+    origin/master:Jellyfin.Plugin.Template.Tests/ConfigurationPageTests.cs:217:    public void ThePageRequestsNothingFromAHostOutsideTheServer()
 
 ## What a user can turn off for themselves
 
@@ -519,6 +519,7 @@ Everything this plugin can be told is one server-wide record:
     origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:69:    public int MaximumTitlesAcrossAllShelves { get; set; }
     origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:96:    public Collection<string> UsersRefusedTheAsk { get; } = new Collection<string>();
     origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:143:    public bool Enabled { get; set; } = true;
+    origin/master:Jellyfin.Plugin.Template/Configuration/PluginConfiguration.cs:185:    public bool IncludeAdultTitles { get; set; }
 
 THIS SENTENCE SAID EVERY FIELD ON THAT RECORD WAS SERVER-WIDE, AND THE SEARCH IT
 RESTED ON WOULD HAVE GONE ON AGREEING WITH IT. The pattern was
@@ -543,6 +544,14 @@ user sets over themselves: nothing lets the person named in it read it, change
 it or turn anything off. What the sentence rested on before, that no field here
 is a user's, is no longer available, and what holds the answer up instead is that
 no field here is settable BY a user.
+
+The fifth field is server-wide as well, and it is named here so that a reader
+does not have to check. It decides whether a title the source flagged as adult
+may be kept at all, which is a decision about what the catalogue holds rather
+than about who sees it, so one answer covers everybody on the server. What a
+given user may see out of what is kept is
+[#57](https://github.com/Flowfin/jellyfin-plugin-discover/issues/57) and is not
+built.
 
 The record held one field when this section was written and holds four now. The
 two that arrived with
