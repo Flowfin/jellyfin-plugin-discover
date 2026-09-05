@@ -48,7 +48,7 @@ creates every release with that flag off:
     git grep -nE '^      - "\[0-9\]|prerelease:' -- .github/workflows/publish.yaml
     .github/workflows/publish.yaml:29:      - "[0-9]+.[0-9]+.[0-9]+-stable"
     .github/workflows/publish.yaml:30:      - "[0-9]+.[0-9]+.[0-9]+.[0-9]+-stable"
-    .github/workflows/publish.yaml:537:          prerelease: false
+    .github/workflows/publish.yaml:554:          prerelease: false
 
 THIS PARAGRAPH SAID THE WORKFLOW RAN ON A TAG AND ON NO OTHER TRIGGER. It carries
 a second one since

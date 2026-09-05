@@ -61,6 +61,12 @@ workflow's `alert` job, naming which of the four jobs failed, the run, the commi
 and the moment. A failed run nobody is watching is the same as no check at all,
 and a tag is pushed rarely enough that nobody is watching by default.
 
+Watching that alert fire is a dispatch, and it is dispatched on a throwaway branch
+rather than on `master`. The run's jobs attach as check-runs to the commit its ref
+names and the run is meant to fail, so a dispatch on `master` leaves a mainline
+commit reading as red for as long as the run is kept. The comment above the
+trigger in the workflow carries the two commands.
+
 The alert is one issue per failed run, so two failures leave two issues rather
 than one. Three things it does not cover, each for a different reason:
 
