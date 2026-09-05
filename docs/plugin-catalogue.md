@@ -253,11 +253,23 @@ and stay different, and the release process that picks one is
 [#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119) rather
 than this page.
 
-What the answer does not make true is that this repository is listed anywhere. It
-names the address a manifest will be published at. Publishing one is
-[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120) and has
-not happened, and a reader who takes the address for an install path is reading a
-decision as an artefact.
+What the answer did not make true was that this repository is listed anywhere,
+and it is listed now. `flowfin.dev/manifest.json` answers with a catalogue
+carrying this plugin's first release, its published checksum and the server line
+it declares, and an operator can point a dashboard at it. That paragraph said
+publishing one had not happened; it happened on 2026-09-04 with the first
+release, and it is
+[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120) that
+carries what is still owed there.
+
+What is still owed is worth naming, because a listed plugin reads as a finished
+install path. Nothing in this repository has installed from that address, so the
+route is unexercised rather than proven; the manifest is written and served by
+the Flowfin catalogue rather than by this repository, which is the half of that
+issue's first condition a reader should weigh before treating this page's
+self-hosting answer as executed; and no scheduled check compares the checksum in
+that catalogue against the file it names, which is
+[#124](https://github.com/Flowfin/jellyfin-plugin-discover/issues/124).
 
 ## Bounds
 

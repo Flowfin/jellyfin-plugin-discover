@@ -45,20 +45,29 @@ thing this page owes and cannot pay.
 
 ## Installing
 
-A package is published and no catalogue entry is, and both halves decide what an
-operator does. The releases are here, and the first one is `0.1.0.0-stable`,
-published on 2026-09-04:
+A package is published and a catalogue lists it, so there are two routes. The
+releases are here, and the first one is `0.1.0.0-stable`, published on
+2026-09-04:
 
     gh release list --repo Flowfin/jellyfin-plugin-discover
 
-Publishing a manifest is
-[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120) and has
-not happened, so there is still no address a server's plugin catalogue can be
-pointed at. The dashboard will not find this plugin, and nothing on the server
-notices a later release: an operator installing this way is the thing that has
-to watch for one.
+**From the catalogue.** In the dashboard, under **Plugins** and then
+**Repositories**, add `https://flowfin.dev/manifest.json`. Discover appears in
+the catalogue with the versions that address lists, and the server does the
+download, the checksum comparison and the unpacking.
 
-A release carries four files, the archive and three that describe it:
+That is the route that notices a later release, and it is the whole of what it
+buys over the one below. Two things about it are worth having before you take
+it. Nothing in this repository has ever installed from that address, so what a
+server makes of it is unverified here rather than known, and that is
+[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120)'s fourth
+condition. And the manifest is written elsewhere: it is served from the Flowfin
+catalogue rather than from this repository, so a release published here reaches
+that address on a schedule rather than at the moment of publication.
+
+**By hand.** This is what the rest of this section and the next one are about,
+and it is the route the checks below apply to. A release carries four files, the
+archive and three that describe it:
 
     gh release download 0.1.0.0-stable --repo Flowfin/jellyfin-plugin-discover
 
@@ -132,12 +141,14 @@ carries and an operator following this section gets provenance rather than
 contents.
 
 And nothing re-checks any of this afterwards. The comparison an operator would
-most want repeated is a catalogue's published checksum against the file it serves,
-and there is no catalogue and no manifest to hold one, which is
-[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120) again. The
-scheduled half of
-[#124](https://github.com/Flowfin/jellyfin-plugin-discover/issues/124) waits on
-that and on nothing in this page.
+most want repeated is a catalogue's published checksum against the file it
+serves. The catalogue exists now and publishes a checksum for this plugin, and
+the two agreed when they were last compared, on 2026-09-06, by somebody running
+the comparison rather than by anything that runs again. What would repeat it is
+the scheduled half of
+[#124](https://github.com/Flowfin/jellyfin-plugin-discover/issues/124), and that
+is still not built: the check that does read the published catalogue every day
+asks whether the newest release is listed and reads no checksum at all.
 
 ## What you get after installing and doing nothing
 
