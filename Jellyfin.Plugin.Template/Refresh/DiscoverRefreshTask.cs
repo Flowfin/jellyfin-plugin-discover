@@ -213,6 +213,11 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     /// Thrown by <see cref="Configuration.CatalogueBounds.Of"/> when the pair
     /// the document carries contradicts itself.
     /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown by <see cref="Configuration.CatalogueBounds.ThrowIfShelvesDoNotFit"/>
+    /// when the shipped set at the per-shelf bound would hold more titles than
+    /// the total the document allows.
+    /// </exception>
     /// <remarks>
     /// Public and separate from <see cref="ExecuteAsync"/> because it is the
     /// only part of the server's own path that can be asserted without a server:
@@ -230,13 +235,50 @@ public sealed class DiscoverRefreshTask : IScheduledTask
     /// is a plugin an operator switched off, the other a run with nothing to
     /// read a bound from. The run still happens, so what the documents on disk
     /// hold past the retention is still taken; the reason is at the setting.
+    ///
+    /// BOTH REFUSALS RUN HERE AND ONE OF THEM DID NOT, WHICH IS #105'S FIRST
+    /// LINE. A configuration is written by a page, by a restored backup and by
+    /// an operator editing a file, and only the first of those goes through
+    /// <see cref="Plugin.UpdateConfiguration"/>. A pair that contradicts itself
+    /// was already refused here, because <see cref="Configuration.PluginConfiguration.Bounds"/>
+    /// is where that rule lives; a pair the shipped set does not fit inside was
+    /// refused at the save and nowhere else, so a hand edit put it on disk and
+    /// the first thing to notice was a refresh. The same call is made here now,
+    /// with the same words, which is what the shape decided on #105 asks for:
+    /// the rule runs at the point of use, nothing rewrites the file, and nothing
+    /// substitutes a default.
+    ///
+    /// THE OFF SWITCH IS STILL READ FIRST AND THAT IS A CHOICE RATHER THAN THE
+    /// ORDER IT WAS ALREADY IN. A document with the plugin turned off carries
+    /// its pair past both refusals, so an operator who turns the plugin back on
+    /// meets the refusal at that moment rather than at the save. Putting the
+    /// refusal in front of the switch would fix that and would cost more than it
+    /// buys: a run under a turned-off plugin exists to take what the documents
+    /// on disk hold past the retention, which is a source's terms rather than an
+    /// operator's preference, and a pair about how much a refresh may fetch has
+    /// no bearing on it. Refusing there would stop the retention for a number
+    /// nothing on that path reads. Whether that trade is the right one is open on
+    /// #105, and this comment is the state rather than the answer.
     /// </remarks>
-    public static IReadOnlyList<Shelf>? ShelvesFor(Configuration.PluginConfiguration? configuration) =>
-        configuration is null
-            ? null
-            : configuration.Enabled
-                ? ShippedShelves.Bounded(configuration.Bounds().TitlesPerShelf)
-                : Array.Empty<Shelf>();
+    public static IReadOnlyList<Shelf>? ShelvesFor(Configuration.PluginConfiguration? configuration)
+    {
+        if (configuration is null)
+        {
+            return null;
+        }
+
+        if (!configuration.Enabled)
+        {
+            return Array.Empty<Shelf>();
+        }
+
+        var bounds = configuration.Bounds();
+        var shelves = ShippedShelves.Bounded(bounds.TitlesPerShelf);
+
+        bounds.ThrowIfShelvesDoNotFit(shelves.Count);
+
+        return shelves;
+    }
 
     /// <inheritdoc />
     /// <remarks>

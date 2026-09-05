@@ -146,6 +146,78 @@ public class DiscoverRefreshTaskTests
     }
 
     /// <summary>
+    /// A pair the shipped shelves do not fit inside is refused where a run reads it, and not only where a page saves it.
+    /// </summary>
+    /// <remarks>
+    /// #105's first line, which names three writers of a configuration and says
+    /// only one of them can be validated in a browser. A page saving this pair
+    /// was already refused; a restored backup and a hand edit put it on disk
+    /// with nothing reading it, and the first thing to notice was a refresh
+    /// three shelves in.
+    ///
+    /// The numbers are chosen so that the pair passes the rule beside this one
+    /// and fails this one. Forty titles a shelf is under the hundred the
+    /// document allows in total, so <c>CatalogueBounds.Of</c> accepts it; the
+    /// six shipped shelves at forty are two hundred and forty, which is not
+    /// under a hundred. A test whose pair failed both would pass with this
+    /// refusal removed.
+    ///
+    /// The message is asserted on rather than the type alone, because the whole
+    /// reason the refusal is a refusal and not a cap is that an operator has to
+    /// know which of the two settings to change, and either one of them alone
+    /// tells them nothing.
+    /// </remarks>
+    [Fact]
+    public void APairTheShippedShelvesDoNotFitInsideIsRefusedWhereARunReadsIt()
+    {
+        var configuration = new PluginConfiguration
+        {
+            MaximumTitlesPerShelf = 40,
+            MaximumTitlesAcrossAllShelves = 100
+        };
+
+        Assert.Equal(40, configuration.Bounds().TitlesPerShelf);
+
+        var refused = Assert.Throws<ArgumentException>(() => DiscoverRefreshTask.ShelvesFor(configuration));
+
+        Assert.Contains(nameof(PluginConfiguration.MaximumTitlesPerShelf), refused.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(PluginConfiguration.MaximumTitlesAcrossAllShelves), refused.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A turned-off document carries the same pair past the refusal, which is a choice and is asserted so that changing it is one too.
+    /// </summary>
+    /// <remarks>
+    /// The switch is read before the bounds are, so an operator turning the
+    /// plugin back on meets this refusal at that moment rather than at the save.
+    /// What the ordering buys is that a run under a turned-off plugin goes on
+    /// taking what the documents on disk hold past the retention, which is a
+    /// source's terms rather than an operator's preference and which no number
+    /// in the pair above has any bearing on.
+    ///
+    /// It is asserted rather than left to the reader for the reason the
+    /// configuration page's hidden list is asserted: a designed state that
+    /// nothing holds is indistinguishable from an oversight, and the next person
+    /// to reorder these two lines should have to say so. Whether the trade is
+    /// the right one is open on #105.
+    /// </remarks>
+    [Fact]
+    public void ATurnedOffDocumentCarriesThatPairPastTheRefusal()
+    {
+        var off = new PluginConfiguration
+        {
+            Enabled = false,
+            MaximumTitlesPerShelf = 40,
+            MaximumTitlesAcrossAllShelves = 100
+        };
+
+        var shelves = DiscoverRefreshTask.ShelvesFor(off);
+
+        Assert.NotNull(shelves);
+        Assert.Empty(shelves);
+    }
+
+    /// <summary>
     /// A configuration with the plugin turned off gives a run no shelves, which
     /// is not the same answer as no configuration.
     /// </summary>
