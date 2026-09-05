@@ -268,4 +268,112 @@ public static class CatalogueBoundsTests
         Assert.Contains(nameof(PluginConfiguration.MaximumTitlesAcrossAllShelves), refusal.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("shelfCount", refusal.Message, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// #105's fourth condition at the lower edge of both numbers. The refusals
+    /// above are proven at zero and below; nothing above proved that one, the
+    /// smallest count either bound accepts, is inside. A refusal written as
+    /// "less than two" would have passed every test in this file.
+    /// </summary>
+    [Fact]
+    public static void ABoundOfOneIsTheSmallestAcceptedOnEitherNumber()
+    {
+        var bounds = CatalogueBounds.Of(maximumTitlesPerShelf: 1, maximumTitlesAcrossAllShelves: 1);
+
+        Assert.Equal(1, bounds.TitlesPerShelf);
+        Assert.Equal(1, bounds.TitlesAcrossAllShelves);
+
+        // One shelf of one title fills that allowance exactly, and a second
+        // shelf is one step beyond it.
+        bounds.ThrowIfShelvesDoNotFit(1);
+        Assert.Throws<ArgumentException>(() => bounds.ThrowIfShelvesDoNotFit(2));
+    }
+
+    /// <summary>
+    /// The edge between the two numbers, one step apart rather than ten. The
+    /// test above that refuses forty against thirty would pass a rule that
+    /// allowed a total one short of the per-shelf bound.
+    /// </summary>
+    [Fact]
+    public static void ATotalOneBelowThePerShelfBoundIsRefusedAndEqualIsNot()
+    {
+        var refusal = Assert.Throws<ArgumentOutOfRangeException>(
+            () => CatalogueBounds.Of(maximumTitlesPerShelf: 30, maximumTitlesAcrossAllShelves: 29));
+
+        Assert.Equal("maximumTitlesAcrossAllShelves", refusal.ParamName);
+        Assert.Contains("29", refusal.Message, StringComparison.Ordinal);
+
+        var equal = CatalogueBounds.Of(maximumTitlesPerShelf: 30, maximumTitlesAcrossAllShelves: 30);
+        Assert.Equal(30, equal.TitlesAcrossAllShelves);
+    }
+
+    /// <summary>
+    /// The edge of the total against the shipped set, derived from that set
+    /// rather than typed, so a seventh shelf moves the edge and not the test.
+    /// The total the set fills exactly is inside; one title fewer is refused,
+    /// and the refusal names both numbers so an operator can see which to move.
+    /// </summary>
+    [Fact]
+    public static void ATotalTheShippedSetFillsExactlyIsAcceptedAndOneBelowIsRefused()
+    {
+        var shipped = ShippedShelves.Bounded(CatalogueBounds.DefaultTitlesPerShelf).Count;
+        var exactly = shipped * CatalogueBounds.DefaultTitlesPerShelf;
+
+        CatalogueBounds.Of(CatalogueBounds.DefaultTitlesPerShelf, exactly).ThrowIfShelvesDoNotFit(shipped);
+
+        var refusal = Assert.Throws<ArgumentException>(
+            () => CatalogueBounds.Of(CatalogueBounds.DefaultTitlesPerShelf, exactly - 1).ThrowIfShelvesDoNotFit(shipped));
+
+        Assert.Contains((exactly - 1).ToString(CultureInfo.InvariantCulture), refusal.Message, StringComparison.Ordinal);
+        Assert.Contains(exactly.ToString(CultureInfo.InvariantCulture), refusal.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The same two edges through the save itself rather than through the
+    /// type, which is where #105 says a bad setting is refused. A value at the
+    /// edge reaches the serialiser and a value one step beyond does not, and
+    /// what was written last is still the last accepted document.
+    /// </summary>
+    [Fact]
+    public static void ASaveAtTheEdgeIsWrittenAndOneStepBeyondIsNot()
+    {
+        var shipped = ShippedShelves.Bounded(CatalogueBounds.DefaultTitlesPerShelf).Count;
+        var exactly = shipped * CatalogueBounds.DefaultTitlesPerShelf;
+
+        var log = new CallLog();
+        var serialiser = new XmlSerializerThatRecordsWhatIsWritten(log);
+        var plugin = new Plugin(new ApplicationPathsThatRefuseEveryCallButThePluginDirectories(log), serialiser);
+
+        var atTheEdge = new PluginConfiguration
+        {
+            MaximumTitlesPerShelf = CatalogueBounds.DefaultTitlesPerShelf,
+            MaximumTitlesAcrossAllShelves = exactly
+        };
+        plugin.UpdateConfiguration(atTheEdge);
+        Assert.Same(atTheEdge, serialiser.LastWritten);
+
+        var oneBeyond = new PluginConfiguration
+        {
+            MaximumTitlesPerShelf = CatalogueBounds.DefaultTitlesPerShelf,
+            MaximumTitlesAcrossAllShelves = exactly - 1
+        };
+        Assert.Throws<ArgumentException>(() => plugin.UpdateConfiguration(oneBeyond));
+        Assert.Same(atTheEdge, serialiser.LastWritten);
+
+        var smallest = new PluginConfiguration
+        {
+            MaximumTitlesPerShelf = 1,
+            MaximumTitlesAcrossAllShelves = shipped
+        };
+        plugin.UpdateConfiguration(smallest);
+        Assert.Same(smallest, serialiser.LastWritten);
+
+        var belowTheSmallest = new PluginConfiguration
+        {
+            MaximumTitlesPerShelf = 0,
+            MaximumTitlesAcrossAllShelves = shipped
+        };
+        Assert.Throws<ArgumentOutOfRangeException>(() => plugin.UpdateConfiguration(belowTheSmallest));
+        Assert.Same(smallest, serialiser.LastWritten);
+    }
 }

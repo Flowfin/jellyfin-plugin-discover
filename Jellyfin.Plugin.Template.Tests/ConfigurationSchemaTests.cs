@@ -171,6 +171,23 @@ public class ConfigurationSchemaTests
         Assert.Equal(99, refusal.FoundSchemaVersion);
     }
 
+    /// <summary>
+    /// #105's fourth condition, one step past the edge in the direction the
+    /// tests above do not take. 99 is a version this build does not know, and
+    /// so is the very next one; a refusal that let the neighbour through would
+    /// pass the test at 99. The refusal names the setting as the document
+    /// spells it, which is the rule stated at <c>PluginConfiguration.Bounds</c>.
+    /// </summary>
+    [Fact]
+    public void ADocumentOneVersionAheadIsRefusedNamingTheSetting()
+    {
+        var refusal = Assert.Throws<UnknownConfigurationSchemaException>(
+            () => ConfigurationSchema.ThrowIfUnknown(Read(PluginConfiguration.CurrentSchemaVersion + 1)));
+
+        Assert.Equal(PluginConfiguration.CurrentSchemaVersion + 1, refusal.FoundSchemaVersion);
+        Assert.StartsWith(nameof(PluginConfiguration.SchemaVersion), refusal.Message, StringComparison.Ordinal);
+    }
+
     private static PluginConfiguration Read(int schemaVersion)
     {
         return ReadDocument(
