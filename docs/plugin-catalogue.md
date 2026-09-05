@@ -214,7 +214,7 @@ This repository's own release route asserts the opposite, that what is published
 is exactly what `build.yaml` declares, and refuses the tag otherwise:
 
     git grep -n 'carries version ${numeric} but build.yaml declares' origin/master -- .github/workflows/publish.yaml
-    origin/master:.github/workflows/publish.yaml:235:            echo "::error::Tag ${tag} carries version ${numeric} but build.yaml declares ${version}. Bump build.yaml, or tag the version that is in it."
+    origin/master:.github/workflows/publish.yaml:241:            echo "::error::Tag ${tag} carries version ${numeric} but build.yaml declares ${version}. Bump build.yaml, or tag the version that is in it."
 
 Both are defensible and they are not the same scheme. If this repository is ever
 inside the catalogue, the same bytes carry one version string installed from the
