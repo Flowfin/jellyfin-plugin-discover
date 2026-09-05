@@ -35,10 +35,12 @@
 # docs/gate-parity.md. Repeating the leg here would give one mistake two red
 # checks and leave #40 choosing between them.
 #
-# THE FAIL TIER IS SKIPPED FOR TWO KINDS OF AUTHOR, for two different reasons,
-# and each reason is written at the skip rather than only here. Neither skip is
-# silent: both annotate, so a run that judged less than the whole set cannot be
-# read as one that judged it all.
+# THE FAIL TIER IS SKIPPED FOR ONE KIND OF AUTHOR, a bot, and the reason is
+# written at the skip rather than only here. The skip is not silent: it
+# annotates, so a run that judged less than the whole set cannot be read as one
+# that judged it all. It was two kinds until #419. An author the payload
+# reported as outside this repository was skipped too, and that skip is gone,
+# for the reason written where it stood.
 #
 # Which checks stand behind a merge is a property of the repository rather than
 # of this file, so it is printed rather than restated:
@@ -86,29 +88,23 @@ jobs:
             const failures = [];
             const warnings = [];
 
-            // Who the FAIL tier is for.
+            // Who the FAIL tier is for: every author who is not a bot.
             //
             // A bot cannot know this repository's issue conventions and does not
             // open its pull requests against an issue, so failing one on linkage
-            // refuses a change for a rule it was never able to follow.
+            // refuses a change for a rule it was never able to follow. That skip
+            // is keyed on the account being a bot rather than on its relationship
+            // to this repository, so no reading of a payload moves it.
             //
-            // Somebody arriving from outside is a separate case with a separate
-            // reason. They can read a convention but they cannot know which
-            // issue number this board expects, and often there is no issue yet.
-            // The linkage is still wanted for their change; it is owed by
-            // whoever picks the change up, which is what the annotation says.
-            // Read this skip as "not their obligation", never as "linkage does
-            // not matter here".
-            //
-            // author_association describes the author's relationship to this
-            // repository, so somebody added as a collaborator stops being
-            // exempt from that moment.
-            //
-            // COLLABORATOR IS INSIDE, AND THE FIRST VERSION OF THIS LEFT IT
-            // OUT. The value here is the one the workflow token can see, and
-            // that token cannot see private organisation membership, so it
-            // reports COLLABORATOR where a user token reading the same pull
-            // request reports MEMBER. Measured rather than reasoned about:
+            // THERE WAS A SECOND SKIP HERE, FOR AN AUTHOR THE PAYLOAD REPORTED AS
+            // OUTSIDE THIS REPOSITORY, AND IT IS GONE. It read author_association
+            // against an inside set, and that field answers differently on the
+            // two routes that read it: the workflow token cannot see private
+            // organisation membership and reports COLLABORATOR where a user
+            // token reading the same pull request reports MEMBER. This board
+            // met that once already, when an inside set of OWNER and MEMBER
+            // skipped every pull request while the check reported green.
+            // Measured rather than reasoned about:
             //
             //   the run that judged the near-miss branch, with an inside set of
             //   OWNER and MEMBER only, passed and printed
@@ -119,16 +115,18 @@ jobs:
             //     gh api repos/Flowfin/jellyfin-plugin-discover/pulls/183 --jq '.author_association'
             //     MEMBER
             //
-            // With that set, every pull request on this board took the skip and
-            // the check was inert while reporting green, which is the worst
-            // shape a check can have. Push access to this repository is what
-            // the tier is really about, and COLLABORATOR is what push access
-            // looks like from here. The genuinely outside values are
-            // CONTRIBUTOR, FIRST_TIME_CONTRIBUTOR, FIRST_TIMER and NONE.
+            // COLLABORATOR was added to the set and the tier applied here again.
+            // The sibling board carrying this same file did not have that value,
+            // its context was required, and a required check that cannot fail
+            // refuses nothing. That is Flowfin/jellyfin-plugin-smart-collections#246,
+            // decided on 2026-09-05 for every copy of this file: the failing
+            // tier applies to every author, and reading the association decides
+            // nothing but what is printed. #419 is where this board took it.
+            // Whether the linkage rule should be softened for a first change
+            // from outside is a decision to take on that issue with a run in
+            // front of it, not a skip restored quietly.
             const isBot = pr.user && pr.user.type === "Bot";
-            const INSIDE = ["OWNER", "MEMBER", "COLLABORATOR"];
-            const isOutside = !INSIDE.includes(pr.author_association || "NONE");
-            const failTierApplies = !isBot && !isOutside;
+            const failTierApplies = !isBot;
 
             // Printed on every run, not only on a skip, so a green run says
             // what it judged on rather than leaving a reader to assume.
@@ -144,13 +142,13 @@ jobs:
                   "A bot opens its changes against no issue and cannot carry a " +
                   "reference it was never given.",
               );
-            } else if (isOutside) {
-              warnings.push(
-                "The author is outside this repository (author_association: " +
-                  `${pr.author_association || "NONE"}), so the two failing ` +
-                  "checks are skipped. The issue linkage is still wanted: " +
-                  "whoever picks this change up supplies the reference, and " +
-                  "files the issue where none exists yet.",
+            } else {
+              core.notice(
+                "The two failing checks apply to this author (author_association: " +
+                  `${pr.author_association || "NONE"}). They apply whatever that ` +
+                  "value is, since #419: reading it decided nothing but whether " +
+                  "the tier ran, and it answered differently on the two routes " +
+                  "that read it.",
               );
             }
 
