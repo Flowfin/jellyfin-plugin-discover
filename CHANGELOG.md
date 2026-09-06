@@ -92,7 +92,12 @@ published. Whether the description is right is not judged by anything.
 
 ## Unreleased
 
-- Nothing yet.
+- The release path builds the package through the gate's own workflow instead of
+  a second copy of its steps, refuses to publish a package that differs entry by
+  entry from what the gate built for the tagged commit, and attaches the bill of
+  materials beside the archive
+  ([#35](https://github.com/Flowfin/jellyfin-plugin-discover/issues/35),
+  [#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119)).
 
 ## 0.1.0.0 - 2026-09-04
 

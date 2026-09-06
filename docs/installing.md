@@ -66,8 +66,9 @@ catalogue rather than from this repository, so a release published here reaches
 that address on a schedule rather than at the moment of publication.
 
 **By hand.** This is what the rest of this section and the next one are about,
-and it is the route the checks below apply to. A release carries four files, the
-archive and three that describe it:
+and it is the route the checks below apply to. `0.1.0.0-stable` carries four files,
+the archive and three that describe it; the publish workflow now attaches the bill
+of materials as a fifth, and no tag has been pushed under that workflow yet:
 
     gh release download 0.1.0.0-stable --repo Flowfin/jellyfin-plugin-discover
 
@@ -135,10 +136,12 @@ The `.md5` is the same comparison in the value a Jellyfin catalogue serves as a
 plugin checksum, for the day there is a catalogue to serve it.
 
 **What neither answers.** Both bind the archive to a build; neither says what is
-inside it. The list of what ships is the bill of materials, and it is written on
-the build rather than on the publish, so it is not among the four files a release
-carries and an operator following this section gets provenance rather than
-contents.
+inside it. The list of what ships is the bill of materials, `sbom.cyclonedx.json`.
+`0.1.0.0-stable` does not carry it: on that release it was written on the build and
+not attached on the publish, so an operator on the first release gets provenance
+rather than contents. The publish workflow attaches it beside the archive now, which
+[`RELEASING.md`](RELEASING.md) describes, and no release has been cut under that
+workflow yet.
 
 And nothing re-checks any of this afterwards. The comparison an operator would
 most want repeated is a catalogue's published checksum against the file it

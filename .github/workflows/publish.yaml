@@ -297,28 +297,12 @@ jobs:
         # created a release cannot be reused.
         run: tools/changelog-names-the-version.sh "${VERSION}" CHANGELOG.md
 
-  build:
-    name: Build package
-    needs: gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    # Reads the source and nothing else. The signing scopes are deliberately not here:
-    # this job runs a NuGet restore and arbitrary MSBuild logic from every restored
-    # package, and a job that can be made to run someone else's code must not also be
-    # able to mint an attestation under this repository's identity.
-    permissions:
-      contents: read
-    steps:
-      - name: Check out the tagged commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # The same commit the gate job checked, for the same reason.
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
       - name: Set up .NET
-        # No dependency cache in the publish path. A cache entry written by another
-        # run must never be able to reach the bytes that get released.
+        # The three checks below ask MSBuild for properties and compile nothing. They
+        # sat in the build job until the build became a call into build-run.yml, which
+        # takes no inputs and holds no release-only step, so the checks that compare
+        # the project against the manifest moved here, in front of the build rather
+        # than beside it. Neither workflow sets a dependency cache.
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: "9.0.x"
@@ -354,23 +338,21 @@ jobs:
             echo "::notice::The project is built for ${declared}. This run publishes only ${EXPECTED_FRAMEWORK}, the line build.yaml names. The other lines are not published by this workflow."
           fi
 
-      - name: Restore against the committed lock file
-        # The packaging tool calls dotnet itself and passes no restore arguments, so
-        # without this step the graph the release is compiled from is whatever the feed
-        # served at that minute. Locked mode refuses a graph that does not match
-        # packages.lock.json, which is the file review actually saw.
-        #
-        # A repository with no lock file fails here rather than building. Creating one
-        # is a single command and is written up in docs/RELEASING.md.
+      - name: Check the committed lock file exists
+        # The build restores in locked mode wherever CI is set, which
+        # Directory.Build.props states and every runner here sets, so the graph the
+        # release is compiled from is the one in packages.lock.json or the build fails.
+        # That refusal is NuGet's and its message names a lock file rather than a
+        # release, so the absence is named here first, where the way out fits in one
+        # line. Creating one is a single command and is written up in docs/RELEASING.md.
         run: |
           set -euo pipefail
           project="Jellyfin.Plugin.Template/Jellyfin.Plugin.Template.csproj"
           lock="$(dirname "${project}")/packages.lock.json"
           if [ ! -f "${lock}" ]; then
-            echo "::error::${lock} does not exist. The release build restores in locked mode so the shipped bytes come from the dependency graph that was reviewed. Run: dotnet restore ${project} -p:RestorePackagesWithLockFile=true, then commit the file."
+            echo "::error::${lock} does not exist. The build restores in locked mode so the shipped bytes come from the dependency graph that was reviewed. Run: dotnet restore ${project} -p:RestorePackagesWithLockFile=true, then commit the file."
             exit 1
           fi
-          dotnet restore "${project}" --locked-mode
 
       - name: Check the assembly version matches the manifest
         env:
@@ -404,46 +386,136 @@ jobs:
           fi
           echo "Assembly version ${assembly} matches the manifest."
 
-      - name: Build the plugin package
-        id: jprm
-        # No version input: the packager reads the version from build.yaml, and the
-        # gate job has already proven that value equals the tag.
-        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
-        with:
-          dotnet-target: "net9.0"
+  build:
+    # The gate's build, called rather than copied (#35, #119). build-run.yml is the
+    # reusable workflow build.yaml calls on every pull request, so there is one build
+    # definition and not a second copy of its steps here, which is what makes "what
+    # the gate tested is what ships" a property of the tree rather than a hope about
+    # two files staying alike. It checks out the commit the push event recorded, reads
+    # the server line from Directory.Build.props, packages with the same tool at the
+    # same pin, writes the bill of materials, and uploads the archive, the descriptor
+    # written beside it and the inventory as one artifact named build-artifact. The
+    # version the packager reads out of build.yaml is the one the gate job above
+    # proved equals the tag.
+    #
+    # One definition is then proved rather than inherited: the compare job below
+    # fetches the artifact the gate uploaded for the tagged commit on the mainline and
+    # refuses to publish a package whose entries differ from it. The gate's artifact
+    # is compared with and never shipped, because an artifact expires and a release
+    # has to be repeatable on the day it is gone.
+    #
+    # The signing scopes are deliberately not granted to this call: the build runs a
+    # NuGet restore and arbitrary MSBuild logic from every restored package, and a job
+    # that can be made to run someone else's code must not also be able to mint an
+    # attestation under this repository's identity.
+    needs: gate
+    permissions:
+      contents: read
+    uses: ./.github/workflows/build-run.yml
 
-      - name: Check both release inputs exist
-        env:
-          ARTIFACT: ${{ steps.jprm.outputs.artifact }}
-        # if-no-files-found on the upload below fires only when no pattern matches at
-        # all, so a missing metadata file would ride through as a warning and leave the
-        # release one asset short. Named here, one file at a time.
-        run: |
-          set -euo pipefail
-          for file in "${ARTIFACT}" "${ARTIFACT}.meta.json"; do
-            if [ ! -f "${file}" ]; then
-              echo "::error::The packaging step did not produce ${file}. Both the archive and the metadata written beside it are release assets."
-              exit 1
-            fi
-          done
-          ls -l "${ARTIFACT}" "${ARTIFACT}.meta.json"
-
-      - name: Hand the package to the later jobs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+  compare:
+    name: Prove the package is the gate's
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Reads two artifacts and runs the comparison. It checks out nothing, restores
+    # nothing and holds no write scope; `actions: read` is what lets it list the
+    # gate's runs for this commit and download the artifact one of them uploaded.
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      verdict: ${{ steps.verdict.outputs.verdict }}
+    steps:
+      - name: Download the package this run built
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifact
-          retention-days: 30
-          if-no-files-found: error
-          # The archive and the metadata the packager writes beside it. The metadata
-          # travels with the release so a catalog can be built from the package that
-          # was actually shipped instead of from a file read back out of the tree.
-          path: |
-            ${{ steps.jprm.outputs.artifact }}
-            ${{ steps.jprm.outputs.artifact }}.meta.json
+          path: ours
+
+      - name: Fetch the comparison
+        # The script and nothing else, at the tagged commit. A checkout of the whole
+        # tree would put build tooling within reach of this job for no reason.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p tools
+          gh api "repos/${GH_REPO}/contents/tools/package-matches-the-gate.sh?ref=${COMMIT}" \
+            -H "Accept: application/vnd.github.raw+json" > tools/package-matches-the-gate.sh
+          chmod +x tools/package-matches-the-gate.sh
+
+      - name: Fetch the gate's artifact for the tagged commit
+        id: theirs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+          MAINLINE: master
+        # The gate is build.yaml on a push to the mainline, and the tagged commit is
+        # on the mainline or the gate job above has already refused it. A run that
+        # succeeded and still holds its artifact is what there is to compare with.
+        # Where there is none, this step says so rather than failing: an artifact is
+        # kept for thirty days, and a release cut later than that from a commit the
+        # gate did test must still be possible. What it cannot then be is proved, and
+        # the release body carries that sentence in place of the comparison.
+        run: |
+          set -euo pipefail
+          runs="$(gh api "repos/${GH_REPO}/actions/workflows/build.yaml/runs?head_sha=${COMMIT}&branch=${MAINLINE}&event=push&status=success&per_page=20" \
+            --jq '.workflow_runs | sort_by(.created_at) | reverse | .[].id')"
+          if [ -z "${runs}" ]; then
+            echo "reason=no successful run of build.yaml on ${MAINLINE} exists for ${COMMIT}" >> "$GITHUB_OUTPUT"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No successful run of build.yaml on ${MAINLINE} exists for ${COMMIT}, so there is no gate artifact to compare the package with."
+            exit 0
+          fi
+          for run in ${runs}; do
+            live="$(gh api "repos/${GH_REPO}/actions/runs/${run}/artifacts" \
+              --jq '[.artifacts[] | select(.name == "build-artifact" and .expired == false)] | length')"
+            if [ "${live}" -gt 0 ]; then
+              gh run download "${run}" --repo "${GH_REPO}" --name build-artifact --dir theirs
+              echo "run=${run}" >> "$GITHUB_OUTPUT"
+              echo "found=true" >> "$GITHUB_OUTPUT"
+              echo "Comparing with the artifact of run ${run}."
+              exit 0
+            fi
+          done
+          echo "reason=the gate's artifact for ${COMMIT} has expired (runs: $(printf '%s ' ${runs}))" >> "$GITHUB_OUTPUT"
+          echo "found=false" >> "$GITHUB_OUTPUT"
+          echo "::warning::Every successful run of build.yaml on ${MAINLINE} for ${COMMIT} has lost its artifact to the retention window, so there is no gate artifact to compare the package with."
+
+      - name: Compare the two packages entry by entry
+        id: verdict
+        env:
+          FOUND: ${{ steps.theirs.outputs.found }}
+          RUN: ${{ steps.theirs.outputs.run }}
+          REASON: ${{ steps.theirs.outputs.reason }}
+          COMMIT: ${{ github.sha }}
+          RUN_URL_BASE: ${{ github.server_url }}/${{ github.repository }}/actions/runs
+        # The verdict is one line, and it is written into the release body by the
+        # release job so a reader of the release meets it without opening a run. A
+        # refusal is the script's exit status; a comparison that could not be made is
+        # not a pass and is written as exactly that.
+        run: |
+          set -euo pipefail
+          if [ "${FOUND}" != "true" ]; then
+            echo "verdict=Not compared with the gate's artifact: ${REASON}. The package was built by the gate's own workflow and nothing proved it equal to what the gate tested at this commit." >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ours="$(find ours -name '*.zip' | head -n 1)"
+          theirs="$(find theirs -name '*.zip' | head -n 1)"
+          if [ -z "${ours}" ] || [ -z "${theirs}" ]; then
+            echo "::error::One of the two artifacts carries no archive (release: '${ours}', gate: '${theirs}')."
+            exit 1
+          fi
+          tools/package-matches-the-gate.sh "${ours}" "${theirs}"
+          echo "verdict=Built by the gate's workflow and compared entry by entry with the artifact the gate uploaded for ${COMMIT} in run ${RUN_URL_BASE}/${RUN}: identical, apart from the timestamp in meta.json." >> "$GITHUB_OUTPUT"
 
   attest:
     name: Attest build provenance
-    needs: build
+    needs: [build, compare]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # The only job that can mint an attestation under this repository's identity, and
@@ -469,7 +541,7 @@ jobs:
 
   release:
     name: Publish the release
-    needs: [build, attest]
+    needs: [build, compare, attest]
     runs-on: ubuntu-latest
     # Generous, because this job builds nothing and the time it spends is asset
     # uploads on somebody else's network. A timeout that fires between creating the
@@ -542,27 +614,38 @@ jobs:
           ls -l
 
       - name: Create the release and upload the assets
-        # Creates the release for the pushed tag and attaches every file in the
-        # working directory. fail_on_unmatched_files keeps a run that produced
-        # nothing from publishing an empty release. overwrite_files is false because
-        # the default is true, and silently replacing a published asset is the one
-        # thing this route must never do.
+        # Creates the release for the pushed tag and attaches the five files named
+        # below: the archive, its descriptor, the bill of materials the gate wrote for
+        # it, and the two checksums. Named rather than globbed, so a file that starts
+        # arriving in the artifact is a change somebody has to look at before it ships.
+        # fail_on_unmatched_files keeps a run that produced nothing from publishing an
+        # empty release. overwrite_files is false because the default is true, and
+        # silently replacing a published asset is the one thing this route must never
+        # do. The body is the compare job's one line, in front of the notes the forge
+        # composes, so the release says on its own page whether the package was proved
+        # to be the gate's.
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           name: ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
           prerelease: false
+          body: ${{ needs.compare.outputs.verdict }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           overwrite_files: false
           preserve_order: true
-          files: ./*
+          files: |
+            ./*.zip
+            ./*.zip.meta.json
+            ./sbom.cyclonedx.json
+            ./*.md5
+            ./*.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   alert:
     name: Raise an alert for a failed publish
-    needs: [gate, build, attest, release]
+    needs: [gate, build, compare, attest, release]
     # always(), because a job that runs only when its needs succeeded is exactly the job
     # that never runs here. The condition names what it reads rather than using
     # failure(): a run that was CANCELLED raises nothing, and that bound is stated on
@@ -590,6 +673,7 @@ jobs:
           DELIBERATE: ${{ github.event_name == 'workflow_dispatch' && inputs.prove_the_alert }}
           GATE_RESULT: ${{ needs.gate.result }}
           BUILD_RESULT: ${{ needs.build.result }}
+          COMPARE_RESULT: ${{ needs.compare.result }}
           ATTEST_RESULT: ${{ needs.attest.result }}
           RELEASE_RESULT: ${{ needs.release.result }}
         # One issue per failed run, keyed on the run id in its title, with no attempt to
@@ -607,7 +691,8 @@ jobs:
             echo "| Job | Result |"
             echo "| --- | --- |"
             echo "| Release metadata gate | \`${GATE_RESULT}\` |"
-            echo "| Build package | \`${BUILD_RESULT}\` |"
+            echo "| Build (build-run.yml) | \`${BUILD_RESULT}\` |"
+            echo "| Prove the package is the gate's | \`${COMPARE_RESULT}\` |"
             echo "| Attest build provenance | \`${ATTEST_RESULT}\` |"
             echo "| Publish the release | \`${RELEASE_RESULT}\` |"
             echo

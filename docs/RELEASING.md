@@ -57,7 +57,7 @@ other half.
 ## When a publish fails
 
 A run of `Publish Release` that fails opens an issue in this repository, in the
-workflow's `alert` job, naming which of the four jobs failed, the run, the commit
+workflow's `alert` job, naming which of the five jobs failed, the run, the commit
 and the moment. A failed run nobody is watching is the same as no check at all,
 and a tag is pushed rarely enough that nobody is watching by default.
 
@@ -149,11 +149,13 @@ and it says nothing about the together half.
 
 ## What the run produces
 
-The workflow builds the plugin from the tagged commit, creates the GitHub release
-for the tag, and attaches four files:
+The workflow builds the plugin from the tagged commit through `build-run.yml`, the
+workflow the gate builds with, creates the GitHub release for the tag, and attaches
+five files:
 
 - the plugin archive
 - the packaging metadata written beside it, `<archive>.zip.meta.json`
+- the bill of materials the build wrote for the archive, `sbom.cyclonedx.json`
 - one `.md5` file, the checksum of the archive
 - one `.sha256` file for the same archive
 
@@ -175,9 +177,10 @@ subjects in the range.
 
 The `.md5` is the value a Jellyfin catalog serves as the plugin checksum. There is
 exactly one per release so that no generator can pair a checksum with the wrong
-file. Both the archive and the metadata are checked for existence by name before the
-release job runs, so a release with three of the four files is not a state this route
-can reach.
+file. The archive, the metadata and the bill of materials are checked for existence
+by name before the build uploads them, and the release step is given the five files
+by name and refuses a run in which any of them is missing, so a release short of a
+file is not a state this route can reach.
 
 The run also signs a build provenance statement for the archive, in a separate job
 that downloads the archive and runs no build tooling. A downloaded archive can be
@@ -216,6 +219,56 @@ reports either the delay or a failure to publish. What an operator does with tha
 address is on [`installing.md`](installing.md); what is still owed is
 [#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120).
 
+## The package is the gate's
+
+The build job of `Publish Release` is a call into `build-run.yml`, the reusable
+workflow `build.yaml` runs on every pull request and every push to `master`, and not
+a second copy of its steps. So the package a release ships is built by the one
+definition the gate builds with, and the bill of materials the gate writes travels
+with it. Decided on 2026-09-05 and recorded on
+[#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119);
+[#35](https://github.com/Flowfin/jellyfin-plugin-discover/issues/35) is where the
+packaging in the gate lives.
+
+One definition is then proved rather than trusted. The `compare` job fetches the
+artifact the gate uploaded for the tagged commit on `master`, unpacks both archives,
+and the run refuses to publish on any difference between them:
+
+```
+tools/package-matches-the-gate.sh <release>.zip <gate>.zip
+```
+
+Entries and not archives, because two packages built from one commit minutes apart
+are not the same file: the packaging tool stamps each entry with the minute it was
+written and puts the moment of the build into `meta.json` as `timestamp`. Measured
+on the first release, where the gate's archive and the released one carried the same
+`Jellyfin.Plugin.Template.dll` to the byte and differed only in those stamps, so a
+checksum over the archives would have refused a release that was the gate's package.
+The script compares the list of entries in both directions, every entry other than
+`meta.json` byte for byte, and `meta.json` with its timestamp removed.
+
+The gate's artifact is compared with and never shipped. An artifact is kept for
+thirty days, and a release has to be possible on the day it is gone, so where no
+successful `build.yaml` run on `master` still holds one for the tagged commit the
+comparison is not made and the run says so rather than failing. What the run found is
+one line at the top of the release body, in front of the notes the forge composes:
+either that the package was compared with the gate's artifact of a named run and
+found identical, or that it was not compared and why. A release whose body carries
+the second sentence was built by the gate's workflow and proved equal to nothing.
+
+To take the reading by hand, download the release and the gate's artifact for its
+commit and run the script on the two archives:
+
+```
+gh release download <tag> --repo Flowfin/jellyfin-plugin-discover
+gh run download <run id> --repo Flowfin/jellyfin-plugin-discover -n build-artifact -D gate
+tools/package-matches-the-gate.sh <archive>.zip gate/<archive>.zip
+```
+
+No tag has been pushed under this shape of the workflow. What the call and the
+comparison do at a tag is read from the file; what the script does is watched, on
+the first release's two archives and on copies of them altered by hand.
+
 ## What fails the run
 
 - The tag does not end in `-stable`, or the workflow was started from something
@@ -235,7 +288,11 @@ address is on [`installing.md`](installing.md); what is still owed is
 - `CHANGELOG.md` carries no heading naming the version being released, or the
   heading is there with nothing under it.
 - The version stamped into the assembly is not the version in `build.yaml`.
-- The build produced no archive, or more than one, or no packaging metadata.
+- The build produced no archive, or more than one, or no packaging metadata, or no
+  bill of materials.
+- The package differs from the artifact the gate uploaded for the tagged commit: an
+  entry more or fewer, an entry with different bytes, or a `meta.json` that differs
+  beyond its timestamp.
 - A release already exists for the tag.
 
 All of these fail before anything is published.
