@@ -48,7 +48,7 @@ creates every release with that flag off:
     git grep -nE '^      - "\[0-9\]|prerelease:' -- .github/workflows/publish.yaml
     .github/workflows/publish.yaml:29:      - "[0-9]+.[0-9]+.[0-9]+-stable"
     .github/workflows/publish.yaml:30:      - "[0-9]+.[0-9]+.[0-9]+.[0-9]+-stable"
-    .github/workflows/publish.yaml:554:          prerelease: false
+    .github/workflows/publish.yaml:631:          prerelease: false
 
 THIS PARAGRAPH SAID THE WORKFLOW RAN ON A TAG AND ON NO OTHER TRIGGER. It carries
 a second one since
@@ -92,7 +92,12 @@ published. Whether the description is right is not judged by anything.
 
 ## Unreleased
 
-- Nothing yet.
+- The release path builds the package through the gate's own workflow instead of
+  a second copy of its steps, refuses to publish a package that differs entry by
+  entry from what the gate built for the tagged commit, and attaches the bill of
+  materials beside the archive
+  ([#35](https://github.com/Flowfin/jellyfin-plugin-discover/issues/35),
+  [#119](https://github.com/Flowfin/jellyfin-plugin-discover/issues/119)).
 
 ## 0.1.0.0 - 2026-09-04
 
