@@ -263,6 +263,39 @@ checked against. Read that as the line the tree carries and not as the set of
 lines that are supported: two are supported, and the difference between the two
 sets is a row on [`docs/support.md`](docs/support.md).
 
+## Installing
+
+The dashboard route is the one to take. Under **Plugins** and then
+**Repositories**, add this address:
+
+    https://flowfin.dev/manifest.json
+
+Discover appears in the catalogue under that repository, and the server does the
+download, the checksum comparison and the unpacking. What identifies it there is
+not its name but the identifier the tree fixes, which is the thing to match
+before pressing install:
+
+    git grep -n '^guid' -- build.yaml
+    build.yaml:3:guid: "8227de33-0101-48a3-951d-2bf921709e48"
+
+What to do in what order, what to expect after each step, what the first run
+writes and what an uninstall leaves behind are
+[`docs/installing.md`](docs/installing.md). That is the operator's page and this
+one does not restate it. The route by hand, from a published archive and the
+attestation and checksum that come with it, is on that page rather than here for
+the same reason.
+
+Two bounds belong beside the address rather than under it. Nothing in this
+repository has ever installed from it, so what a server makes of that catalogue
+is unverified here rather than known, and that is
+[#120](https://github.com/Flowfin/jellyfin-plugin-discover/issues/120)'s fourth
+condition. And the manifest is written and served elsewhere, by the Flowfin
+catalogue rather than by this repository, so a release published here reaches
+that address on a schedule rather than at the moment it is published.
+
+Building a package out of this tree is the developer's route and is the two
+sections below. Almost nobody installing this plugin has to take it.
+
 ## Building
 
     dotnet build Jellyfin.Plugin.Template.sln -c Release
