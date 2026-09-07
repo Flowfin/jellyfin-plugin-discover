@@ -133,7 +133,7 @@ run asks nobody:
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:55:    private readonly IMetadataSource[] _sources;
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:136:        IReadOnlyCollection<IMetadataSource> sources,
     Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:149:        var taken = new List<IMetadataSource>(sources.Count);
-    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:879:    private IMetadataSource? SourceFor(MetadataSource source)
+    Jellyfin.Plugin.Template/Refresh/CatalogueRefresh.cs:876:    private IMetadataSource? SourceFor(MetadataSource source)
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:67:    private readonly IReadOnlyList<IMetadataSource> _sources;
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:101:        IEnumerable<IMetadataSource> sources,
     Jellyfin.Plugin.Template/Refresh/DiscoverRefreshTask.cs:115:        var taken = new List<IMetadataSource>();
