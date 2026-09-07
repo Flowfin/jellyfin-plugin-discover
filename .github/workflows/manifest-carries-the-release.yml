@@ -1,0 +1,107 @@
+# The published manifest is read on a schedule and compared with the newest
+# release (#120, #124). The manifest a server installs this plugin from is
+# written and served by the Flowfin catalogue rather than by this repository,
+# so a publish that reports success and leaves it listing the previous
+# version, or listing this one with a checksum the package does not have,
+# leaves no trace in this tree and no red run anywhere. This is the run that
+# goes red: daily, and on request, it fetches the manifest, takes the newest
+# finished release and its package from the release page, and hands the three
+# to tools/manifest-carries-the-release.sh, which holds the comparison and
+# says which of its four legs failed.
+#
+# It runs on no pull request and publishes no check-run name on one, because
+# what it judges is published state rather than a change. A red run here is a
+# manifest to repair or a release to re-publish, never a branch to fix.
+#
+# Hardened per the repo's workflow policy (see zizmor.yml): the action is
+# SHA-pinned with a version comment, checkout runs with persist-credentials
+# false, the token is read-only, and nothing from the manifest is interpolated
+# into a script.
+name: manifest-carries-the-release
+
+on:
+  schedule:
+    # Once a day, an hour after the catalogue's own freshness run, so a
+    # manifest rewritten overnight is read after it settles.
+    - cron: "53 6 * * *"
+  workflow_dispatch:
+
+# Read-only: the run reads the release page and a public address, and writes
+# nothing anywhere.
+permissions:
+  contents: read
+
+# A newer run supersedes an in-flight one; the reading is of published state
+# and the later one is the one that matters.
+concurrency:
+  group: manifest-carries-the-release
+  cancel-in-progress: true
+
+env:
+  MANIFEST_URL: https://flowfin.dev/manifest.json
+
+jobs:
+  compare:
+    name: The manifest carries the newest release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch the manifest
+        # --fail turns an error page into a red step rather than a body the
+        # script would refuse for not parsing; both are red, this one says why.
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 60 \
+            --output manifest.json "$MANIFEST_URL"
+          echo "$(wc -c < manifest.json) bytes from $MANIFEST_URL"
+
+      - name: Take the newest finished release and its package
+        # The stable channel is the one the catalogue lists, so drafts and
+        # prereleases are left out. An empty answer is refused rather than read
+        # as a board with nothing to compare: this repository has released,
+        # so an empty list is a token or an API failure before it is anything
+        # else, and a check that passed on it would be reporting on nothing.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 \
+            --json tagName --jq '.[0].tagName // ""')
+          if [ -z "$tag" ]; then
+            echo "::error::gh release list returned no finished release, so there is nothing to compare the manifest with."
+            exit 1
+          fi
+          echo "newest finished release: $tag"
+          mkdir -p package
+          gh release download "$tag" --pattern '*.zip' --dir package
+          count=$(find package -maxdepth 1 -name '*.zip' | wc -l)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::release $tag carries $count zip assets; this check compares exactly one package."
+            exit 1
+          fi
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "PACKAGE=$(find package -maxdepth 1 -name '*.zip')" >> "$GITHUB_ENV"
+
+      - name: Read this plugin's guid
+        # From build.yaml rather than typed here, so a rename of the identifier
+        # is read from the one place it is declared.
+        run: |
+          set -euo pipefail
+          guid=$(sed -n 's/^guid:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$/\1/p' build.yaml | head -1)
+          if [ -z "$guid" ]; then
+            echo "::error::build.yaml carries no guid line, so the manifest cannot be searched for this plugin."
+            exit 1
+          fi
+          echo "GUID=$guid" >> "$GITHUB_ENV"
+
+      - name: Compare the manifest with the release
+        run: |
+          set -euo pipefail
+          tools/manifest-carries-the-release.sh manifest.json "$GUID" "$TAG" "$PACKAGE"
