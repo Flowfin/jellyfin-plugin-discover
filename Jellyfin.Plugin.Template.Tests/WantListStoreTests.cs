@@ -402,7 +402,7 @@ public class WantListStoreTests
         };
     }
 
-    private static string Folder(string named) => Path.Combine(Path.GetTempPath(), TestFolders, "want-list-" + named);
+    private static string Folder(string named) => Path.Join(Path.GetTempPath(), TestFolders, "want-list-" + named);
 
     private static WantListStore Store(string folder) => Store(folder, out _);
 

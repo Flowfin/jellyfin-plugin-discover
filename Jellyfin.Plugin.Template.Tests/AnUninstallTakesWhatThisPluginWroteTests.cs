@@ -66,10 +66,10 @@ public class AnUninstallTakesWhatThisPluginWroteTests
 
             var folder = plugin.DataFolderPath;
 
-            Directory.CreateDirectory(Path.Combine(folder, "catalogue"));
-            Directory.CreateDirectory(Path.Combine(folder, "wants"));
-            File.WriteAllText(Path.Combine(folder, "catalogue", "shelves"), "the shelves as they stood");
-            File.WriteAllText(Path.Combine(folder, "wants", "wants.json"), "who asked for what");
+            Directory.CreateDirectory(Path.Join(folder, "catalogue"));
+            Directory.CreateDirectory(Path.Join(folder, "wants"));
+            File.WriteAllText(Path.Join(folder, "catalogue", "shelves"), "the shelves as they stood");
+            File.WriteAllText(Path.Join(folder, "wants", "wants.json"), "who asked for what");
 
             plugin.OnUninstalling();
 
@@ -113,8 +113,8 @@ public class AnUninstallTakesWhatThisPluginWroteTests
             var paths = new ApplicationPathsThatRefuseEveryCallButThePluginDirectories(new CallLog(), root);
             var plugin = new Plugin(paths, new XmlSerializerThatRefusesEveryCall());
 
-            var configurations = Path.Combine(root, "configurations");
-            var document = Path.Combine(configurations, "Discover.xml");
+            var configurations = Path.Join(root, "configurations");
+            var document = Path.Join(configurations, "Discover.xml");
 
             Directory.CreateDirectory(configurations);
             File.WriteAllText(document, "what an operator configured");
@@ -188,7 +188,7 @@ public class AnUninstallTakesWhatThisPluginWroteTests
                 new XmlSerializerThatRefusesEveryCall());
 
             Directory.CreateDirectory(plugin.DataFolderPath);
-            File.WriteAllText(Path.Combine(plugin.DataFolderPath, "something"), "anything");
+            File.WriteAllText(Path.Join(plugin.DataFolderPath, "something"), "anything");
 
             plugin.OnUninstalling();
             plugin.OnUninstalling();
@@ -212,7 +212,7 @@ public class AnUninstallTakesWhatThisPluginWroteTests
     /// </param>
     /// <returns>The root, which does not exist yet.</returns>
     private static string ARootOfItsOwn(string test) =>
-        Path.Combine(
+        Path.Join(
             Path.GetTempPath(),
             "jellyfin-plugin-discover-tests",
             "uninstall-" + test);

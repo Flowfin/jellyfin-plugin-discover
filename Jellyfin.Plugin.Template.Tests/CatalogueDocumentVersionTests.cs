@@ -272,7 +272,7 @@ public class CatalogueDocumentVersionTests
     /// <returns>The full path of the folder.</returns>
     private static string Folder(string name)
     {
-        return Path.Combine(Path.GetTempPath(), TestFolders, name);
+        return Path.Join(Path.GetTempPath(), TestFolders, name);
     }
 
     /// <summary>

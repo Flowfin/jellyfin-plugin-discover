@@ -255,7 +255,7 @@ public class ARefreshHoldsToTheSourcesBudgetTests
             new CatalogueDirectory(folder),
             new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>());
 
-    private static string Folder(string name) => Path.Combine(Path.GetTempPath(), TestFolders, name);
+    private static string Folder(string name) => Path.Join(Path.GetTempPath(), TestFolders, name);
 
     private static void Remove(string folder)
     {

@@ -47,7 +47,7 @@ public class CatalogueDirectoryTests
         var directory = new CatalogueDirectory(plugin.DataFolderPath);
 
         Assert.Equal(
-            Path.Combine(plugin.DataFolderPath, CatalogueDirectory.Name),
+            Path.Join(plugin.DataFolderPath, CatalogueDirectory.Name),
             directory.FullPath,
             StringComparer.Ordinal);
 
@@ -272,7 +272,7 @@ public class CatalogueDirectoryTests
 
         var path = directory.DocumentPath("shelves");
 
-        Assert.Equal(Path.Combine(directory.FullPath, "shelves"), path, StringComparer.Ordinal);
+        Assert.Equal(Path.Join(directory.FullPath, "shelves"), path, StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -293,7 +293,7 @@ public class CatalogueDirectoryTests
     /// <returns>The full path of the folder.</returns>
     private static string Folder(string name)
     {
-        return Path.Combine(Path.GetTempPath(), TestFolders, name);
+        return Path.Join(Path.GetTempPath(), TestFolders, name);
     }
 
     /// <summary>

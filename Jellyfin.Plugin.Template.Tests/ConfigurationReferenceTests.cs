@@ -105,7 +105,7 @@ public static class ConfigurationReferenceTests
     /// <returns>One entry per row.</returns>
     private static Entry[] Entries()
     {
-        var lines = File.ReadAllLines(RepositoryFile(Path.Combine("docs", "configuration.md")));
+        var lines = File.ReadAllLines(RepositoryFile(Path.Join("docs", "configuration.md")));
 
         var header = Array.FindIndex(
             lines,
@@ -221,7 +221,7 @@ public static class ConfigurationReferenceTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var candidate = Path.Combine(directory.FullName, name);
+            var candidate = Path.Join(directory.FullName, name);
             if (File.Exists(candidate))
             {
                 return candidate;

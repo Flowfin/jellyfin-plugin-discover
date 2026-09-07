@@ -82,7 +82,7 @@ public sealed class CatalogueDirectory
                 nameof(pluginDataFolderPath));
         }
 
-        _fullPath = Path.Combine(pluginDataFolderPath, Name);
+        _fullPath = Path.Join(pluginDataFolderPath, Name);
     }
 
     /// <summary>
@@ -178,7 +178,7 @@ public sealed class CatalogueDirectory
                 nameof(documentName));
         }
 
-        return Path.Combine(_fullPath, documentName);
+        return Path.Join(_fullPath, documentName);
     }
 
     /// <summary>

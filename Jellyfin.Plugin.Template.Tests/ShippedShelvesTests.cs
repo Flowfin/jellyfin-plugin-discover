@@ -193,7 +193,7 @@ public static class ShippedShelvesTests
     /// <returns>One row per shelf the page states.</returns>
     private static Row[] Rows()
     {
-        var lines = File.ReadAllLines(RepositoryFile(Path.Combine("docs", "shelves.md")));
+        var lines = File.ReadAllLines(RepositoryFile(Path.Join("docs", "shelves.md")));
 
         var header = Array.FindIndex(
             lines,
@@ -245,7 +245,7 @@ public static class ShippedShelvesTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var candidate = Path.Combine(directory.FullName, name);
+            var candidate = Path.Join(directory.FullName, name);
             if (File.Exists(candidate))
             {
                 return candidate;

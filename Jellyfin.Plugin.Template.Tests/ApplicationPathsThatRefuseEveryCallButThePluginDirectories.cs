@@ -82,7 +82,7 @@ internal sealed class ApplicationPathsThatRefuseEveryCallButThePluginDirectories
     /// <summary>
     /// Gets the root every fake that was not handed one composes its two answered paths under.
     /// </summary>
-    public static string SharedRoot => Path.Combine(Path.GetTempPath(), "jellyfin-plugin-discover-tests");
+    public static string SharedRoot => Path.Join(Path.GetTempPath(), "jellyfin-plugin-discover-tests");
 
     /// <inheritdoc />
     public string ProgramDataPath => throw Refused();
@@ -100,10 +100,10 @@ internal sealed class ApplicationPathsThatRefuseEveryCallButThePluginDirectories
     public string ImageCachePath => throw Refused();
 
     /// <inheritdoc />
-    public string PluginsPath => Answered(Path.Combine(_root, "plugins"));
+    public string PluginsPath => Answered(Path.Join(_root, "plugins"));
 
     /// <inheritdoc />
-    public string PluginConfigurationsPath => Answered(Path.Combine(_root, "configurations"));
+    public string PluginConfigurationsPath => Answered(Path.Join(_root, "configurations"));
 
     /// <inheritdoc />
     public string LogDirectoryPath => throw Refused();

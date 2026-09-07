@@ -93,13 +93,13 @@ public class CatalogueLayoutTests
         ShelfQuestion question,
         DiscoverTitleKind kind)
     {
-        var folder = Path.Combine(Path.GetTempPath(), "a-folder-nothing-creates");
+        var folder = Path.Join(Path.GetTempPath(), "a-folder-nothing-creates");
         var directory = new CatalogueDirectory(folder);
         var name = CatalogueLayout.DocumentName(question, kind);
 
         var path = directory.DocumentPath(name);
 
-        Assert.Equal(Path.Combine(directory.FullPath, name), path, StringComparer.Ordinal);
+        Assert.Equal(Path.Join(directory.FullPath, name), path, StringComparer.Ordinal);
         Assert.Equal(name, Path.GetFileName(path), StringComparer.Ordinal);
     }
 

@@ -77,7 +77,7 @@ public class CatalogueDocumentStoreTests
 
             Assert.Null(store.Read("shelves"));
             Assert.Empty(log.Lines);
-            Assert.False(Directory.Exists(Path.Combine(folder, CatalogueDirectory.Name)));
+            Assert.False(Directory.Exists(Path.Join(folder, CatalogueDirectory.Name)));
         }
         finally
         {
@@ -392,7 +392,7 @@ public class CatalogueDocumentStoreTests
     /// <returns>The full path of the folder.</returns>
     private static string Folder(string name)
     {
-        return Path.Combine(Path.GetTempPath(), TestFolders, name);
+        return Path.Join(Path.GetTempPath(), TestFolders, name);
     }
 
     /// <summary>

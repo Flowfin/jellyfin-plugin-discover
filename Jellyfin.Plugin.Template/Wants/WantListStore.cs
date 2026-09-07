@@ -105,8 +105,8 @@ public sealed class WantListStore
                 nameof(pluginDataFolderPath));
         }
 
-        _directoryPath = Path.Combine(pluginDataFolderPath, DirectoryName);
-        _filePath = Path.Combine(_directoryPath, FileName);
+        _directoryPath = Path.Join(pluginDataFolderPath, DirectoryName);
+        _filePath = Path.Join(_directoryPath, FileName);
         _logger = logger;
     }
 

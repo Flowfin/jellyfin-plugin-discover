@@ -389,7 +389,7 @@ public class CatalogueDocumentBodyTests
     [Fact]
     public void ADocumentThatCameBackThroughTheStoreIsTheOneThatWentIn()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "jellyfin-plugin-discover-tests", "document-body-through-the-store");
+        var folder = Path.Join(Path.GetTempPath(), "jellyfin-plugin-discover-tests", "document-body-through-the-store");
         Remove(folder);
         try
         {
