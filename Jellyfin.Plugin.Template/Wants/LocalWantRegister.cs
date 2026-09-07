@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Jellyfin.Plugin.Template.Seam;
 
 namespace Jellyfin.Plugin.Template.Wants;
@@ -332,15 +333,10 @@ public sealed class LocalWantRegister
 
         lock (_gate)
         {
-            var doomed = new List<string>();
-
-            foreach (var row in _wants)
-            {
-                if (row.Value.AskingUser == user)
-                {
-                    doomed.Add(row.Key);
-                }
-            }
+            var doomed = _wants
+                .Where(row => row.Value.AskingUser == user)
+                .Select(row => row.Key)
+                .ToList();
 
             foreach (var key in doomed)
             {

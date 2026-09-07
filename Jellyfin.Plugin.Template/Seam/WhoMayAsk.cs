@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Jellyfin.Plugin.Template.Configuration;
 
 namespace Jellyfin.Plugin.Template.Seam;
@@ -159,15 +160,16 @@ public sealed class WhoMayAsk
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        foreach (var entry in configuration.UsersRefusedTheAsk)
+        var unreadable = configuration.UsersRefusedTheAsk
+            .Where(entry => !Guid.TryParse(entry, out var user) || user == Guid.Empty)
+            .ToList();
+
+        if (unreadable.Count > 0)
         {
-            if (!Guid.TryParse(entry, out var user) || user == Guid.Empty)
-            {
-                throw new ArgumentException(
-                    FormattableString.Invariant(
-                        $"{nameof(PluginConfiguration.UsersRefusedTheAsk)} carries {Unreadable(entry)}, which is not a user identifier. Every entry is the server's own identifier for one user, and a list holding one this build cannot read is a list none of whose refusals can be applied."),
-                    nameof(configuration));
-            }
+            throw new ArgumentException(
+                FormattableString.Invariant(
+                    $"{nameof(PluginConfiguration.UsersRefusedTheAsk)} carries {Unreadable(unreadable[0])}, which is not a user identifier. Every entry is the server's own identifier for one user, and a list holding one this build cannot read is a list none of whose refusals can be applied."),
+                nameof(configuration));
         }
     }
 

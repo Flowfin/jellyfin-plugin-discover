@@ -138,12 +138,9 @@ public class AddingASourceTouchesNoShelfCodeTests
 
         foreach (var type in shelfCode)
         {
-            foreach (var mentioned in Mentions(type))
+            foreach (var mentioned in Mentions(type).Where(implementations.Contains))
             {
-                if (implementations.Contains(mentioned))
-                {
-                    named.Add(type.Name + " names " + mentioned.Name);
-                }
+                named.Add(type.Name + " names " + mentioned.Name);
             }
         }
 
