@@ -57,7 +57,8 @@ public class PluginDataPurgeTests
                 new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>());
             var wants = new WantListStore(folder, new LoggerThatRecordsWhatIsWritten<WantListStore>());
 
-            catalogue.Write("shelves", new MemoryStream(new byte[] { 1, 2, 3 }));
+            using var body = new MemoryStream(new byte[] { 1, 2, 3 });
+            catalogue.Write("shelves", body);
             wants.Write(new List<LocalWant>());
 
             Assert.True(Directory.Exists(directory.FullPath));
@@ -102,7 +103,8 @@ public class PluginDataPurgeTests
                 new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>());
             var wants = new WantListStore(folder, new LoggerThatRecordsWhatIsWritten<WantListStore>());
 
-            catalogue.Write("shelves", new MemoryStream(new byte[] { 1, 2, 3 }));
+            using var body = new MemoryStream(new byte[] { 1, 2, 3 });
+            catalogue.Write("shelves", body);
             wants.Write(new List<LocalWant>());
 
             directory.RemoveEverything();
