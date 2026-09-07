@@ -187,7 +187,7 @@ public class AFreshInstallWritesNothingTests
     [Fact]
     public async Task ARunWithNothingConfiguredWritesNothing()
     {
-        var folder = Path.Combine(Path.GetTempPath(), TestFolders, "fresh-install-run");
+        var folder = Path.Join(Path.GetTempPath(), TestFolders, "fresh-install-run");
 
         Remove(folder);
 

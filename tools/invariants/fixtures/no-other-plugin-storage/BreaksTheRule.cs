@@ -19,14 +19,14 @@ public sealed class BreaksTheRule
     }
 
     public string NeighboursData()
-        => Path.Combine(_paths.PluginsPath, "Jellyfin.Plugin.Neighbour", "catalogue");
+        => Path.Join(_paths.PluginsPath, "Jellyfin.Plugin.Neighbour", "catalogue");
 
     public string NeighboursConfiguration()
-        => Path.Combine(_paths.PluginConfigurationsPath, "Neighbour.xml");
+        => Path.Join(_paths.PluginConfigurationsPath, "Neighbour.xml");
 
     public Type? NeighboursRecord()
     {
-        var assembly = Assembly.LoadFrom(Path.Combine(NeighboursData(), "Jellyfin.Plugin.Neighbour.dll"));
+        var assembly = Assembly.LoadFrom(Path.Join(NeighboursData(), "Jellyfin.Plugin.Neighbour.dll"));
         return assembly.GetType("Jellyfin.Plugin.Neighbour.Record");
     }
 }

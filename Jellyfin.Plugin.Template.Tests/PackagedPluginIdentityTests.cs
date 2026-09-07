@@ -71,7 +71,7 @@ public static class PackagedPluginIdentityTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var candidate = Path.Combine(directory.FullName, name);
+            var candidate = Path.Join(directory.FullName, name);
             if (File.Exists(candidate))
             {
                 return candidate;

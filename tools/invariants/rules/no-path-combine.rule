@@ -1,0 +1,37 @@
+Id: no-path-combine
+Pattern: \bPath\.Combine\(
+Subject: *.cs
+Except: none
+Issue: 450
+
+A path here is composed with Path.Join and never with Path.Combine. The two
+read the same on every call in this tree today and differ on exactly the call
+that matters: Combine drops every earlier argument the moment a later one is
+rooted, so a name that arrives rooted lands outside the directory the first
+argument named and still writes successfully. Join never drops an argument. A
+rooted later argument comes out under the earlier one, and whatever refuses it
+sees a path inside the directory rather than a path somewhere else.
+
+The plugin has one place a name it did not choose reaches a join, and that
+place refuses a rooted name before the join is made, which is
+CatalogueDirectory.DocumentPath. The rule is wider than that guard on purpose.
+The forty-seven calls that stood when it landed were forty-three in the test
+project, where no guard sits in front of any of them and where a temporary root
+joined to a test's own literal is the ordinary shape; the C# analysis reported
+thirty-three of them as cs/path-combine and read the other fourteen as the
+same call. One method everywhere is what makes the property readable by a
+pattern instead of by an argument per site, and it is what stops the scan
+reporting the next test that joins a root to a literal.
+
+The subject is every C# file rather than the two project directories by name,
+because #14 renames the project directory and a rule naming today's path would
+go quiet on the day of the rename instead of failing. The fixtures of the other
+rules are inside that subject, so a fixture that composes a path composes it
+with Join as well.
+
+What it cannot do. It reads tracked text one line at a time, so a call through
+an alias, a delegate or reflection is invisible to it. And Join settles only
+which argument survives: a later argument carrying a relative step walks out of
+the directory under either method, which is why DocumentPath refuses those
+separately and why this rule does not claim to hold the location decision on
+its own.

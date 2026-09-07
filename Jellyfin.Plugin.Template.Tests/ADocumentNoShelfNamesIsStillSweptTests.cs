@@ -99,7 +99,7 @@ public class ADocumentNoShelfNamesIsStillSweptTests
             Write(store, Orphan, Title("Long ago", "1", _fetchedAt));
 
             File.WriteAllText(
-                Path.Combine(directory.FullPath, Orphan + CatalogueDocumentStore.TemporaryNameSuffix),
+                Path.Join(directory.FullPath, Orphan + CatalogueDocumentStore.TemporaryNameSuffix),
                 "half of a document");
 
             Assert.Equal(
@@ -362,7 +362,7 @@ public class ADocumentNoShelfNamesIsStillSweptTests
             new CatalogueDirectory(folder),
             new LoggerThatRecordsWhatIsWritten<CatalogueDocumentStore>());
 
-    private static string Folder(string name) => Path.Combine(Path.GetTempPath(), TestFolders, name);
+    private static string Folder(string name) => Path.Join(Path.GetTempPath(), TestFolders, name);
 
     private static void Remove(string folder)
     {

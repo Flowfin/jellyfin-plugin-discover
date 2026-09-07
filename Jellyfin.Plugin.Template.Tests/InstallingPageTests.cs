@@ -91,7 +91,7 @@ public static class InstallingPageTests
     private static string[] ManualRemovalPaths()
     {
         var lines = File.ReadAllLines(PackagedPluginIdentityTests.RepositoryFile(
-            Path.Combine("docs", "installing.md")));
+            Path.Join("docs", "installing.md")));
 
         var header = Array.FindIndex(
             lines,
