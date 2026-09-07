@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Jellyfin.Plugin.Template.Catalogue;
 using Jellyfin.Plugin.Template.Refresh;
 using Xunit;
@@ -184,15 +185,7 @@ public class SourcePaceTests
 
         foreach (var ending in begun)
         {
-            var inside = 0;
-
-            foreach (var began in begun)
-            {
-                if (began > ending - SourcePace.Window && began <= ending)
-                {
-                    inside++;
-                }
-            }
+            var inside = begun.Count(began => began > ending - SourcePace.Window && began <= ending);
 
             Assert.True(
                 inside <= SourcePace.RequestsPerWindow,

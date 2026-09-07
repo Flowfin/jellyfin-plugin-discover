@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -336,18 +337,9 @@ public sealed class CatalogueDocumentStore
     /// </remarks>
     public IReadOnlyList<string> DocumentNames()
     {
-        var listed = _directory.ListDocuments();
-        var names = new List<string>(listed.Count);
-
-        foreach (var name in listed)
-        {
-            if (!name.EndsWith(TemporaryNameSuffix, StringComparison.Ordinal))
-            {
-                names.Add(name);
-            }
-        }
-
-        return names;
+        return _directory.ListDocuments()
+            .Where(name => !name.EndsWith(TemporaryNameSuffix, StringComparison.Ordinal))
+            .ToList();
     }
 
     /// <summary>

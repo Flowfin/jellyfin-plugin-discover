@@ -396,12 +396,9 @@ public sealed class CatalogueRefresh
             named.Add(result.DocumentName);
         }
 
-        foreach (var documentName in _store.DocumentNames())
+        foreach (var documentName in _store.DocumentNames().Where(name => !named.Contains(name)))
         {
-            if (!named.Contains(documentName))
-            {
-                SweepOneNoShelfNamed(documentName);
-            }
+            SweepOneNoShelfNamed(documentName);
         }
     }
 

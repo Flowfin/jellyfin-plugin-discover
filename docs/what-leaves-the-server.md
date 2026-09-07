@@ -357,7 +357,7 @@ THE TYPE SAID SO ABOUT ITSELF. The type says the opposite, in its own words and
 in capitals, naming the change:
 
     git grep -n 'THIS SAID IT DOES NOT SURVIVE A RESTART' origin/master -- Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs
-    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:31:/// THIS SAID IT DOES NOT SURVIVE A RESTART, and it does where it is given a
+    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:32:/// THIS SAID IT DOES NOT SURVIVE A RESTART, and it does where it is given a
 
 A register given a store writes its rows through to a file of its own, beside the
 catalogue's directory rather than inside it:
@@ -476,11 +476,11 @@ person's rows out of the list and, where the register was given a store, rewrite
 the file without them:
 
     git grep -n 'public int Forget' origin/master -- Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs
-    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:324:    public int Forget(Guid user)
+    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:325:    public int Forget(Guid user)
 
     git grep -n -A 2 'private void Keep()' origin/master -- Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs
-    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:399:    private void Keep() => _store?.Write(InOrder());
-    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs-400-}
+    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs:395:    private void Keep() => _store?.Write(InOrder());
+    origin/master:Jellyfin.Plugin.Template/Wants/LocalWantRegister.cs-396-}
 
 THIS PARAGRAPH SAID THE REMOVAL REACHED MEMORY AND NOTHING ELSE, which is the
 same staleness as the one repaired above and arrived in the same commit. What it
